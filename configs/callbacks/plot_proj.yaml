@@ -1,0 +1,2 @@
+plot_proj:
+  _target_: src.utils.callbacks.PlotLearntProjection

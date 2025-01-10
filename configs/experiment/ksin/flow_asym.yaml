@@ -1,10 +1,10 @@
 # @package _global_
 defaults:
   - ksin/base
-  - override /model: ksin_flow_cnn
+  - override /model: ksin_flow_xform
   - _self_
 
-run_name: rect_flow_asym
+run_name: flow_xform_asym
 
 data:
   break_symmetry: true

@@ -2,10 +2,13 @@
 
 defaults:
   - fm/base
-  - override /model: ksin_flow_cnn
+  - override /model: ksin_flow_xform
 
-run_name: rect_flow_cnn
+run_name: flow_xform
 
 model:
   vector_field:
-    field_dim: ${out_dim}
+    num_tokens: ${out_dim}
+    projection:
+      num_tokens: ${out_dim}
+      num_params: ${out_dim}

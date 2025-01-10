@@ -345,12 +345,22 @@ class KSinFlowMatchingModule(LightningModule):
         loss = loss * w
         loss = loss.mean()
 
-        return loss
+        penalty = None
+        if hasattr(self.vector_field, "penalty"):
+            penalty = self.vector_field.penalty()
+
+        return loss, penalty
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        loss = self._train_step(batch)
+        loss, penalty = self._train_step(batch)
         self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        return loss
+
+        if penalty is not None:
+            self.log(
+                "train/penalty", penalty, on_step=False, on_epoch=True, prog_bar=True
+            )
+
+        return loss + penalty
 
     def on_train_epoch_end(self) -> None:
         pass
@@ -444,7 +454,8 @@ class KSinFlowMatchingModule(LightningModule):
 
     def setup(self, stage: str) -> None:
         if self.hparams.compile and stage == "fit":
-            self.net = torch.compile(self.net)
+            self.vector_field = torch.compile(self.vector_field)
+            self.encoder = torch.compile(self.encoder)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
@@ -465,4 +476,4 @@ class KSinFlowMatchingModule(LightningModule):
 
 
 if __name__ == "__main__":
-    _ = KSinFeedForwardModule(None, None, None, None, None)
+    _ = KSinFlowMatchingModule(None, None, None, None)

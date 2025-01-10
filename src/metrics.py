@@ -28,7 +28,7 @@ class LogSpectralDistance(Metric):
         synth_fn: Callable,
     ):
         pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = synth_fn(pred_freq, pred_amp, target_signal.shape[-1])
+        pred_signal = synth_fn(pred_freq, pred_amp)
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")
@@ -40,7 +40,8 @@ class LogSpectralDistance(Metric):
         self.count += 1
 
     def compute(self):
-        return self.lsd / self.count
+        lsd = self.lsd / self.count
+        return lsd.sqrt()
 
 
 class SpectralDistance(Metric):
@@ -57,7 +58,7 @@ class SpectralDistance(Metric):
         synth_fn: Callable,
     ):
         pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = synth_fn(pred_freq, pred_amp, target_signal.shape[-1])
+        pred_signal = synth_fn(pred_freq, pred_amp)
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")
@@ -108,9 +109,9 @@ class LinearAssignmentDistance(Metric):
         cost = 0.0
         for b in range(dist_c.shape[0]):
             row_ind, col_ind = linear_sum_assignment(dist_c[b])
-            cost = cost + dist[row_ind, col_ind].mean()
-            self.count += 1
+            cost = cost + dist[b, row_ind, col_ind].mean()
 
+        self.count += dist.shape[0]
         self.linear_assignment_distance += cost
 
     def compute(self):

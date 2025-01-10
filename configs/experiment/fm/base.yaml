@@ -22,19 +22,18 @@ tags:
 seed: 12345
 
 trainer:
-  min_epochs: 10
-  max_epochs: 1000
-  limit_val_batches: 0.0
+  min_epochs: 400
+  max_epochs: 400
   check_val_every_n_epoch: 10
   limit_val_batches: 10
 
 logger:
   wandb:
     tags: ${tags}
-    group: fm_${data.algorithm}
+    group: fm_${data.algorithm}_400k
     name: fm_${data.algorithm}_${run_name}
 
 callbacks:
   early_stopping: null
   model_checkpoint:
-    monitor: train/loss
+    monitor: val/lsd

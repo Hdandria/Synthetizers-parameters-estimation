@@ -10,6 +10,7 @@ log = pylogger.RankedLogger(__name__, rank_zero_only=True)
 
 def register_resolvers() -> None:
     OmegaConf.register_new_resolver("mul", lambda x, y: x * y)
+    OmegaConf.register_new_resolver("div", lambda x, y: x // y)
 
 def extras(cfg: DictConfig) -> None:
     """Applies optional utilities before the task is started.

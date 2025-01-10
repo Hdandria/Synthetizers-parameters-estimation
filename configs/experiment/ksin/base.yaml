@@ -17,14 +17,12 @@ experiment_name: ksin
 tags:
   - ksin
   - k_${data.k}
-  - data_standardised
-  - fft_norm
 
 seed: 12345
 
 trainer:
-  min_epochs: 1000
-  max_epochs: 1000
+  min_epochs: 400
+  max_epochs: 400
   gradient_clip_val: 1.0
   check_val_every_n_epoch: 10
   limit_val_batches: 10
@@ -32,7 +30,7 @@ trainer:
 logger:
   wandb:
     tags: ${tags}
-    group: ${data.k}sin_new
+    group: ${data.k}sin_400k
     name: ${data.k}sin_${run_name}
 
 callbacks:

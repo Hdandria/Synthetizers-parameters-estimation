@@ -1,0 +1,2 @@
+plot_pos_enc:
+  _target_: src.utils.callbacks.PlotPositionalEncodingSimilarity

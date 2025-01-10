@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
@@ -26,20 +27,6 @@ def _sample_amplitudes(
     )
 
 
-def _sample_freqs_symmetry_broken(
-    k: int,
-    num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
-) -> torch.Tensor:
-    """Sample frequencies such that each sinusoidal component has frequency drawn from
-    disjoint intervals.
-    """
-    freqs = _sample_freqs(k, num_samples, device, generator) / k
-    shift = 2.0 * torch.arange(k, device=device) / k
-    return freqs + shift[None, :]
-
-
 def _sample_freqs_shifted(
     k: int,
     num_samples: int,
@@ -58,8 +45,16 @@ def _sample_freqs_shifted(
     return freqs
 
 
-def make_sin(freqs: torch.Tensor, amps: torch.Tensor, length: int):
+def make_sin(
+    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+):
     freqs = torch.pi * (freqs + 1.0) / 2.0
+
+    if break_symmetry:
+        k = freqs.shape[-1]
+        shift = torch.arange(k, device=freqs.device) * torch.pi / k
+        freqs = shift + freqs / k
+
     amps = (amps + 1.0) / 2.0
 
     n = torch.arange(length, device=freqs.device)
@@ -112,11 +107,11 @@ class KSinDataLoader:
     def _sample_parameters(
         self, generator: Optional[torch.Generator] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        if self.break_symmetry:
-            freqs = _sample_freqs_symmetry_broken(
-                self.k, self.batch_size, self.device, generator
-            )
-        elif self.shift_test_distribution:
+        # if self.break_symmetry:
+        #     freqs = _sample_freqs_symmetry_broken(
+        #         self.k, self.batch_size, self.device, generator
+        #     )
+        if self.shift_test_distribution:
             freqs = _sample_freqs_shifted(
                 self.k, self.batch_size, self.is_test, self.device, generator
             )
@@ -131,15 +126,18 @@ class KSinDataLoader:
         return freqs, amplitudes
 
     def _make_batch(self, generator: Optional[torch.Generator] = None):
+        sin_fn = partial(
+            make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
+        )
         freqs, amps = self._sample_parameters(generator)
-        sins = make_sin(freqs, amps, self.signal_length)
+        sins = sin_fn(freqs, amps)
         params = torch.cat((freqs, amps), dim=-1)
-        return (sins, params, make_sin)
+        return (sins, params, sin_fn)
 
     def __iter__(self):
         self.generator.manual_seed(self.seed)
         for _ in range(self.batches_per_epoch):
-            yield self._make_batch()
+            yield self._make_batch(self.generator)
 
         raise StopIteration
 

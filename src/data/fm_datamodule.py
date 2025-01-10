@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Literal, Optional, Tuple, Union
 
 import torch
@@ -46,8 +47,12 @@ def _sample_freqs_symmetry_broken(
     return freqs + shift[None, :]
 
 
-def fm_conditional_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int):
-    """An FM synthesiser with algorithm (M1->C1) + C2"""
+def fm_conditional_symmetry(
+    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+):
+    """An FM synthesiser with algorithm (M1->C1) + C2.
+    param layout: [m1, c2, c1]
+    """
     assert freqs.shape[-1] == 3
     assert amps.shape[-1] == 3
 
@@ -55,6 +60,10 @@ def fm_conditional_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int
     amps = amps.clone()
     amps[..., 0] *= 2 * torch.pi
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
+
+    if break_symmetry:
+        freqs[:, 0] = freqs[:, 0] / 2
+        freqs[:, 1] = (freqs[:, 1] + torch.pi) / 2
 
     n = torch.arange(length, device=freqs.device)
     phi_m1c2 = freqs[..., :2, None] * n
@@ -71,26 +80,20 @@ def fm_conditional_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int
 
 def _sample_params_conditional_symmetry(
     num_samples: int,
-    break_symmetry: bool,
     device: Union[str, torch.device],
     generator: Optional[torch.Generator],
 ):
     amplitudes = _sample_amplitudes(3, num_samples, device, generator)
-
-    if not break_symmetry:
-        freqs = _sample_freqs(3, num_samples, device, generator)
-    else:
-        # break the conditional and unconditional symmetries by limiting each carrier and
-        # each modulator to a particular frequency range
-        mod_freqs = _sample_freqs(1, num_samples, device, generator)
-        carrier_freqs = _sample_freqs_symmetry_broken(2, num_samples, device, generator)
-        freqs = torch.cat([mod_freqs, carrier_freqs], dim=-1)
-
+    freqs = _sample_freqs(3, num_samples, device, generator)
     return freqs, amplitudes
 
 
-def fm_mixed_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int):
-    """An FM synthesiser with algorithm (M1->C1) + (M2->C2)"""
+def fm_mixed_symmetry(
+    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+):
+    """An FM synthesiser with algorithm (M1->C1) + (M2->C2)
+    layout: [m1, m2, c1, c2]
+    """
     assert freqs.shape[-1] == 4
     assert amps.shape[-1] == 4
     n = torch.arange(length, device=freqs.device)
@@ -99,6 +102,12 @@ def fm_mixed_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int):
     amps = amps.clone()
     amps[..., 0:2] *= 2 * torch.pi
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
+
+    if break_symmetry:
+        freqs[:, 0] = freqs[:, 0] / 2
+        freqs[:, 1] = (freqs[:, 1] + torch.pi) / 2
+        freqs[:, 2] = freqs[:, 2] / 2
+        freqs[:, 3] = (freqs[:, 3] + torch.pi) / 2
 
     phi_m1m2 = freqs[..., :2, None] * n
     x_m1m2 = torch.sin(phi_m1m2)
@@ -114,26 +123,21 @@ def fm_mixed_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int):
 
 def _sample_params_mixed_symmetry(
     num_samples: int,
-    break_symmetry: bool,
     device: Union[str, torch.device],
     generator: Optional[torch.Generator],
 ):
     amplitudes = _sample_amplitudes(4, num_samples, device, generator)
-
-    if not break_symmetry:
-        freqs = _sample_freqs(4, num_samples, device, generator)
-    else:
-        # break the conditional and unconditional symmetries by limiting each carrier and
-        # each modulator to a particular frequency range
-        mod_freqs = _sample_freqs_symmetry_broken(2, num_samples, device, generator)
-        carrier_freqs = _sample_freqs_symmetry_broken(2, num_samples, device, generator)
-        freqs = torch.cat([mod_freqs, carrier_freqs], dim=-1)
+    freqs = _sample_freqs(4, num_samples, device, generator)
 
     return freqs, amplitudes
 
 
-def fm_hierarchical_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: int):
-    """An FM synthesiser with algorithm ((M1+M2)->C1) + ((M3+M4)->C2)"""
+def fm_hierarchical_symmetry(
+    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+):
+    """An FM synthesiser with algorithm ((M1+M2)->C1) + ((M3+M4)->C2)
+    layout: [m1, m2, m3, m4, c1, c2]
+    """
     assert freqs.shape[-1] == 6
     assert amps.shape[-1] == 6
     n = torch.arange(length, device=freqs.device)
@@ -141,6 +145,12 @@ def fm_hierarchical_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: in
     amps = amps.clone()
     amps[..., 0:4] *= 2 * torch.pi
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
+
+    if break_symmetry:
+        shifts = torch.arange(4, device=freqs.device) * torch.pi / 4
+        freqs[:, 0:4] = shifts + freqs[:, 0:4] / 4
+        freqs[:, 4] = freqs[:, 4] / 2
+        freqs[:, 5] = (freqs[:, 5] + torch.pi) / 2
 
     phi_m = freqs[..., :4, None] * n
     x_m = torch.sin(phi_m)
@@ -157,20 +167,11 @@ def fm_hierarchical_symmetry(freqs: torch.Tensor, amps: torch.Tensor, length: in
 
 def _sample_params_hierarchical_symmetry(
     num_samples: int,
-    break_symmetry: bool,
     device: Union[str, torch.device],
     generator: Optional[torch.Generator],
 ):
     amplitudes = _sample_amplitudes(6, num_samples, device, generator)
-
-    if not break_symmetry:
-        freqs = _sample_freqs(6, num_samples, device, generator)
-    else:
-        # break the conditional and unconditional symmetries by limiting each carrier and
-        # each modulator to a particular frequency range
-        mod_freqs = _sample_freqs_symmetry_broken(4, num_samples, device, generator)
-        carrier_freqs = _sample_freqs_symmetry_broken(2, num_samples, device, generator)
-        freqs = torch.cat([mod_freqs, carrier_freqs], dim=-1)
+    freqs = _sample_freqs(6, num_samples, device, generator)
 
     return freqs, amplitudes
 
@@ -201,21 +202,26 @@ class FMDataLoader:
         self.seed = seed
         self.device = device
 
-        self.generator = torch.Generator()
+        self.generator = torch.Generator(device=device)
 
     def __len__(self):
         return self.batches_per_epoch
 
     def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
         sampler, _ = _FM_ALGORITHMS[self.algorithm]
-        freqs, amplitudes = sampler(self.batch_size, self.break_symmetry, self.device)
+        freqs, amplitudes = sampler(
+            self.batch_size, self.break_symmetry, self.device, self.generator
+        )
 
         return freqs, amplitudes
 
     def _make_batch(self):
         freqs, amps = self._sample_parameters()
         _, synth = _FM_ALGORITHMS[self.algorithm]
-        signals = synth(freqs, amps, self.signal_length)
+        synth = partial(
+            synth, length=self.signal_length, break_symmetry=self.break_symmetry
+        )
+        signals = synth(freqs, amps)
         params = torch.cat((freqs, amps), dim=-1)
         return (signals, params, synth)
 
