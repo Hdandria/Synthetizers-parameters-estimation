@@ -271,7 +271,16 @@ class PlotLearntProjectionII(Callback):
         assignment = self._get_assignment(pl_module)
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
 
-        ax.imshow(assignment.cpu().numpy(), aspect="equal")
+        maxval = assignment.abs().max().item()
+        img = ax.imshow(
+            assignment.cpu().numpy(),
+            aspect="equal",
+            vmin=-maxval,
+            vmax=maxval,
+            cmap="RdBu",
+        )
+        fig.colorbar(img, ax=ax)
+
         ax.set_title("Assignment")
 
         ax.set_xlabel("params")

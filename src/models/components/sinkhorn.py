@@ -7,11 +7,11 @@ import torch.nn as nn
 def sinkhorn_C(
     costs: torch.Tensor,
     iters: int = 5,
-    reg: float = 0.1,
+    reg: float = 1.0,
     # eps: float = 1e-6,
 ) -> torch.Tensor:
     # costs has shape (b k n)
-    K = -costs / reg
+    K = costs / reg
 
     # we initialize our scaling vectors to ones
     num_tokens, num_params = costs.shape
@@ -19,7 +19,8 @@ def sinkhorn_C(
     v = torch.zeros(num_tokens, 1, device=K.device, dtype=K.dtype)
 
     # we initialize our marginals proportionally to the number of tokens
-    a = num_tokens / num_params  # row marginal
+    # a = num_tokens / num_params  # row marginal
+    a = 1.0
     b = 1.0  # column marginal
 
     log_a = math.log(a)

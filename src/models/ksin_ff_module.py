@@ -46,7 +46,7 @@ class KSinFeedForwardModule(LightningModule):
         self.val_chamfer.reset()
 
     def model_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
-        x, y, _ = batch
+        x, y, *_ = batch
         preds = self.forward(x)
         loss = self.criterion(preds, y)
         return loss, preds, y, x

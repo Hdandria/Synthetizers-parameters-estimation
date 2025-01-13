@@ -1,8 +1,12 @@
+from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
+import torch.multiprocessing as mp
 from lightning import LightningDataModule
+from scipy.optimize import linear_sum_assignment
+from threadpoolctl import threadpool_limits
 
 
 def _sample_freqs(
@@ -65,19 +69,17 @@ def make_sin(
     return x.sum(dim=-2)
 
 
-class KSinDataLoader:
+class KSinDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         k: int,
         signal_length: int,
+        num_samples: int,
         sort_frequencies: bool,
         break_symmetry: bool,
         shift_test_distribution: bool,
-        batch_size: int,
-        batches_per_epoch: int,
         is_test: bool,
         seed: int,
-        device: Union[str, torch.device],
     ):
         self.k = k
         self.signal_length = signal_length
@@ -92,54 +94,93 @@ class KSinDataLoader:
         self.break_symmetry = break_symmetry
         self.shift_test_distribution = shift_test_distribution
 
-        self.batch_size = batch_size
-        self.batches_per_epoch = batches_per_epoch
+        self.num_samples = num_samples
 
         self.seed = seed
-        self.generator = torch.Generator(device=device)
-        self.device = device
+        self.generator = torch.Generator(device=torch.device("cpu"))
 
         self.is_test = is_test
 
-    def __len__(self):
-        return self.batches_per_epoch
+        self._init_dataset()
 
-    def _sample_parameters(
-        self, generator: Optional[torch.Generator] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        # if self.break_symmetry:
-        #     freqs = _sample_freqs_symmetry_broken(
-        #         self.k, self.batch_size, self.device, generator
-        #     )
+    def _init_dataset(self):
+        self.generator.manual_seed(self.seed)
+        freqs, amps = self._sample_parameters()
+        freqs.share_memory_()
+        amps.share_memory_()
+        self.freqs = freqs
+        self.amps = amps
+
+    def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
         if self.shift_test_distribution:
             freqs = _sample_freqs_shifted(
-                self.k, self.batch_size, self.is_test, self.device, generator
+                self.k,
+                self.num_samples,
+                self.is_test,
+                torch.device("cpu"),
+                self.generator,
             )
         else:
-            freqs = _sample_freqs(self.k, self.batch_size, self.device, generator)
+            freqs = _sample_freqs(
+                self.k, self.num_samples, torch.device("cpu"), self.generator
+            )
 
-        amplitudes = _sample_amplitudes(self.k, self.batch_size, self.device, generator)
+        amplitudes = _sample_amplitudes(
+            self.k, self.num_samples, torch.device("cpu"), self.generator
+        )
 
         if self.sort_frequencies:
             freqs, _ = torch.sort(freqs, dim=-1)
 
         return freqs, amplitudes
 
-    def _make_batch(self, generator: Optional[torch.Generator] = None):
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        freq = self.freqs[idx][None]
+        amp = self.amps[idx][None]
         sin_fn = partial(
             make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
         )
-        freqs, amps = self._sample_parameters(generator)
-        sins = sin_fn(freqs, amps)
-        params = torch.cat((freqs, amps), dim=-1)
+        params = torch.cat((freq, amp), dim=-1)
+        sins = sin_fn(freq, amp)
         return (sins, params, sin_fn)
 
-    def __iter__(self):
-        self.generator.manual_seed(self.seed)
-        for _ in range(self.batches_per_epoch):
-            yield self._make_batch(self.generator)
 
-        raise StopIteration
+def _hungarian_match(noise: torch.Tensor, params: torch.Tensor, sins: torch.Tensor):
+    cost = torch.cdist(noise, params)
+    cost = cost.numpy()
+
+    with threadpool_limits(limits=1):
+        row_ind, col_ind = linear_sum_assignment(cost)
+
+    noise = noise[row_ind]
+    params = params[col_ind]
+    sins = sins[col_ind]
+
+    return noise, params, sins
+
+
+def regular_collate_fn(batch):
+    sins, params, sin_fn = zip(*batch)
+    sins = torch.cat(sins, dim=0)
+    params = torch.cat(params, dim=0)
+    noise = torch.randn_like(params)
+    sin_fn = sin_fn[0]
+    return (sins, params, noise, sin_fn)
+
+
+def ot_collate_fn(batch):
+    sins, params, sin_fn = zip(*batch)
+    sins = torch.cat(sins, dim=0)
+    params = torch.cat(params, dim=0)
+    noise = torch.randn_like(params)
+
+    noise, params, sins = _hungarian_match(noise, params, sins)
+
+    sin_fn = sin_fn[0]
+    return (sins, params, noise, sin_fn)
 
 
 class KSinDataModule(LightningDataModule):
@@ -160,6 +201,8 @@ class KSinDataModule(LightningDataModule):
         train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
         train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
+        ot: bool = False,
+        num_workers: int = 0,
     ):
         super().__init__()
 
@@ -178,6 +221,9 @@ class KSinDataModule(LightningDataModule):
         self.batch_size = batch_size
 
         self.device = None
+        self.num_workers = num_workers
+
+        self.ot = ot
 
     def prepare_data(self):
         pass
@@ -194,42 +240,57 @@ class KSinDataModule(LightningDataModule):
             device = self.trainer.strategy.root_device
 
         if stage == "fit":
-            self.train = KSinDataLoader(
+            train_ds = KSinDataset(
                 self.k,
                 self.signal_length,
+                self.train_size,
                 self.sort_frequencies,
                 self.break_symmetry,
                 self.shift_test_distribution,
-                self.batch_size,
-                self.train_size // self.batch_size,
                 False,
                 self.train_seed,
-                device,
             )
-            self.val = KSinDataLoader(
+            val_ds = KSinDataset(
                 self.k,
                 self.signal_length,
+                self.val_size,
                 self.sort_frequencies,
                 self.break_symmetry,
                 self.shift_test_distribution,
-                self.batch_size,
-                self.val_size // self.batch_size,
                 False,
                 self.val_seed,
-                device,
+            )
+            self.train = torch.utils.data.DataLoader(
+                train_ds,
+                batch_size=self.batch_size,
+                shuffle=True,
+                collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+                num_workers=self.num_workers,
+            )
+            self.val = torch.utils.data.DataLoader(
+                val_ds,
+                batch_size=self.batch_size,
+                shuffle=False,
+                collate_fn=regular_collate_fn,
+                num_workers=self.num_workers,
             )
         else:
-            self.test = KSinDataLoader(
+            test_ds = KSinDataset(
                 self.k,
                 self.signal_length,
+                self.test_size,
                 self.sort_frequencies,
                 self.break_symmetry,
                 self.shift_test_distribution,
-                self.batch_size,
-                self.test_size // self.batch_size,
                 True,
                 self.test_seed,
-                device,
+            )
+            self.test = torch.utils.data.DataLoader(
+                test_ds,
+                batch_size=self.batch_size,
+                shuffle=False,
+                collate_fn=regular_collate_fn,
+                num_workers=self.num_workers,
             )
 
     def train_dataloader(self):

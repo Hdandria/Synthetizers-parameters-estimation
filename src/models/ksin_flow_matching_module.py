@@ -9,12 +9,8 @@ from lightning import LightningModule
 from scipy.optimize import linear_sum_assignment
 from torch.nn.functional import soft_margin_loss
 
-from src.metrics import (
-    ChamferDistance,
-    LinearAssignmentDistance,
-    LogSpectralDistance,
-    SpectralDistance,
-)
+from src.metrics import (ChamferDistance, LinearAssignmentDistance,
+                         LogSpectralDistance, SpectralDistance)
 from src.utils.math import divmod
 
 
@@ -321,7 +317,7 @@ class KSinFlowMatchingModule(LightningModule):
         return target
 
     def _train_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
-        signal, params, _ = batch
+        signal, params, noise, _ = batch
 
         # Get conditioning vector
         conditioning = self.encoder(signal)
@@ -332,7 +328,9 @@ class KSinFlowMatchingModule(LightningModule):
             t = self._sample_time(signal.shape[0], signal.device)
             w = self._weight_time(t)
 
-            x0, x1, z = self._sample_x0_and_x1(params, z)
+            # x0, x1, z = self._sample_x0_and_x1(params, z)
+            x0 = noise
+            x1 = params
 
             # we sample a point along the trajectory
             x_t = self._sample_probability_path(x0, x1, t)
@@ -381,9 +379,9 @@ class KSinFlowMatchingModule(LightningModule):
         steps: int,
         cfg_strength: float,
     ):
-        x, y, _ = batch
+        x, y, sample, _ = batch
 
-        sample = torch.randn_like(y)
+        # sample = torch.randn_like(y)
         conditioning = self.encoder(x)
         t = torch.zeros(sample.shape[0], 1, device=sample.device)
         dt = 1.0 / steps

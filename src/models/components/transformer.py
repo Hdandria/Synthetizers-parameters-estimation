@@ -1,11 +1,11 @@
+import math
 from typing import Literal, Optional, Sequence
 
 import torch
 import torch.nn as nn
 from einops import rearrange
 
-from src.models.components.sinkhorn import (SinkhornAttention, sinkhorn,
-                                            sinkhorn_C)
+from src.models.components.sinkhorn import SinkhornAttention, sinkhorn_C
 
 
 class PositionalEncoding(nn.Module):
@@ -180,15 +180,39 @@ class LearntProjectionII(nn.Module):
         d_model: int,
         num_params: int,
         num_tokens: int,
+        sinkhorn: bool = False,
+        sinkhorn_iters: int = 10,
+        sinkhorn_reg: float = 0.2,
     ):
         super().__init__()
 
-        assignment = torch.rand(num_tokens, num_params)
-        assignment = assignment / assignment.sum(1, keepdim=True)
-        self.assignment = nn.Parameter(assignment)
+        if not sinkhorn:
+            assignment = torch.rand(num_tokens, num_params)
+            assignment = assignment / assignment.sum(1, keepdim=True)
 
-        self.value_encoding = nn.Parameter(torch.randn(num_params, d_model))
-        self.out_projection = nn.Parameter(torch.randn(d_model, num_params))
+        else:
+            assignment = torch.randn(num_tokens, num_params) * 0.1
+
+        self._assignment = nn.Parameter(assignment)
+
+        # self._assignment = nn.Parameter(torch.randn(num_tokens, num_params) * 0.1)
+        # self._assignment = nn.Parameter(torch.empty(num_tokens, num_params))
+        # nn.init.xavier_normal_(self._assignment)
+
+        proj = torch.randn(1, d_model) / math.sqrt(d_model)
+        self.value_encoding = nn.Parameter(proj.repeat(num_params, 1))
+        self.out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+
+        self.sinkhorn = sinkhorn
+        self.sinkhorn_iters = sinkhorn_iters
+        self.sinkhorn_reg = sinkhorn_reg
+
+    @property
+    def assignment(self):
+        if not self.sinkhorn:
+            return self._assignment
+        return sinkhorn_C(self._assignment, self.sinkhorn_iters, self.sinkhorn_reg)
+        # return torch.abs(self._assignment)
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
         values = torch.einsum("bn,nd->bnd", x, self.value_encoding)
@@ -390,10 +414,11 @@ class DiTransformerBlock(nn.Module):
         num_heads: int,
         d_ff: int,
         dropout: float = 0.0,
+        norm: Literal["layer", "rms"] = "layer",
     ):
         super().__init__()
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
+        self.norm1 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
         self.attn = nn.MultiheadAttention(
             d_model, num_heads, dropout=dropout, batch_first=True
         )
@@ -455,13 +480,14 @@ class ApproxEquivTransformer(nn.Module):
         pe_type: Literal["initial", "layerwise"] = "initial",
         pe_penalty: float = 0.0,
         projection_penalty: float = 0.0,
+        norm: Literal["layer", "rms"] = "layer",
     ):
         super().__init__()
 
         self.layers = nn.ModuleList(
             [
                 DiTransformerBlock(
-                    d_model, conditioning_dim + 1, num_heads, d_ff, dropout
+                    d_model, conditioning_dim + 1, num_heads, d_ff, dropout, norm
                 )
                 for _ in range(num_layers)
             ]

@@ -22,6 +22,9 @@ vector_field:
     d_model: ${model.vector_field.d_model}
     num_params: ${mul:${data.k},2}
     num_tokens: ${data.k}
+    sinkhorn: false
+    sinkhorn_iters: 10
+    sinkhorn_reg: 0.2
   num_layers: 5
   d_model: 128
   conditioning_dim: ${model.encoder.out_dim}
@@ -34,6 +37,7 @@ vector_field:
   pe_type: none
   pe_penalty: 0.0
   projection_penalty: 0.1
+  norm: layer
 
 # training
 cfg_dropout_rate: 0.2
