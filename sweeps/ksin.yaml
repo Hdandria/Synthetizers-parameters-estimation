@@ -14,6 +14,7 @@ parameters:
   experiment:
     values:
       - ksin/flow
+      - ksin/flow_fixed
       - ksin/ffn_chamfer
       - ksin/ffn_mse
       - ksin/ffn_sort
@@ -21,7 +22,7 @@ parameters:
       - ksin/flow_asym
   data.k:
     values:
-      - 32
       - 8
       - 2
       - 1
+      - 32

@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - ksin/base
+  - override /model: flow
+  - _self_
+
+run_name: flow
+
+data:
+  ot: true
+
+model:
+  vector_field:
+    projection:
+      _target_: src.models.components.transformer.KSinParamToTokenProjection
+      d_model: ${model.vector_field.d_model}
+      k: ${data.k}

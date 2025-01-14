@@ -1,9 +1,0 @@
-defaults:
-  - ksin_flow
-  - _self_
-
-optimal_transport: true
-cfm_variance: 0.0
-sinkhorn_reg: 0.05
-sinkhorn_thresh: 1e-5
-ot_replace: true

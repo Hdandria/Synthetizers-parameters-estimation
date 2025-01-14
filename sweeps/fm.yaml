@@ -17,7 +17,7 @@ parameters:
       - fm/ffn_mse
       - fm/ffn_asym
       - fm/flow_asym
-  "experiment/fm/algorithm":
+  'experiment/fm/algorithm':
     values:
       - conditional
       - mixed

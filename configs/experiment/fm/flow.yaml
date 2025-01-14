@@ -2,9 +2,9 @@
 
 defaults:
   - fm/base
-  - override /model: ksin_flow_xform
+  - override /model: flow
 
-run_name: flow_xform
+run_name: flow
 
 model:
   vector_field:
@@ -12,3 +12,6 @@ model:
     projection:
       num_tokens: ${out_dim}
       num_params: ${out_dim}
+
+data:
+  ot: true

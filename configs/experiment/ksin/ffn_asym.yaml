@@ -2,7 +2,7 @@
 
 defaults:
   - ksin/base
-  - override /model: ksin_ff_cnn
+  - override /model: ffn
   - _self_
 
 run_name: ffn_asym

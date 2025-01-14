@@ -2,9 +2,9 @@
 
 defaults:
   - fm/base
-  - override /model: ksin_flow_xform
+  - override /model: flow
 
-run_name: flow_xform_asym
+run_name: flow_asym
 
 model:
   vector_field:
@@ -15,3 +15,4 @@ model:
 
 data:
   break_symmetry: true
+  ot: true

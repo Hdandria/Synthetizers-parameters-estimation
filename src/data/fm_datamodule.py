@@ -30,7 +30,8 @@ def _sample_amplitudes(
 
 
 def _scale_freqs_and_amps_fm(freqs: torch.Tensor, amps: torch.Tensor):
-    freqs = torch.pi * (freqs + 1.0) / 2.0
+    # max freq = torch.pi / 10
+    freqs = (torch.pi / 4.0) * (freqs + 1.0) / 2.0
     amps = (amps + 1.0) / 2.0
     return freqs, amps
 
@@ -60,7 +61,7 @@ def fm_conditional_symmetry(
 
     # mod indices should go higher than amplitudes
     amps = amps.clone()
-    amps[..., 0] *= 2 * torch.pi
+    amps[..., 0] *= 2
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
 
     if break_symmetry:
@@ -102,7 +103,7 @@ def fm_mixed_symmetry(
 
     # mod indices should go higher than amplitudes
     amps = amps.clone()
-    amps[..., 0:2] *= 2 * torch.pi
+    amps[..., 0:2] *= 2
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
 
     if break_symmetry:
@@ -145,7 +146,7 @@ def fm_hierarchical_symmetry(
     n = torch.arange(length, device=freqs.device)
     # mod indices should go higher than amplitudes
     amps = amps.clone()
-    amps[..., 0:4] *= 2 * torch.pi
+    amps[..., 0:4] *= 2
     freqs, amps = _scale_freqs_and_amps_fm(freqs, amps)
 
     if break_symmetry:
@@ -204,6 +205,8 @@ class FMDataset(torch.utils.data.Dataset):
         self.seed = seed
         self.generator = torch.Generator(device=torch.device("cpu"))
 
+        self._init_dataset()
+
     def _init_dataset(self):
         self.generator.manual_seed(self.seed)
         freqs, amps = self._sample_parameters()
@@ -215,7 +218,7 @@ class FMDataset(torch.utils.data.Dataset):
     def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
         sampler, _ = _FM_ALGORITHMS[self.algorithm]
         freqs, amplitudes = sampler(
-            self.batch_size, self.break_symmetry, torch.device("cpu"), self.generator
+            self.num_samples, torch.device("cpu"), self.generator
         )
 
         return freqs, amplitudes

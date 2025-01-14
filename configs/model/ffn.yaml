@@ -11,10 +11,10 @@ scheduler: null
 net:
   _target_: src.models.components.residual_mlp.CNNResidualMLP
   in_dim: ${data.signal_length}
-  channels: 16
+  channels: 24
   encoder_blocks: 4
-  trunk_blocks: 5
-  hidden_dim: 2048
+  trunk_blocks: 4
+  hidden_dim: 384
   out_dim: ${mul:${data.k},2}
   kernel_size: 7
   norm: bn

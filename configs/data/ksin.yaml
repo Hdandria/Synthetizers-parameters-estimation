@@ -10,5 +10,5 @@ train_val_test_sizes:
   - 51_200
 train_val_test_seeds: [123, 456, 789]
 batch_size: 1024
-num_workers: 4
+num_workers: 8
 ot: false

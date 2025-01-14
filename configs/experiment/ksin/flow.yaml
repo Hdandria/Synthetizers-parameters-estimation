@@ -2,8 +2,10 @@
 
 defaults:
   - ksin/base
-  - override /model: ksin_flow_xform
+  - override /model: flow
   - _self_
 
-run_name: flow_xform
+run_name: flow
 
+data:
+  ot: true
