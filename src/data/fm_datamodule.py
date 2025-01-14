@@ -4,6 +4,8 @@ from typing import Literal, Optional, Tuple, Union
 import torch
 from lightning import LightningDataModule
 
+from src.data.ot import ot_collate_fn, regular_collate_fn
+
 
 def _sample_freqs(
     k: int,
@@ -183,54 +185,57 @@ _FM_ALGORITHMS = dict(
 )
 
 
-class FMDataLoader:
+class FMDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         algorithm: Literal["conditional", "mixed", "hierarchical"],
         signal_length: int,
+        num_samples: int,
         break_symmetry: bool,
-        batch_size: int,
-        batches_per_epoch: int,
         seed: int,
-        device: Union[str, torch.device],
     ):
         self.algorithm = algorithm
         self.signal_length = signal_length
+
+        self.num_samples = num_samples
+
         self.break_symmetry = break_symmetry
-        self.batch_size = batch_size
-        self.batches_per_epoch = batches_per_epoch
+
         self.seed = seed
-        self.device = device
+        self.generator = torch.Generator(device=torch.device("cpu"))
 
-        self.generator = torch.Generator(device=device)
-
-    def __len__(self):
-        return self.batches_per_epoch
+    def _init_dataset(self):
+        self.generator.manual_seed(self.seed)
+        freqs, amps = self._sample_parameters()
+        freqs.share_memory_()
+        amps.share_memory_()
+        self.freqs = freqs
+        self.amps = amps
 
     def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
         sampler, _ = _FM_ALGORITHMS[self.algorithm]
         freqs, amplitudes = sampler(
-            self.batch_size, self.break_symmetry, self.device, self.generator
+            self.batch_size, self.break_symmetry, torch.device("cpu"), self.generator
         )
 
         return freqs, amplitudes
 
-    def _make_batch(self):
-        freqs, amps = self._sample_parameters()
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        freq = self.freqs[idx][None]
+        amp = self.amps[idx][None]
+
         _, synth = _FM_ALGORITHMS[self.algorithm]
         synth = partial(
             synth, length=self.signal_length, break_symmetry=self.break_symmetry
         )
-        signals = synth(freqs, amps)
-        params = torch.cat((freqs, amps), dim=-1)
+
+        signals = synth(freq, amp)
+        params = torch.cat((freq, amp), dim=-1)
+
         return (signals, params, synth)
-
-    def __iter__(self):
-        self.generator.manual_seed(self.seed)
-        for _ in range(self.batches_per_epoch):
-            yield self._make_batch()
-
-        raise StopIteration
 
 
 class FMDataModule(LightningDataModule):
@@ -246,6 +251,8 @@ class FMDataModule(LightningDataModule):
         train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
         train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
+        num_workers: int = 0,
+        ot: bool = False,
     ):
         super().__init__()
 
@@ -261,50 +268,56 @@ class FMDataModule(LightningDataModule):
         # dataloader
         self.batch_size = batch_size
 
-        self.device = None
+        self.num_workers = num_workers
+        self.ot = ot
 
     def prepare_data(self):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        if self.trainer is None:
-            import warnings
-
-            warnings.warn(
-                "No trainer attached to datamodule, defaulting to device=None"
-            )
-            device = self.device
-        else:
-            device = self.trainer.strategy.root_device
-
         if stage == "fit":
-            self.train = FMDataLoader(
+            train_ds = FMDataset(
                 self.algorithm,
                 self.signal_length,
+                self.train_size,
                 self.break_symmetry,
-                self.batch_size,
-                self.train_size // self.batch_size,
                 self.train_seed,
-                device,
             )
-            self.val = FMDataLoader(
+            val_ds = FMDataset(
                 self.algorithm,
                 self.signal_length,
+                self.val_size,
                 self.break_symmetry,
-                self.batch_size,
-                self.val_size // self.batch_size,
                 self.val_seed,
-                device,
+            )
+            self.train = torch.utils.data.DataLoader(
+                train_ds,
+                batch_size=self.batch_size,
+                shuffle=True,
+                collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+                num_workers=self.num_workers,
+            )
+            self.val = torch.utils.data.DataLoader(
+                val_ds,
+                batch_size=self.batch_size,
+                shuffle=False,
+                collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+                num_workers=self.num_workers,
             )
         else:
-            self.test = FMDataLoader(
+            test_ds = FMDataset(
                 self.algorithm,
                 self.signal_length,
+                self.test_size,
                 self.break_symmetry,
-                self.batch_size,
-                self.test_size // self.batch_size,
                 self.test_seed,
-                device,
+            )
+            self.test = torch.utils.data.DataLoader(
+                test_ds,
+                batch_size=self.batch_size,
+                shuffle=False,
+                collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+                num_workers=self.num_workers,
             )
 
     def train_dataloader(self):

@@ -22,7 +22,7 @@ vector_field:
     d_model: ${model.vector_field.d_model}
     num_params: ${mul:${data.k},2}
     num_tokens: ${data.k}
-    sinkhorn: true
+    assignment_type: linear
     sinkhorn_iters: 10
     sinkhorn_reg: 0.2
   num_layers: 5

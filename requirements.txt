@@ -25,3 +25,5 @@ scipy==1.14.1
 # sh            # for running bash commands in some tests (linux/macos only)
 
 POT
+einops
+threadpoolctl

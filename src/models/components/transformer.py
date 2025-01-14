@@ -168,6 +168,23 @@ class LearntProjection(nn.Module):
         raise ValueError(f"Unknown penalty {self.penalty}")
 
 
+class SemiReLU(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        ctx.save_for_backward(x)
+        return x.clamp(min=0.0)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x = ctx.saved_tensors[0]
+        positive_mask = x > 0.0
+        direction_mask = grad_output <= 0.0
+        mask = positive_mask | direction_mask
+
+        grad_input = torch.where(mask, grad_output, 0.0)
+        return grad_input
+
+
 class LearntProjectionII(nn.Module):
     """Smarter learnt projection that factorises into:
     (i) assignment matrix
@@ -180,18 +197,29 @@ class LearntProjectionII(nn.Module):
         d_model: int,
         num_params: int,
         num_tokens: int,
-        sinkhorn: bool = False,
+        value_code: Literal["scale", "sin", "proto"] = "scale",
+        assignment_type: Literal["linear", "sinkhorn", "exp", "semi_relu"] = "linear",
         sinkhorn_iters: int = 10,
         sinkhorn_reg: float = 0.2,
+        var_penalty: bool = False,
+        initial_ffn: bool = False,
+        num_prototypes: int = 2,
     ):
         super().__init__()
 
-        if not sinkhorn:
+        if assignment_type == "linear":
             assignment = torch.rand(num_tokens, num_params)
             assignment = assignment / assignment.sum(1, keepdim=True)
-
-        else:
+        elif assignment_type == "sinkhorn":
             assignment = torch.randn(num_tokens, num_params) * 0.1
+        elif assignment_type == "exp":
+            assignment = torch.randn(num_tokens, num_params)
+            assignment = assignment - torch.logsumexp(assignment, dim=(0, 1))
+        elif assignment_type == "semi_relu":
+            assignment = torch.rand(num_tokens, num_params)
+            assignment = assignment / assignment.sum()
+        else:
+            raise ValueError(f"Unknown assignment type {assignment_type}")
 
         self._assignment = nn.Parameter(assignment)
 
@@ -199,24 +227,82 @@ class LearntProjectionII(nn.Module):
         # self._assignment = nn.Parameter(torch.empty(num_tokens, num_params))
         # nn.init.xavier_normal_(self._assignment)
 
-        proj = torch.randn(1, d_model) / math.sqrt(d_model)
-        self.value_encoding = nn.Parameter(proj.repeat(num_params, 1))
-        self.out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+        # proj = torch.randn(1, d_model) / math.sqrt(d_model)
+        # self.value_encoding = nn.Parameter(proj.repeat(num_params, 1))
 
-        self.sinkhorn = sinkhorn
+        if value_code == "sin":
+            self.sinusoidal_encoding = SinusoidalEncoding(d_model)
+            proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
+            self._in_projection = nn.Parameter(proj)
+            self._out_projection = nn.Parameter(proj.T)
+        elif value_code == "proto":
+            proto = torch.randn(num_prototypes, d_model) / math.sqrt(d_model)
+            self.in_prototypes = nn.Parameter(proto)
+            self.out_prototypes = nn.Parameter(proto)
+            mappings = torch.rand(num_params, num_prototypes)
+            self.in_proto_mappings = nn.Parameter(mappings)
+            self.out_proto_mappings = nn.Parameter(mappings)
+        elif value_code == "scale":
+            proj = torch.randn(1, d_model) / math.sqrt(d_model)
+            self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
+            self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+
+        self.value_code = value_code
+
+        self.assignment_type = assignment_type
         self.sinkhorn_iters = sinkhorn_iters
         self.sinkhorn_reg = sinkhorn_reg
+        self.var_penalty = var_penalty
+
+        if initial_ffn:
+            self.initial_ffn = nn.Sequential(
+                nn.Linear(d_model, d_model), nn.GELU(), nn.Linear(d_model, d_model)
+            )
+        else:
+            self.initial_ffn = nn.Identity()
 
     @property
     def assignment(self):
-        if not self.sinkhorn:
+        if self.assignment_type == "linear":
             return self._assignment
-        return sinkhorn_C(self._assignment, self.sinkhorn_iters, self.sinkhorn_reg)
-        # return torch.abs(self._assignment)
+        elif self.assignment_type == "exp":
+            return torch.exp(self._assignment)
+        elif self.assignment_type == "sinkhorn":
+            return sinkhorn_C(self._assignment, self.sinkhorn_iters, self.sinkhorn_reg)
+        elif self.assignment_type == "semi_relu":
+            return SemiReLU.apply(self._assignment)
+
+    @property
+    def in_projection(self):
+        if self.value_code == "scale":
+            return self._in_projection
+        elif self.value_code == "sin":
+            return self._in_projection
+        elif self.value_code == "proto":
+            return torch.einsum("np,pd->nd", self.in_proto_mappings, self.in_prototypes)
+
+    @property
+    def out_projection(self):
+        if self.value_code == "scale":
+            return self._out_projection
+        elif self.value_code == "sin":
+            return self._out_projection
+        elif self.value_code == "proto":
+            return torch.einsum(
+                "np,pd->dn", self.out_proto_mappings, self.out_prototypes
+            )
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        values = torch.einsum("bn,nd->bnd", x, self.value_encoding)
-        return torch.einsum("bnd,kn->bkd", values, self.assignment)
+        if self.value_code == "sin":
+            values = self.sinusoidal_encoding(x)
+            values = values * self.in_projection
+        else:
+            values = torch.einsum("bn,nd->bnd", x, self.in_projection)
+
+        values = self.initial_ffn(values)
+        tokens = torch.einsum("bnd,kn->bkd", values, self.assignment)
+        # tokens = self.initial_ffn(tokens)
+        return tokens
 
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
         deassigned = torch.einsum("bkd,kn->bnd", x, self.assignment)
@@ -224,7 +310,12 @@ class LearntProjectionII(nn.Module):
 
     def penalty(self) -> torch.Tensor:
         # we apply L1 penalty to the assignment matrix
-        return self.assignment.abs().mean()
+        penalty = self.assignment.abs().mean()
+        if self.var_penalty:
+            var_penalty = self._in_projection.std(dim=0).mean()
+            penalty = penalty + var_penalty
+
+        return penalty
 
 
 def normalize(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
@@ -415,9 +506,15 @@ class DiTransformerBlock(nn.Module):
         d_ff: int,
         dropout: float = 0.0,
         norm: Literal["layer", "rms"] = "layer",
+        first_norm: bool = True,
     ):
         super().__init__()
-        self.norm1 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
+        if first_norm:
+            self.norm1 = (
+                nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
+            )
+        else:
+            self.norm1 = nn.Identity()
         self.norm2 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
         self.attn = nn.MultiheadAttention(
             d_model, num_heads, dropout=dropout, batch_first=True
@@ -481,15 +578,22 @@ class ApproxEquivTransformer(nn.Module):
         pe_penalty: float = 0.0,
         projection_penalty: float = 0.0,
         norm: Literal["layer", "rms"] = "layer",
+        skip_first_norm: bool = False,
     ):
         super().__init__()
 
         self.layers = nn.ModuleList(
             [
                 DiTransformerBlock(
-                    d_model, conditioning_dim + 1, num_heads, d_ff, dropout, norm
+                    d_model,
+                    conditioning_dim + 1,
+                    num_heads,
+                    d_ff,
+                    dropout,
+                    norm,
+                    first_norm=False if i == 0 and skip_first_norm else True,
                 )
-                for _ in range(num_layers)
+                for i in range(num_layers)
             ]
         )
 

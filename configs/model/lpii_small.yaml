@@ -22,7 +22,7 @@ vector_field:
     d_model: ${model.vector_field.d_model}
     num_params: ${mul:${data.k},2}
     num_tokens: ${data.k}
-    sinkhorn: false
+    assignment_type: linear
     sinkhorn_iters: 10
     sinkhorn_reg: 0.2
   num_layers: 5
@@ -38,6 +38,7 @@ vector_field:
   pe_penalty: 0.0
   projection_penalty: 0.1
   norm: layer
+  skip_first_norm: true
 
 # training
 cfg_dropout_rate: 0.2

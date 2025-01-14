@@ -292,7 +292,7 @@ class PlotLearntProjectionII(Callback):
 
     def _get_value_similarity(self, pl_module):
         proj = (
-            pl_module.vector_field.projection.value_encoding
+            pl_module.vector_field.projection.in_projection
         )  # num_params x d_embed x d_model
 
         sim_proj = torch.nn.functional.cosine_similarity(
