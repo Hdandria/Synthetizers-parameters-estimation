@@ -2,7 +2,7 @@
 
 defaults:
   - ksin/base
-  - override /model: flow
+  - override /model: flow_fixed
   - _self_
 
 run_name: flow
@@ -10,9 +10,3 @@ run_name: flow
 data:
   ot: true
 
-model:
-  vector_field:
-    projection:
-      _target_: src.models.components.transformer.KSinParamToTokenProjection
-      d_model: ${model.vector_field.d_model}
-      k: ${data.k}
