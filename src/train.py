@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import hydra
 import lightning as L
 import rootutils
-import torch.multiprocessing as mp
 import torch
+import torch.multiprocessing as mp
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
@@ -29,7 +29,7 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.utils import (RankedLogger, extras, get_metric_value,
                        instantiate_callbacks, instantiate_loggers,
-                       log_hyperparameters, register_resolvers, task_wrapper)
+                       log_hyperparameters, register_resolvers, task_wrapper, watch_gradients)
 
 register_resolvers()
 
@@ -80,6 +80,10 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if logger:
         log.info("Logging hyperparameters!")
         log_hyperparameters(object_dict)
+
+    if cfg.get("watch_gradients"):
+        log.info("Watching gradients!")
+        watch_gradients(model, logger)
 
     if cfg.get("train"):
         log.info("Starting training!")

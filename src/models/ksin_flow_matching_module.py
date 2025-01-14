@@ -351,11 +351,11 @@ class KSinFlowMatchingModule(LightningModule):
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, penalty = self._train_step(batch)
-        self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         if penalty is not None:
             self.log(
-                "train/penalty", penalty, on_step=False, on_epoch=True, prog_bar=True
+                "train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True
             )
 
         return loss + penalty

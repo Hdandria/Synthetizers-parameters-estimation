@@ -3,7 +3,7 @@ algorithm: mixed
 signal_length: 1024
 break_symmetry: false
 train_val_test_sizes:
-  - 1_024_000
+  - 409_600_000
   - 10_240
   - 51_200
 train_val_test_seeds: [123, 456, 789]

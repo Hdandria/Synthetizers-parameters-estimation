@@ -1,16 +1,20 @@
 import warnings
 from importlib.util import find_spec
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from lightning import LightningModule
+from lightning.pytorch.loggers import Logger, WandbLogger
 from omegaconf import DictConfig, OmegaConf
 
 from src.utils import pylogger, rich_utils
 
 log = pylogger.RankedLogger(__name__, rank_zero_only=True)
 
+
 def register_resolvers() -> None:
     OmegaConf.register_new_resolver("mul", lambda x, y: x * y)
     OmegaConf.register_new_resolver("div", lambda x, y: x // y)
+
 
 def extras(cfg: DictConfig) -> None:
     """Applies optional utilities before the task is started.
@@ -41,7 +45,6 @@ def extras(cfg: DictConfig) -> None:
     if cfg.extras.get("print_config"):
         log.info("Printing config tree with Rich! <cfg.extras.print_config=True>")
         rich_utils.print_config_tree(cfg, resolve=True, save_to_file=True)
-
 
 
 def task_wrapper(task_func: Callable) -> Callable:
@@ -99,7 +102,9 @@ def task_wrapper(task_func: Callable) -> Callable:
     return wrap
 
 
-def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) -> Optional[float]:
+def get_metric_value(
+    metric_dict: Dict[str, Any], metric_name: Optional[str]
+) -> Optional[float]:
     """Safely retrieves value of the metric logged in LightningModule.
 
     :param metric_dict: A dict containing metric values.
@@ -121,3 +126,17 @@ def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) ->
     log.info(f"Retrieved metric value! <{metric_name}={metric_value}>")
 
     return metric_value
+
+
+def watch_gradients(model: LightningModule, loggers: List[Logger]) -> None:
+    """Watches gradients during training.
+
+    :param model: The model to watch gradients for.
+    :param loggers: A list of loggers to search for a WandbLogger.
+    """
+    for logger in loggers:
+        if isinstance(logger, WandbLogger):
+            logger.watch(model, log="gradients")
+            return
+
+    warnings.warn("WandbLogger not found in loggers! Skipping gradient watching...")

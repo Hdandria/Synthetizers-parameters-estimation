@@ -5,7 +5,7 @@ sort_frequencies: false
 break_symmetry: false
 shift_test_distribution: false
 train_val_test_sizes:
-  - 1_024_000
+  - 409_600_000
   - 10_240
   - 51_200
 train_val_test_seeds: [123, 456, 789]

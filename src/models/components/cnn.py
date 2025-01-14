@@ -154,7 +154,7 @@ class ResidualEncoder(nn.Module):
                     ConvDownsampler(
                         dim,
                         dim * 2,
-                        stride=4,
+                        stride=3,
                         norm=norm,
                     ),
                 ]
@@ -163,7 +163,7 @@ class ResidualEncoder(nn.Module):
         self.conv_net = nn.Sequential(*conv_layers)
         self.net = nn.Sequential(
             nn.LazyLinear(in_dim // 2),
-            ResidualMLPBlock(in_dim // 2, out_dim * 2, out_dim),
+            ResidualMLPBlock(in_dim // 2, in_dim // 2, out_dim),
         )
 
         self.register_buffer("_d", torch.empty(()))
