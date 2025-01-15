@@ -5,6 +5,9 @@ import torch
 from lightning import LightningDataModule
 
 from src.data.ot import ot_collate_fn, regular_collate_fn
+from src.utils import RankedLogger
+
+log = RankedLogger(__name__, rank_zero_only=True)
 
 
 def _sample_freqs(
@@ -103,29 +106,31 @@ class KSinDataset(torch.utils.data.Dataset):
 
     def _init_dataset(self):
         self.generator.manual_seed(self.seed)
-        freqs, amps = self._sample_parameters()
-        freqs.share_memory_()
-        amps.share_memory_()
-        self.freqs = freqs
-        self.amps = amps
+        self.seeds = (
+            torch.randperm(self.num_samples, device=torch.device("cpu")) + self.seed
+        )
+        # freqs, amps = self._sample_parameters()
+        # # freqs.share_memory_()
+        # # amps.share_memory_()
+        # log.info("Done!")
+        # self.freqs = freqs
+        # self.amps = amps
 
-    def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample_parameters(self, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        self.generator.manual_seed(seed)
+
         if self.shift_test_distribution:
             freqs = _sample_freqs_shifted(
                 self.k,
-                self.num_samples,
+                1,
                 self.is_test,
                 torch.device("cpu"),
                 self.generator,
             )
         else:
-            freqs = _sample_freqs(
-                self.k, self.num_samples, torch.device("cpu"), self.generator
-            )
+            freqs = _sample_freqs(self.k, 1, torch.device("cpu"), self.generator)
 
-        amplitudes = _sample_amplitudes(
-            self.k, self.num_samples, torch.device("cpu"), self.generator
-        )
+        amplitudes = _sample_amplitudes(self.k, 1, torch.device("cpu"), self.generator)
 
         if self.sort_frequencies:
             freqs, _ = torch.sort(freqs, dim=-1)
@@ -136,8 +141,8 @@ class KSinDataset(torch.utils.data.Dataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        freq = self.freqs[idx][None]
-        amp = self.amps[idx][None]
+        seed = self.seeds[idx].item()
+        freq, amp = self._sample_parameters(seed)
         sin_fn = partial(
             make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
         )

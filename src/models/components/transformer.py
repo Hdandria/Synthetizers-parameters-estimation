@@ -199,6 +199,7 @@ class LearntProjectionII(nn.Module):
         num_tokens: int,
         value_code: Literal["scale", "sin", "proto"] = "scale",
         assignment_type: Literal["linear", "sinkhorn", "exp", "semi_relu"] = "linear",
+        sym_init: bool = True,
         sinkhorn_iters: int = 10,
         sinkhorn_reg: float = 0.2,
         var_penalty: bool = False,
@@ -243,9 +244,14 @@ class LearntProjectionII(nn.Module):
             self.in_proto_mappings = nn.Parameter(mappings)
             self.out_proto_mappings = nn.Parameter(mappings)
         elif value_code == "scale":
-            proj = torch.randn(1, d_model) / math.sqrt(d_model)
-            self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
-            self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+            if sym_init:
+                proj = torch.randn(1, d_model) / math.sqrt(d_model)
+                self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
+                self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+            else:
+                proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
+                self._in_projection = nn.Parameter(proj)
+                self._out_projection = nn.Parameter(proj.T)
 
         self.value_code = value_code
 
@@ -256,7 +262,9 @@ class LearntProjectionII(nn.Module):
 
         if initial_ffn:
             self.initial_ffn = nn.Sequential(
-                nn.Linear(d_model, d_model), nn.GELU(), nn.Linear(d_model, d_model)
+                nn.Linear(d_model, d_model),
+                nn.GELU(),
+                nn.Linear(d_model, d_model),
             )
         else:
             self.initial_ffn = nn.Identity()

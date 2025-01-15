@@ -22,6 +22,7 @@ vector_field:
     assignment_type: linear
     sinkhorn_iters: 10
     sinkhorn_reg: 0.2
+    sym_init: true
     var_penalty: false
     initial_ffn: true
   num_layers: 5
