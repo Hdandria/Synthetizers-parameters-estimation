@@ -110,7 +110,7 @@ class KSinParamToTokenProjection(nn.Module):
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
         if self.filler_tokens is not None:
             num_filler = self.filler_tokens.shape[1]
-            x = x[:, :, :-num_filler]
+            x = x[:, :-num_filler, :]
 
         x = self.backward_proj(x)
         x = rearrange(x, "b k d -> b (d k)", d=2)
