@@ -5,7 +5,7 @@ command:
   - python
   - src/train.py
   - ${args_no_hyphens}
-name: ksin_sweep
+name: ksin_sweep_flowonly
 method: grid
 metric:
   goal: minimize
@@ -15,11 +15,12 @@ parameters:
     values:
       - ksin/flow
       - ksin/flow_fixed
-      - ksin/ffn_chamfer
-      - ksin/ffn_mse
-      - ksin/ffn_sort
-      - ksin/ffn_asym
+      # - ksin/ffn_chamfer
+      # - ksin/ffn_mse
+      # - ksin/ffn_sort
+      # - ksin/ffn_asym
       - ksin/flow_asym
+      - ksin/flow_fixed_asym
   data.k:
     values:
       - 8

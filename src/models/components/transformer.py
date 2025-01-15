@@ -85,17 +85,33 @@ class ParamToTokenProjection(nn.Module):
 
 
 class KSinParamToTokenProjection(nn.Module):
-    def __init__(self, d_model: int, k: int):
+    def __init__(self, d_model: int, k: int, filler_tokens: int = 0):
         super().__init__()
         self.forward_proj = nn.Linear(2, d_model)
         self.backward_proj = nn.Linear(d_model, 2)
 
+        if filler_tokens > 0:
+            self.filler_tokens = nn.Parameter(torch.randn(1, filler_tokens, d_model))
+        else:
+            self.filler_tokens = None
+
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
         k = x.shape[-1] // 2
         x = rearrange(x, "b (d k) -> b k d", k=k)
-        return self.forward_proj(x)
+
+        x = self.forward_proj(x)
+
+        if self.filler_tokens is not None:
+            filler_tokens = self.filler_tokens.expand(x.shape[0], -1, -1)
+            x = torch.cat([x, filler_tokens], dim=1)
+
+        return x
 
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
+        if self.filler_tokens is not None:
+            num_filler = self.filler_tokens.shape[1]
+            x = x[:, :, :-num_filler]
+
         x = self.backward_proj(x)
         x = rearrange(x, "b k d -> b (d k)", d=2)
         return x
@@ -200,6 +216,7 @@ class LearntProjectionII(nn.Module):
         value_code: Literal["scale", "sin", "proto"] = "scale",
         assignment_type: Literal["linear", "sinkhorn", "exp", "semi_relu"] = "linear",
         sym_init: bool = True,
+        filler_tokens: int = 0,
         sinkhorn_iters: int = 10,
         sinkhorn_reg: float = 0.2,
         var_penalty: bool = False,
@@ -267,7 +284,14 @@ class LearntProjectionII(nn.Module):
                 nn.Linear(d_model, d_model),
             )
         else:
-            self.initial_ffn = nn.Identity()
+            self.initial_ffn = None
+
+        if filler_tokens > 0:
+            self.filler_tokens = nn.Parameter(
+                torch.randn(1, filler_tokens, d_model) / math.sqrt(d_model)
+            )
+        else:
+            self.filler_tokens = None
 
     @property
     def assignment(self):
@@ -307,12 +331,23 @@ class LearntProjectionII(nn.Module):
         else:
             values = torch.einsum("bn,nd->bnd", x, self.in_projection)
 
-        values = self.initial_ffn(values)
+        if self.initial_ffn is not None:
+            values = self.initial_ffn(values)
+
         tokens = torch.einsum("bnd,kn->bkd", values, self.assignment)
-        # tokens = self.initial_ffn(tokens)
+
+        if self.filler_tokens is None:
+            return tokens
+
+        filler = self.filler_tokens.repeat(x.shape[0], 1, 1)
+        tokens = torch.cat([tokens, filler], dim=1)
         return tokens
 
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
+        if self.filler_tokens is not None:
+            num_filler = self.filler_tokens.shape[1]
+            x = x[:, :-num_filler]
+
         deassigned = torch.einsum("bkd,kn->bnd", x, self.assignment)
         return torch.einsum("bnd,dn->bn", deassigned, self.out_projection)
 

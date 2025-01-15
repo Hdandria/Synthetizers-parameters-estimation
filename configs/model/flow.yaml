@@ -22,6 +22,7 @@ vector_field:
     assignment_type: linear
     sinkhorn_iters: 10
     sinkhorn_reg: 0.2
+    filler_tokens: 8
     sym_init: true
     var_penalty: false
     initial_ffn: true
@@ -31,7 +32,7 @@ vector_field:
   num_heads: 4
   d_ff: 256
   dropout: 0.0
-  num_tokens: ${data.k}
+  num_tokens: ${model.vector_field.projection.num_tokens}
   learn_pe: false
   learn_projection: true
   pe_type: none
@@ -61,6 +62,9 @@ validation_sample_steps: 50
 validation_cfg_strength: 2.0
 test_sample_steps: 200
 test_cfg_strength: 2.0
+
+# SYMMETRY DISCOVERY!
+freeze_for_first_n_steps: 5_000
 
 # compile model for faster training with pytorch 2.0
 compile: false

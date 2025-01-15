@@ -9,8 +9,12 @@ from lightning import LightningModule
 from scipy.optimize import linear_sum_assignment
 from torch.nn.functional import soft_margin_loss
 
-from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance, SpectralDistance)
+from src.metrics import (
+    ChamferDistance,
+    LinearAssignmentDistance,
+    LogSpectralDistance,
+    SpectralDistance,
+)
 from src.utils.math import divmod
 
 
@@ -79,6 +83,7 @@ class KSinFlowMatchingModule(LightningModule):
         sinkhorn_reg: float = 0.05,
         sinkhorn_thresh: float = 1e-6,
         ot_replace: bool = True,
+        freeze_for_first_n_steps: int = 0,
         compile: bool = False,
     ):
         super().__init__()
@@ -350,6 +355,23 @@ class KSinFlowMatchingModule(LightningModule):
         return loss, penalty
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        if self.global_step < self.hparams.freeze_for_first_n_steps:
+            # freeze vector_field and encoder, leaving only projection active
+            for param in self.vector_field.parameters():
+                param.requires_grad = False
+
+            for param in self.vector_field.projection.parameters():
+                param.requires_grad = True
+
+            for param in self.encoder.parameters():
+                param.requires_grad = False
+        else:
+            # unfreeze vector_field and encoder
+            for param in self.vector_field.parameters():
+                param.requires_grad = True
+            for param in self.encoder.parameters():
+                param.requires_grad = True
+
         loss, penalty = self._train_step(batch)
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 

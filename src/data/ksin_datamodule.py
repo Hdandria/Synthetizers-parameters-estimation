@@ -1,5 +1,6 @@
 from functools import partial
 from typing import Optional, Tuple, Union
+import sys
 
 import torch
 from lightning import LightningDataModule
@@ -106,9 +107,6 @@ class KSinDataset(torch.utils.data.Dataset):
 
     def _init_dataset(self):
         self.generator.manual_seed(self.seed)
-        self.seeds = (
-            torch.randperm(self.num_samples, device=torch.device("cpu")) + self.seed
-        )
         # freqs, amps = self._sample_parameters()
         # # freqs.share_memory_()
         # # amps.share_memory_()
@@ -141,7 +139,8 @@ class KSinDataset(torch.utils.data.Dataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        seed = self.seeds[idx].item()
+        # modulo max int to avoid overflows
+        seed = (self.seed * idx) % sys.maxsize
         freq, amp = self._sample_parameters(seed)
         sin_fn = partial(
             make_sin, length=self.signal_length, break_symmetry=self.break_symmetry

@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - fm/base
+  - override /model: flow_fixed
+
+run_name: flow_fixed_asym
+
+model:
+  vector_field:
+    num_tokens: ${out_dim}
+    projection:
+      num_tokens: ${out_dim}
+      num_params: ${out_dim}
+
+data:
+  break_symmetry: true
+  ot: true

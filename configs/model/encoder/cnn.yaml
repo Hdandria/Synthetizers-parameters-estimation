@@ -3,4 +3,5 @@ in_dim: ${data.signal_length}
 hidden_dim: 24
 out_dim: 128
 num_blocks: 4
+kernel_size: 7
 
