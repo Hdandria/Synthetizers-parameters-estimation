@@ -24,6 +24,7 @@ parameters:
   data.k:
     values:
       # - 1
-      - 4
+      # - 4
+      - 16
       # - 8
       # - 32

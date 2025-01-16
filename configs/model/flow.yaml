@@ -64,7 +64,7 @@ test_sample_steps: 200
 test_cfg_strength: 2.0
 
 # SYMMETRY DISCOVERY!
-freeze_for_first_n_steps: 0
+freeze_for_first_n_steps: 5_000
 
 # compile model for faster training with pytorch 2.0
 compile: false
