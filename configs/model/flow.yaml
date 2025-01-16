@@ -22,7 +22,7 @@ vector_field:
     assignment_type: linear
     sinkhorn_iters: 10
     sinkhorn_reg: 0.2
-    filler_tokens: 8
+    filler_tokens: 0
     sym_init: true
     var_penalty: false
     initial_ffn: true
@@ -64,7 +64,7 @@ test_sample_steps: 200
 test_cfg_strength: 2.0
 
 # SYMMETRY DISCOVERY!
-freeze_for_first_n_steps: 5_000
+freeze_for_first_n_steps: 0
 
 # compile model for faster training with pytorch 2.0
 compile: false

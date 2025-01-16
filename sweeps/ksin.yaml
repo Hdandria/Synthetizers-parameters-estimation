@@ -15,15 +15,15 @@ parameters:
     values:
       - ksin/flow
       - ksin/flow_fixed
-      # - ksin/ffn_chamfer
-      # - ksin/ffn_mse
-      # - ksin/ffn_sort
-      # - ksin/ffn_asym
+      - ksin/ffn_chamfer
+      - ksin/ffn_mse
+      - ksin/ffn_sort
+      - ksin/ffn_asym
       - ksin/flow_asym
       - ksin/flow_fixed_asym
   data.k:
     values:
-      - 8
-      - 2
-      - 1
-      - 32
+      # - 1
+      - 4
+      # - 8
+      # - 32
