@@ -10,7 +10,7 @@ model:
   vector_field:
     num_tokens: ${out_dim}
     projection:
-      k: ${div:out_dim,2}
+      k: ${div:${out_dim},2}
 
 data:
   break_symmetry: true
