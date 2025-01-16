@@ -30,7 +30,7 @@ vector_field:
   learn_projection: true
   pe_type: none
   pe_penalty: 0.0
-  projection_penalty: 0.1
+  projection_penalty: 0.0
   norm: layer
   skip_first_norm: false
 

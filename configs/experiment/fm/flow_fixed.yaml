@@ -10,8 +10,7 @@ model:
   vector_field:
     num_tokens: ${out_dim}
     projection:
-      num_tokens: ${out_dim}
-      num_params: ${out_dim}
+      k: ${div:out_dim,2}
 
 data:
   ot: true
