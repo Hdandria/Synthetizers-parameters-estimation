@@ -11,59 +11,46 @@ from src.utils import RankedLogger
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
-def polyblep_sawtooth(frequency_hz: torch.Tensor, sample_rate: float) -> torch.Tensor:
-    zeros = torch.zeros(
-        frequency_hz.shape[:-1] + (1,),
-        dtype=frequency_hz.dtype,
-        device=frequency_hz.device,
-    )
-    dt = frequency_hz / sample_rate
-    phase = 0.5 * (dt[..., :-1] + dt[..., 1:])
-    phase = phase.cumsum(dim=-1)
-    phase = torch.cat((zeros, phase), dim=-1)
+def polyblep_sawtooth(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
+    dt = frequency[..., None] / (2 * torch.pi)
+    phase = dt * n
+    phase.fmod_(1.0)
 
-    phase = phase % 1.0
+    sawtooth = phase.mul_(2.0).sub_(1.0)
 
-    sawtooth = phase * 2 - 1
+    correction_low = (phase / dt - 1).square()
+    correction_high = -(((phase - 1) / dt + 1).square())
 
-    low_blep = phase < dt
-    high_blep = phase > 1.0 - dt
-    sawtooth[low_blep] += (phase[low_blep] / dt[low_blep] - 1) ** 2
-    sawtooth[high_blep] += -(((phase[high_blep] - 1) / dt[high_blep] + 1) ** 2)
+    correction_low *= phase < dt
+    correction_high *= phase > 1 - dt
+
+    sawtooth.add_(correction_low).add_(correction_high)
 
     return sawtooth
 
 
 # @torch.jit.script
-def polyblep_square(frequency_hz: torch.Tensor, sample_rate: float) -> torch.Tensor:
-    zeros = torch.zeros(
-        frequency_hz.shape[:-1] + (1,),
-        dtype=frequency_hz.dtype,
-        device=frequency_hz.device,
-    )
-    dt = frequency_hz / sample_rate
-    phase = 0.5 * (dt[..., :-1] + dt[..., 1:])
-    phase = phase.cumsum(dim=-1)
-    phase = torch.cat((zeros, phase), dim=-1)
-    phase = phase % 1.0
-    shifted_phase = (phase - 0.5) % 1.0
+def polyblep_square(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
+    dt = frequency[..., None] / (2 * torch.pi)
+    phase = dt * n
+    phase.fmod_(1.0)
 
+    shifted_phase = phase.sub_(0.5).fmod_(1.0)
     square = torch.where(phase > 0.5, 1.0, -1.0)
 
     low_blep = phase < dt
     mid_low_blep = (phase > 0.5) & (phase < 0.5 + dt)
-
     mid_high_blep = (phase > 0.5 - dt) & (phase < 0.5)
     high_blep = phase > 1.0 - dt
 
-    # add middle bleps
-    square[low_blep] += (phase[low_blep] / dt[low_blep] - 1) ** 2
-    square[mid_low_blep] += -((shifted_phase[mid_low_blep] / dt[mid_low_blep] - 1) ** 2)
+    correction_low = (phase / dt - 1).square_() * low_blep
+    correction_mid_low = -((shifted_phase / dt - 1).square_()) * mid_low_blep
+    correction_mid_high = -(((shifted_phase - 1) / dt + 1).square_()) * mid_high_blep
+    correction_high = ((phase - 1) / dt + 1).square_() * high_blep
 
-    square[mid_high_blep] += (
-        (shifted_phase[mid_high_blep] - 1) / dt[mid_high_blep] + 1
-    ) ** 2
-    square[high_blep] += -(((phase[high_blep] - 1) / dt[high_blep] + 1) ** 2)
+    square.add_(correction_low).add_(correction_mid_low).add_(correction_mid_high).add_(
+        correction_high
+    )
 
     return square
 
@@ -83,9 +70,10 @@ def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
     phi = freqs[..., None] * n
     sins = torch.sin(phi)
 
-    i_freqs = freqs[..., None].repeat(1, 1, length)
-    squares = polyblep_square(i_freqs, 2 * torch.pi)
-    saws = polyblep_sawtooth(i_freqs, 2 * torch.pi)
+    squares = polyblep_square(freqs, n)
+    saws = polyblep_sawtooth(freqs, n)
+    # squares = torch.zeros_like(sins)
+    # saws = torch.zeros_like(sins)
 
     # -1 sin, 0 square, 1 sawtooth
     waveform = waveform[..., None]
