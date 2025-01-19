@@ -8,5 +8,7 @@ defaults:
 run_name: ffn_asym
 model:
   loss_fn: mse
+  net:
+    out_dim: ${mul:${data.k},3}
 data:
   break_symmetry: true

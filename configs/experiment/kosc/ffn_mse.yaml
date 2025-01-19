@@ -9,3 +9,5 @@ run_name: ffn_mse
 
 model:
   loss_fn: mse
+  net:
+    out_dim: ${mul:${data.k},3}

@@ -8,3 +8,5 @@ defaults:
 run_name: ffn_chamfer
 model:
   loss_fn: chamfer
+  net:
+    out_dim: ${mul:${data.k},3}

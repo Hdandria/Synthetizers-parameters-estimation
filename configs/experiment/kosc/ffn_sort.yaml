@@ -8,6 +8,8 @@ defaults:
 run_name: ffn_sort
 model:
   loss_fn: mse
+  net:
+    out_dim: ${mul:${data.k},3}
 
 data:
   sort_frequencies: true

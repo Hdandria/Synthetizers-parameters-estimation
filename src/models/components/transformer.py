@@ -85,12 +85,11 @@ class ParamToTokenProjection(nn.Module):
 
 
 class KSinParamToTokenProjection(nn.Module):
-    def __init__(
-        self, d_model: int, filler_tokens: int = 0, params_per_token: int = 2
-    ):
+    def __init__(self, d_model: int, filler_tokens: int = 0, params_per_token: int = 2):
         super().__init__()
         self.forward_proj = nn.Linear(params_per_token, d_model)
         self.backward_proj = nn.Linear(d_model, params_per_token)
+        self.params_per_token = params_per_token
 
         if filler_tokens > 0:
             self.filler_tokens = nn.Parameter(torch.randn(1, filler_tokens, d_model))
@@ -98,7 +97,7 @@ class KSinParamToTokenProjection(nn.Module):
             self.filler_tokens = None
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        k = x.shape[-1] // 2
+        k = x.shape[-1] // self.params_per_token
         x = rearrange(x, "b (d k) -> b k d", k=k)
 
         x = self.forward_proj(x)
@@ -115,7 +114,7 @@ class KSinParamToTokenProjection(nn.Module):
             x = x[:, :-num_filler, :]
 
         x = self.backward_proj(x)
-        x = rearrange(x, "b k d -> b (d k)", d=2)
+        x = rearrange(x, "b k d -> b (d k)", d=self.params_per_token)
         return x
 
     def penalty(self) -> torch.Tensor:
