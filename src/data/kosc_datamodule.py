@@ -75,7 +75,7 @@ def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
 
     n = torch.arange(length, device=freqs.device)
     phi = freqs[..., None] * n
-    sins = torch.sin(phi)
+    sins = -torch.sin(phi)
 
     squares = polyblep_square(freqs, n)
     saws = polyblep_sawtooth(freqs, n)
@@ -85,7 +85,7 @@ def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
     # -1 sin, 0 square, 1 sawtooth
     waveform = waveform[..., None]
     sin_amt = torch.clamp(-1 * waveform, 0.0, 1.0)
-    square_amt = torch.abs(waveform)
+    square_amt = 1 - torch.abs(waveform)
     saw_amt = torch.clamp(waveform, 0.0, 1.0)
     x = sin_amt * sins + square_amt * squares + saw_amt * saws
 
