@@ -5,10 +5,12 @@ import wandb
 from einops import rearrange
 from lightning.pytorch.callbacks import Callback
 
-from src.models.components.transformer import (ApproxEquivTransformer,
-                                               LearntProjection,
-                                               LearntProjectionII,
-                                               PositionalEncoding)
+from src.models.components.transformer import (
+    ApproxEquivTransformer,
+    LearntProjection,
+    LearntProjectionII,
+    PositionalEncoding,
+)
 from src.models.ksin_flow_matching_module import KSinFlowMatchingModule
 
 
@@ -318,15 +320,34 @@ class PlotLearntProjectionII(Callback):
         val_sim = self._get_value_similarity(pl_module)
         out_sim = self._get_output_similarity(pl_module)
 
-        ax[0].imshow(val_sim.cpu().numpy(), aspect="equal")
+        val_max = val_sim.abs().max()
+        out_max = out_sim.abs().max()
+
+        val_im = ax[0].imshow(
+            val_sim.cpu().numpy(),
+            aspect="equal",
+            vmin=-val_max,
+            vmax=val_max,
+            cmap="RdBu",
+        )
         ax[0].set_title("Value Projection")
         ax[0].set_xlabel("params")
         ax[0].set_ylabel("params")
 
-        ax[1].imshow(out_sim.cpu().numpy(), aspect="equal")
+        out_im = ax[1].imshow(
+            out_sim.cpu().numpy(),
+            aspect="equal",
+            vmin=-out_max,
+            vmax=out_max,
+            cmap="RdBu",
+        )
         ax[1].set_title("Out Projection")
         ax[1].set_xlabel("params")
         ax[1].set_ylabel("params")
+
+        # show colorbar
+        fig.colorbar(val_im, ax=ax[0])
+        fig.colorbar(out_im, ax=ax[1])
 
         fig.tight_layout()
 

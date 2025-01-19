@@ -51,11 +51,13 @@ def _sample_freqs_symmetry_broken(
 
 
 def fm_conditional_symmetry(
-    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+    params: torch.Tensor, length: int, break_symmetry: bool = False
 ):
     """An FM synthesiser with algorithm (M1->C1) + C2.
     param layout: [m1, c2, c1]
     """
+    freqs, amps = params.chunk(2, dim=-1)
+
     assert freqs.shape[-1] == 3
     assert amps.shape[-1] == 3
 
@@ -91,12 +93,11 @@ def _sample_params_conditional_symmetry(
     return freqs, amplitudes
 
 
-def fm_mixed_symmetry(
-    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
-):
+def fm_mixed_symmetry(params: torch.Tensor, length: int, break_symmetry: bool = False):
     """An FM synthesiser with algorithm (M1->C1) + (M2->C2)
     layout: [m1, m2, c1, c2]
     """
+    freqs, amps = params.chunk(2, dim=-1)
     assert freqs.shape[-1] == 4
     assert amps.shape[-1] == 4
     n = torch.arange(length, device=freqs.device)
@@ -136,11 +137,12 @@ def _sample_params_mixed_symmetry(
 
 
 def fm_hierarchical_symmetry(
-    freqs: torch.Tensor, amps: torch.Tensor, length: int, break_symmetry: bool = False
+    params: torch.Tensor, length: int, break_symmetry: bool = False
 ):
     """An FM synthesiser with algorithm ((M1+M2)->C1) + ((M3+M4)->C2)
     layout: [m1, m2, m3, m4, c1, c2]
     """
+    freqs, amps = params.chunk(2, dim=-1)
     assert freqs.shape[-1] == 6
     assert amps.shape[-1] == 6
     n = torch.arange(length, device=freqs.device)

@@ -11,48 +11,65 @@ from src.utils import RankedLogger
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
-def _sample_freqs(
-    k: int,
-    num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
-) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
+def polyblep_sawtooth(frequency_hz: torch.Tensor, sample_rate: float) -> torch.Tensor:
+    zeros = torch.zeros(
+        frequency_hz.shape[:-1] + (1,),
+        dtype=frequency_hz.dtype,
+        device=frequency_hz.device,
     )
+    dt = frequency_hz / sample_rate
+    phase = 0.5 * (dt[..., :-1] + dt[..., 1:])
+    phase = phase.cumsum(dim=-1)
+    phase = torch.cat((zeros, phase), dim=-1)
+
+    phase = phase % 1.0
+
+    sawtooth = phase * 2 - 1
+
+    low_blep = phase < dt
+    high_blep = phase > 1.0 - dt
+    sawtooth[low_blep] += (phase[low_blep] / dt[low_blep] - 1) ** 2
+    sawtooth[high_blep] += -(((phase[high_blep] - 1) / dt[high_blep] + 1) ** 2)
+
+    return sawtooth
 
 
-def _sample_amplitudes(
-    k: int,
-    num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
-) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
+# @torch.jit.script
+def polyblep_square(frequency_hz: torch.Tensor, sample_rate: float) -> torch.Tensor:
+    zeros = torch.zeros(
+        frequency_hz.shape[:-1] + (1,),
+        dtype=frequency_hz.dtype,
+        device=frequency_hz.device,
     )
+    dt = frequency_hz / sample_rate
+    phase = 0.5 * (dt[..., :-1] + dt[..., 1:])
+    phase = phase.cumsum(dim=-1)
+    phase = torch.cat((zeros, phase), dim=-1)
+    phase = phase % 1.0
+    shifted_phase = (phase - 0.5) % 1.0
+
+    square = torch.where(phase > 0.5, 1.0, -1.0)
+
+    low_blep = phase < dt
+    mid_low_blep = (phase > 0.5) & (phase < 0.5 + dt)
+
+    mid_high_blep = (phase > 0.5 - dt) & (phase < 0.5)
+    high_blep = phase > 1.0 - dt
+
+    # add middle bleps
+    square[low_blep] += (phase[low_blep] / dt[low_blep] - 1) ** 2
+    square[mid_low_blep] += -((shifted_phase[mid_low_blep] / dt[mid_low_blep] - 1) ** 2)
+
+    square[mid_high_blep] += (
+        (shifted_phase[mid_high_blep] - 1) / dt[mid_high_blep] + 1
+    ) ** 2
+    square[high_blep] += -(((phase[high_blep] - 1) / dt[high_blep] + 1) ** 2)
+
+    return square
 
 
-def _sample_freqs_shifted(
-    k: int,
-    num_samples: int,
-    is_test: bool,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
-) -> torch.Tensor:
-    """Sample frequencies with different train and test distributions. These are
-    slightly overlapping truncated normal distributions.
-    """
-    freqs = torch.empty(num_samples, k, device=device)
-    mean = -1.0 / 3.0 if not is_test else 1.0 / 3.0
-
-    torch.nn.init.trunc_normal_(freqs, mean, 1.0 / 3.0, -1.0, 1.0, generator=generator)
-
-    return freqs
-
-
-def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False):
-    freqs, amps = params.chunk(2, dim=-1)
+def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
+    freqs, amps, waveform = params.chunk(3, dim=-1)
     freqs = torch.pi * (freqs + 1.0) / 2.0
 
     if break_symmetry:
@@ -64,13 +81,25 @@ def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False):
 
     n = torch.arange(length, device=freqs.device)
     phi = freqs[..., None] * n
-    x = torch.sin(phi)
+    sins = torch.sin(phi)
+
+    i_freqs = freqs[..., None].repeat(1, 1, length)
+    squares = polyblep_square(i_freqs, 2 * torch.pi)
+    saws = polyblep_sawtooth(i_freqs, 2 * torch.pi)
+
+    # -1 sin, 0 square, 1 sawtooth
+    waveform = waveform[..., None]
+    sin_amt = torch.clamp(-1 * waveform, 0.0, 1.0)
+    square_amt = torch.abs(waveform)
+    saw_amt = torch.clamp(waveform, 0.0, 1.0)
+    x = sin_amt * sins + square_amt * squares + saw_amt * saws
+
     x = x * amps[..., None]
 
-    return x.sum(dim=-2)
+    return x.mean(dim=-2)
 
 
-class KSinDataset(torch.utils.data.Dataset):
+class KOscDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         k: int,
@@ -78,22 +107,14 @@ class KSinDataset(torch.utils.data.Dataset):
         num_samples: int,
         sort_frequencies: bool,
         break_symmetry: bool,
-        shift_test_distribution: bool,
         is_test: bool,
         seed: int,
     ):
         self.k = k
         self.signal_length = signal_length
 
-        if shift_test_distribution and break_symmetry:
-            raise ValueError(
-                "Cannot use `shift_test_distribution` and `break_symmetry` at the same"
-                "time."
-            )
-
         self.sort_frequencies = sort_frequencies
         self.break_symmetry = break_symmetry
-        self.shift_test_distribution = shift_test_distribution
 
         self.num_samples = num_samples
 
@@ -116,23 +137,14 @@ class KSinDataset(torch.utils.data.Dataset):
     def _sample_parameters(self, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
         self.generator.manual_seed(seed)
 
-        if self.shift_test_distribution:
-            freqs = _sample_freqs_shifted(
-                self.k,
-                1,
-                self.is_test,
-                torch.device("cpu"),
-                self.generator,
-            )
-        else:
-            freqs = _sample_freqs(self.k, 1, torch.device("cpu"), self.generator)
-
-        amplitudes = _sample_amplitudes(self.k, 1, torch.device("cpu"), self.generator)
-
+        params = torch.empty(1, 3 * self.k, device=torch.device("cpu"))
+        params.uniform_(-1.0, 1.0, generator=self.generator)
         if self.sort_frequencies:
+            freqs, amps, waveform = params.chunk(3, dim=-1)
             freqs, _ = torch.sort(freqs, dim=-1)
+            params = torch.cat((freqs, amps, waveform), dim=-1)
 
-        return freqs, amplitudes
+        return params
 
     def __len__(self):
         return self.num_samples
@@ -140,17 +152,16 @@ class KSinDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         # modulo max int to avoid overflows
         seed = (self.seed * idx) % sys.maxsize
-        freq, amp = self._sample_parameters(seed)
-        sin_fn = partial(
-            make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
+        params = self._sample_parameters(seed)
+        render_fn = partial(
+            make_sig, length=self.signal_length, break_symmetry=self.break_symmetry
         )
-        params = torch.cat((freq, amp), dim=-1)
-        sins = sin_fn(freq, amp)
-        return (sins, params, sin_fn)
+        sig = render_fn(params)
+        return (sig, params, render_fn)
 
 
-class KSinDataModule(LightningDataModule):
-    """k-Sin is a simple synthetic synthesiser parameter estimation task designed to
+class KOscDataModule(LightningDataModule):
+    """k-Osc is a simple synthetic synthesiser parameter estimation task designed to
     elicit problematic behaviour in response to permutation invariant labels.
 
     Each item consists of a signal containing a mixture of sinusoids, and the amplitude
@@ -163,7 +174,6 @@ class KSinDataModule(LightningDataModule):
         signal_length: int = 1024,
         sort_frequencies: bool = False,
         break_symmetry: bool = False,
-        shift_test_distribution: bool = False,
         train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
         train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
@@ -179,7 +189,6 @@ class KSinDataModule(LightningDataModule):
         self.break_symmetry = break_symmetry
 
         # dataset
-        self.shift_test_distribution = shift_test_distribution
         self.train_size, self.val_size, self.test_size = train_val_test_sizes
         self.train_seed, self.val_seed, self.test_seed = train_val_test_seeds
 
@@ -196,23 +205,21 @@ class KSinDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         if stage == "fit":
-            train_ds = KSinDataset(
+            train_ds = KOscDataset(
                 self.k,
                 self.signal_length,
                 self.train_size,
                 self.sort_frequencies,
                 self.break_symmetry,
-                self.shift_test_distribution,
                 False,
                 self.train_seed,
             )
-            val_ds = KSinDataset(
+            val_ds = KOscDataset(
                 self.k,
                 self.signal_length,
                 self.val_size,
                 self.sort_frequencies,
                 self.break_symmetry,
-                self.shift_test_distribution,
                 False,
                 self.val_seed,
             )
@@ -231,13 +238,12 @@ class KSinDataModule(LightningDataModule):
                 num_workers=self.num_workers,
             )
         else:
-            test_ds = KSinDataset(
+            test_ds = KOscDataset(
                 self.k,
                 self.signal_length,
                 self.test_size,
                 self.sort_frequencies,
                 self.break_symmetry,
-                self.shift_test_distribution,
                 True,
                 self.test_seed,
             )
@@ -266,7 +272,7 @@ class KSinDataModule(LightningDataModule):
 
 
 if __name__ == "__main__":
-    dm = KSinDataModule(k=4)
+    dm = KOscDataModule(k=4)
     dm.setup("fit")
     for x, y in dm.train:
         print(x.shape, y.shape)

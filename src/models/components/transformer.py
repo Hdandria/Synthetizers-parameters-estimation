@@ -85,10 +85,12 @@ class ParamToTokenProjection(nn.Module):
 
 
 class KSinParamToTokenProjection(nn.Module):
-    def __init__(self, d_model: int, k: int, filler_tokens: int = 0):
+    def __init__(
+        self, d_model: int, filler_tokens: int = 0, params_per_token: int = 2
+    ):
         super().__init__()
-        self.forward_proj = nn.Linear(2, d_model)
-        self.backward_proj = nn.Linear(d_model, 2)
+        self.forward_proj = nn.Linear(params_per_token, d_model)
+        self.backward_proj = nn.Linear(d_model, params_per_token)
 
         if filler_tokens > 0:
             self.filler_tokens = nn.Parameter(torch.randn(1, filler_tokens, d_model))
@@ -221,13 +223,18 @@ class LearntProjectionII(nn.Module):
         sinkhorn_reg: float = 0.2,
         var_penalty: bool = False,
         initial_ffn: bool = False,
+        final_ffn: bool = False,
         num_prototypes: int = 2,
     ):
         super().__init__()
 
         if assignment_type == "linear":
-            assignment = torch.rand(num_tokens, num_params)
-            assignment = assignment / assignment.sum(1, keepdim=True)
+            # assignment = torch.rand(num_tokens, num_params)
+            # assignment = assignment / assignment.sum(1, keepdim=True)
+            assignment = torch.full(
+                (num_tokens, num_params), 1.0 / math.sqrt(num_tokens * num_params)
+            )
+            assignment = assignment + 1e-4 * torch.randn_like(assignment)
         elif assignment_type == "sinkhorn":
             assignment = torch.randn(num_tokens, num_params) * 0.1
         elif assignment_type == "exp":
@@ -262,9 +269,17 @@ class LearntProjectionII(nn.Module):
             self.out_proto_mappings = nn.Parameter(mappings)
         elif value_code == "scale":
             if sym_init:
+                # proj = torch.randn(1, d_model) / math.sqrt(d_model)
+                #
+                # self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
+                # self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+
                 proj = torch.randn(1, d_model) / math.sqrt(d_model)
-                self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
-                self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
+                proj = proj.repeat(num_params, 1)
+                proj = proj + 1e-4 * torch.randn_like(proj)
+
+                self._in_projection = nn.Parameter(proj)
+                self._out_projection = nn.Parameter(proj.T)
             else:
                 proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
                 self._in_projection = nn.Parameter(proj)
@@ -285,6 +300,15 @@ class LearntProjectionII(nn.Module):
             )
         else:
             self.initial_ffn = None
+
+        if final_ffn:
+            self.final_ffn = nn.Sequential(
+                nn.Linear(d_model, d_model),
+                nn.GELU(),
+                nn.Linear(d_model, d_model),
+            )
+        else:
+            self.final_ffn = None
 
         if filler_tokens > 0:
             self.filler_tokens = nn.Parameter(
@@ -349,6 +373,10 @@ class LearntProjectionII(nn.Module):
             x = x[:, :-num_filler]
 
         deassigned = torch.einsum("bkd,kn->bnd", x, self.assignment)
+
+        if self.final_ffn is not None:
+            deassigned = self.final_ffn(deassigned)
+
         return torch.einsum("bnd,dn->bn", deassigned, self.out_projection)
 
     def penalty(self) -> torch.Tensor:
@@ -359,6 +387,94 @@ class LearntProjectionII(nn.Module):
             penalty = penalty + var_penalty
 
         return penalty
+
+
+class LearntProjectionIII(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        num_params: int,
+        num_tokens: int,
+        num_heads: int = 4,
+        init_scale: float = 1e-4,
+        attn_type: Literal["cross", "cat"] = "cross",
+    ):
+        super().__init__()
+        self.d_model = d_model
+        self.num_params = num_params
+        self.num_tokens = num_tokens
+
+        _param_embeds = torch.randn(1, d_model).repeat(num_params, 1)
+        _param_embeds = _param_embeds + init_scale * torch.randn_like(_param_embeds)
+        _param_outputs = _param_embeds
+
+        self._p2t_tokens = nn.Parameter(torch.randn(1, num_tokens, d_model))
+        self._t2p_tokens = nn.Parameter(torch.randn(1, num_params, d_model))
+        self._param_embeds = nn.Parameter(_param_embeds)
+        self._param_outputs = nn.Parameter(_param_outputs)
+
+        self.p2t_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
+        self.t2p_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
+
+        self.p2t_norm = nn.LayerNorm(d_model)
+        self.t2p_norm = nn.LayerNorm(d_model)
+
+        self.p2t_ffn = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, d_model),
+        )
+        self.t2p_ffn = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, d_model),
+        )
+        self.attn_type = attn_type
+
+    def _do_attn(
+        self, attn: nn.MultiheadAttention, q: torch.Tensor, kv: torch.Tensor
+    ) -> torch.Tensor:
+        if self.attn_type == "cross":
+            return attn(q, kv, kv)[0]
+        elif self.attn_type == "cat":
+            seq = torch.cat([q, kv], dim=1)
+            toks = attn(seq, seq, seq)[0]
+            return toks[:, : q.shape[1], :]
+
+    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
+        # project scalars to vectors
+        params = torch.einsum("bn,nd->bnd", x, self._param_embeds)
+
+        # pass thru FFN with residual (no norm)
+        params = self.p2t_ffn(params) + params
+
+        # cross attention bit
+        params = self.p2t_norm(params)
+        query = self._p2t_tokens.repeat(x.shape[0], 1, 1)
+        tokens = self._do_attn(self.p2t_attn, query, params)
+        tokens = tokens + query
+
+        return tokens
+
+    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
+        # cross attn
+        x = self.t2p_norm(x)
+        query = self._t2p_tokens.repeat(x.shape[0], 1, 1)
+        params = self._do_attn(self.t2p_attn, query, x)
+        params = params + query
+
+        # pass thru FFN with residual
+        res = params
+        params = self.t2p_ffn(params)
+        params = params + res
+
+        params = torch.einsum("bnd,nd->bn", params, self._param_outputs)
+
+        return params
+
+    def penalty(self) -> torch.Tensor:
+        return 0.0
 
 
 def normalize(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:

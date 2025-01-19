@@ -26,6 +26,7 @@ vector_field:
     sym_init: true
     var_penalty: false
     initial_ffn: true
+    final_ffn: false
   num_layers: 5
   d_model: 128
   conditioning_dim: ${model.encoder.out_dim}
@@ -64,7 +65,7 @@ test_sample_steps: 200
 test_cfg_strength: 2.0
 
 # SYMMETRY DISCOVERY!
-freeze_for_first_n_steps: 5_000
+freeze_for_first_n_steps: 0
 
 # compile model for faster training with pytorch 2.0
 compile: false

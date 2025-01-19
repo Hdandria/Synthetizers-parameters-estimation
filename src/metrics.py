@@ -27,8 +27,7 @@ class LogSpectralDistance(Metric):
         target_signal: torch.Tensor,
         synth_fn: Callable,
     ):
-        pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = synth_fn(pred_freq, pred_amp)
+        pred_signal = synth_fn(predicted_params)
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")
@@ -57,8 +56,7 @@ class SpectralDistance(Metric):
         target_signal: torch.Tensor,
         synth_fn: Callable,
     ):
-        pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = synth_fn(pred_freq, pred_amp)
+        pred_signal = synth_fn(predicted_params)
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")
