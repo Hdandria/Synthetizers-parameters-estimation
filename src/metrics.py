@@ -35,12 +35,12 @@ class LogSpectralDistance(Metric):
         pred_power = complex_to_dbfs(pred_fft, self.eps)
         target_power = complex_to_dbfs(target_fft, self.eps)
 
-        self.lsd += torch.nn.functional.mse_loss(pred_power, target_power)
+        self.lsd += (pred_power - target_power).square().mean(dim=-1).sqrt().mean()
         self.count += 1
 
     def compute(self):
         lsd = self.lsd / self.count
-        return lsd.sqrt()
+        return lsd
 
 
 class SpectralDistance(Metric):
