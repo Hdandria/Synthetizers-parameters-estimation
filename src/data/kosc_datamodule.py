@@ -64,7 +64,11 @@ def polyblep_square(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
 
 def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
     freqs, amps, waveform = params.chunk(3, dim=-1)
-    freqs = torch.pi * (freqs + 1.0) / 2.0
+
+    min_freq = 2 * torch.pi * 20.0 / 44100.0
+    max_freq = 2 * torch.pi * 4000.0 / 44100.0
+    freqs = (freqs + 1.0) / 2.0
+    freqs = min_freq + (max_freq - min_freq) * freqs
 
     if break_symmetry:
         k = freqs.shape[-1]
