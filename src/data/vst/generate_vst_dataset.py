@@ -267,7 +267,7 @@ def make_dataset(
     )
     mel_dataset = hdf5_file.create_dataset(
         "mel_spec",
-        (num_samples, 400, 128),
+        (num_samples, 2, 128, 401),
         dtype=np.float32,
     )
     param_dataset = hdf5_file.create_dataset(
