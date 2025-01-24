@@ -237,7 +237,7 @@ def save_sample(
     param_dataset: h5py.Dataset,
     idx: int,
 ) -> None:
-    audio_dataset[idx, :, :] = sample.audio
+    audio_dataset[idx, :, :] = sample.audio.T
     mel_dataset[idx, :, :] = sample.mel_spec
     param_dataset[idx, :] = sample.param_array
 
@@ -268,7 +268,7 @@ def make_dataset(
     )
     mel_dataset = hdf5_file.create_dataset(
         "mel_spec",
-        (num_samples, channels, signal_duration_seconds),
+        (num_samples, 400, 128),
         dtype=np.float32,
         compression="lzf",
     )
