@@ -264,19 +264,16 @@ def make_dataset(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
         dtype=np.float32,
-        compression="lzf",
     )
     mel_dataset = hdf5_file.create_dataset(
         "mel_spec",
         (num_samples, 400, 128),
         dtype=np.float32,
-        compression="lzf",
     )
     param_dataset = hdf5_file.create_dataset(
         "param_array",
         (num_samples, len(SURGE_XT_PARAM_SPEC) + 1),  # +1 for MIDI note
         dtype=np.float32,
-        compression="lzf",
     )
 
     audio_dataset.attrs["min_pitch"] = min_pitch
