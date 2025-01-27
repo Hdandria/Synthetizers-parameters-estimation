@@ -8,7 +8,7 @@ splits = dict(
 )
 
 for split, (lo, hi) in splits.items():
-    split_len = len(hi - lo) * 10_000
+    split_len = (hi - lo) * 10_000
 
     vl_audio = h5py.VirtualLayout(shape=(split_len, 2, 44100 * 4), dtype=np.float32)
     vl_mel = h5py.VirtualLayout(shape=(split_len, 2, 128, 401), dtype=np.float32)
