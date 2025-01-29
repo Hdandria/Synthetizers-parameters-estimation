@@ -26,7 +26,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         self.rescale_params = rescale_params
 
         if use_saved_mean_and_variance:
-            self._load_dataset_statistics(dataset_file)
+            self._load_dataset_statistics()
 
     def _load_dataset_statistics(self):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
