@@ -34,6 +34,14 @@ def concatenate(list_of_arrays: Union[torch.Tensor, np.ndarray]):
         return torch.from_numpy(x)
 
 
+def stack(list_of_arrays: Union[torch.Tensor, np.ndarray]):
+    if isinstance(list_of_arrays[0], torch.Tensor):
+        return torch.stack(list_of_arrays, dim=0)
+    else:
+        x = np.stack(list_of_arrays, axis=0)
+        return torch.from_numpy(x)
+
+
 def _collate_tuple(batch):
     sins, params, sin_fn = zip(*batch)
     sins = concatenate(sins)
@@ -49,10 +57,12 @@ def _collate_dict(batch):
     mel_spec = [d["mel_spec"] for d in batch]
     audio = [d["audio"] for d in batch]
 
-    params = concatenate(params)
-    mel_spec = concatenate(mel_spec)
+    params = stack(params)
+    mel_spec = stack(mel_spec)
     if audio[0] is not None:
-        audio = concatenate(audio)
+        audio = stack(audio)
+    else:
+        audio = None
 
     noise = torch.randn_like(params)
 
@@ -79,30 +89,20 @@ def regular_collate_fn(batch):
 
 
 def _ot_collate_tuple(batch):
-    sins, params, sin_fn = zip(*batch)
-    sins = concatenate(sins)
-    params = concatenate(params)
-    noise = torch.randn_like(params)
-
+    sins, params, noise, sin_fn = _collate_tuple(batch)
     noise, params, sins = _hungarian_match(noise, params, sins)
-
-    sin_fn = sin_fn[0]
     return (sins, params, noise, sin_fn)
 
 
 def _ot_collate_dict(batch):
-    params = [d["params"] for d in batch]
-    mel_spec = [d["mel_spec"] for d in batch]
-    audio = [d["audio"] for d in batch]
+    batch = _collate_dict(batch)
 
-    params = concatenate(params)
-    mel_spec = concatenate(mel_spec)
-    if audio[0] is not None:
-        audio = concatenate(audio)
+    noise = batch["noise"]
+    params = batch["params"]
+    mel_spec = batch["mel_spec"]
+    audio = batch["audio"]
 
-    noise = torch.randn_like(params)
-
-    noise, params, mel_spec = _hungarian_match(noise, params, mel_spec, audio)
+    noise, params, mel_spec, audio = _hungarian_match(noise, params, mel_spec, audio)
 
     return dict(
         params=params,
