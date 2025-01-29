@@ -1,3 +1,6 @@
+from functools import partial
+
+import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
 from threadpoolctl import threadpool_limits
@@ -23,10 +26,17 @@ def _hungarian_match(noise: torch.Tensor, params: torch.Tensor, *args):
     return tuple(return_values)
 
 
+def concatenate(list_of_arrays: Union[torch.Tensor, np.ndarray]):
+    if isinstance(list_of_arrays[0], torch.Tensor):
+        return concatenate(list_of_arrays)
+    else:
+        return np.concatenate(list_of_arrays, axis=0)
+
+
 def _collate_tuple(batch):
     sins, params, sin_fn = zip(*batch)
-    sins = torch.cat(sins, dim=0)
-    params = torch.cat(params, dim=0)
+    sins = concatenate(sins)
+    params = concatenate(params)
     noise = torch.randn_like(params)
     sin_fn = sin_fn[0]
     return (sins, params, noise, sin_fn)
@@ -38,10 +48,10 @@ def _collate_dict(batch):
     mel_spec = [d["mel_spec"] for d in batch]
     audio = [d["audio"] for d in batch]
 
-    params = torch.cat(params, dim=0)
-    mel_spec = torch.cat(mel_spec, dim=0)
+    params = concatenate(params)
+    mel_spec = concatenate(mel_spec)
     if audio[0] is not None:
-        audio = torch.cat(audio, dim=0)
+        audio = concatenate(audio)
 
     noise = torch.randn_like(params)
 
@@ -69,8 +79,8 @@ def regular_collate_fn(batch):
 
 def _ot_collate_tuple(batch):
     sins, params, sin_fn = zip(*batch)
-    sins = torch.cat(sins, dim=0)
-    params = torch.cat(params, dim=0)
+    sins = concatenate(sins)
+    params = concatenate(params)
     noise = torch.randn_like(params)
 
     noise, params, sins = _hungarian_match(noise, params, sins)
@@ -84,10 +94,10 @@ def _ot_collate_dict(batch):
     mel_spec = [d["mel_spec"] for d in batch]
     audio = [d["audio"] for d in batch]
 
-    params = torch.cat(params, dim=0)
-    mel_spec = torch.cat(mel_spec, dim=0)
+    params = concatenate(params)
+    mel_spec = concatenate(mel_spec)
     if audio[0] is not None:
-        audio = torch.cat(audio, dim=0)
+        audio = concatenate(audio)
 
     noise = torch.randn_like(params)
 
