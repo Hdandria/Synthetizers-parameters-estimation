@@ -17,11 +17,16 @@ class SurgeXTDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         dataset_file: Union[str, Path],
+        batch_size: int,
+        ot: bool = True,
         read_audio: bool = False,
         use_saved_mean_and_variance: bool = True,
         rescale_params: bool = True,
         fake: bool = False,
     ):
+        self.batch_size = batch_size
+        self.ot = ot
+
         self.read_audio = read_audio
         self.rescale_params = rescale_params
 
@@ -59,19 +64,24 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         if self.fake:
             return 10000
 
-        return self.dataset_file["audio"].shape[0]
+        return self.dataset_file["audio"].shape[0] // self.batch_size
 
     def _get_fake_item(self):
-        audio = torch.randn(2, 44100 * 4) if not self.read_audio else None
-        mel_spec = torch.randn(2, 128, 401)
-        param_array = torch.rand(189)
+        audio = (
+            torch.randn(self.batch_size, 2, 44100 * 4) if not self.read_audio else None
+        )
+        mel_spec = torch.randn(self.batch_size, 2, 128, 401)
+        param_array = torch.rand(self.batch_size, 189)
 
         if self.rescale_params:
             param_array = param_array * 2 - 1
 
+        noise = torch.randn_like(param_array)
+
         return dict(
             mel_spec=mel_spec,
             params=param_array,
+            noise=noise,
             audio=audio,
         )
 
@@ -79,22 +89,32 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         if self.fake:
             return self._get_fake_item()
 
+        start_idx = idx * self.batch_size
+        end_idx = start_idx + self.batch_size
+
         if self.read_audio:
-            audio = self.dataset_file["audio"][idx, :, :]
+            audio = self.dataset_file["audio"][start_idx:end_idx, :, :]
         else:
             audio = None
 
-        mel_spec = self.dataset_file["mel_spec"][idx, :, :, :]
+        mel_spec = self.dataset_file["mel_spec"][start_idx:end_idx, :, :, :]
         if self.mean is not None and self.std is not None:
             mel_spec = (mel_spec - self.mean) / self.std
 
-        param_array = self.dataset_file["param_array"][idx, :]
+        param_array = self.dataset_file["param_array"][start_idx:end_idx, :]
         if self.rescale_params:
             param_array = param_array * 2 - 1
+
+        noise = torch.randn_like(param_array)
+        if self.ot:
+            noise, param_array, mel_spec, audio = _hungarian_match(
+                mel_spec, param_array, noise, audio
+            )
 
         return dict(
             mel_spec=mel_spec,
             params=param_array,
+            noise=noise,
             audio=audio,
         )
 
@@ -121,16 +141,22 @@ class SurgeDataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         self.train_dataset = SurgeXTDataset(
             self.dataset_root / "train.h5",
+            batch_size=self.batch_size,
+            ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
         )
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
+            batch_size=self.batch_size,
+            ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
         )
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
+            batch_size=self.batch_size,
+            ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
         )
@@ -138,30 +164,30 @@ class SurgeDataModule(LightningDataModule):
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             shuffle=True,
             num_workers=self.num_workers,
-            collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=regular_collate_fn,
+            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=regular_collate_fn,
+            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
