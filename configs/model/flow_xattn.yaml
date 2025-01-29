@@ -15,7 +15,7 @@ optimizer:
 vector_field:
   _target_: src.models.components.transformer.ApproxEquivTransformer
   projection:
-    _target_: src.models.components.transformer.LearntProjectionIII
+    _target_: src.models.components.transformer.LearntProjectionXAttn
     d_model: ${model.vector_field.d_model}
     num_params: ${mul:${data.k},2}
     num_tokens: ${data.k}

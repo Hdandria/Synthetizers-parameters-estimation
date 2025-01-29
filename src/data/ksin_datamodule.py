@@ -145,7 +145,7 @@ class KSinDataset(torch.utils.data.Dataset):
             make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
         )
         params = torch.cat((freq, amp), dim=-1)
-        sins = sin_fn(freq, amp)
+        sins = sin_fn(params)
         return (sins, params, sin_fn)
 
 

@@ -1,0 +1,8 @@
+_target_: AudioSpectrogramTransformer
+d_model: 768
+n_heads: 12
+n_layers: 12
+patch_size: 16
+patch_stride: 10
+input_channels: 2
+spec_shape: [128, 401]

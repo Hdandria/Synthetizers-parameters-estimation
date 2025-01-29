@@ -29,9 +29,10 @@ from src.utils import (
     extras,
     instantiate_loggers,
     log_hyperparameters,
+    register_resolvers,
     task_wrapper,
-    register_resolvers
 )
+
 register_resolvers()
 
 log = RankedLogger(__name__, rank_zero_only=True)
@@ -73,8 +74,14 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         log.info("Logging hyperparameters!")
         log_hyperparameters(object_dict)
 
-    log.info("Starting testing!")
-    trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+    mode = cfg.get("mode", "test")
+
+    if mode == "test":
+        log.info("Starting testing!")
+        trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+    elif mode == "val" or mode == "validate":
+        log.info("Starting validating!")
+        trainer.validate(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
 
     # for predictions use trainer.predict(...)
     # predictions = trainer.predict(model=model, dataloaders=dataloaders, ckpt_path=cfg.ckpt_path)

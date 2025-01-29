@@ -261,7 +261,7 @@ def make_dataset(
     audio_dataset = hdf5_file.create_dataset(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
-        dtype=np.float32,
+        dtype=np.float16,
         compression="gzip",
     )
     mel_dataset = hdf5_file.create_dataset(

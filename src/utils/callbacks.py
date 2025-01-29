@@ -8,7 +8,6 @@ from lightning.pytorch.callbacks import Callback
 from src.models.components.transformer import (
     ApproxEquivTransformer,
     LearntProjection,
-    LearntProjectionII,
     PositionalEncoding,
 )
 from src.models.ksin_flow_matching_module import KSinFlowMatchingModule
@@ -154,118 +153,6 @@ class PlotPositionalEncodingSimilarity(Callback):
 
 
 class PlotLearntProjection(Callback):
-    def _compute_grids(self, pl_module):
-        in_proj = pl_module.vector_field.projection.proj_in
-        out_proj = pl_module.vector_field.projection.proj_out
-
-        in_grid = torch.norm(in_proj, p=2.0, dim=1)
-        if out_proj is not None:
-            out_grid = torch.norm(out_proj, p=2.0, dim=0)
-        else:
-            out_grid = None
-
-        return in_grid, out_grid
-
-    def _compute_similarity(self, pl_module):
-        in_proj = pl_module.vector_field.projection.proj_in  # K x D x N
-        num_tokens = in_proj.size(0)
-        num_params = in_proj.size(2)
-
-        in_proj = rearrange(in_proj, "k d n -> 1 (k n) d")
-        in_sim = _self_similarity(in_proj)
-
-        out_proj = pl_module.vector_field.projection.proj_out  # D x K x N
-        if out_proj is not None:
-            out_proj = rearrange(out_proj, "d k n -> 1 (k n) d")
-            out_sim = _self_similarity(out_proj)
-        else:
-            out_sim = None
-
-        return in_sim, out_sim, num_tokens, num_params
-
-    def _plot_grids(self, in_grid, out_grid):
-        fig, ax = plt.subplots(2, 1, figsize=(5, 5))
-
-        ax[0].imshow(in_grid.cpu().numpy(), aspect="equal")
-        ax[0].set_title("In Projection")
-
-        if out_grid is not None:
-            ax[1].imshow(out_grid.cpu().numpy(), aspect="equal")
-            ax[1].set_title("Out Projection")
-
-        ax[0].set_xlabel("params")
-        ax[1].set_xlabel("params")
-
-        ax[0].set_ylabel("tokens")
-        ax[1].set_ylabel("tokens")
-
-        fig.tight_layout()
-        fig.suptitle("Learnt Projection")
-
-        return fig
-
-    def _plot_similarities(self, in_sim, out_sim, num_tokens, num_params):
-        num_plots = 2 if out_sim is not None else 1
-        fig, ax = plt.subplots(num_plots, 1, figsize=(5, 5 * num_plots), squeeze=False)
-
-        ax[0, 0].imshow(in_sim.cpu().numpy(), aspect="equal")
-        ax[0, 0].set_title("In Projection")
-
-        p_ticks = range(num_params * num_tokens)
-        p_labels = [f"P{i+1}" for i in range(num_params)] * num_tokens
-
-        t_ticks = [i * num_params for i in range(num_tokens)]
-        t_labels = [f"\nT{i+1}" for i in range(num_tokens)]
-
-        ax[0, 0].set_xticks(p_ticks, labels=p_labels)
-        ax[0, 0].secondary_xaxis(location=0).set_xticks(t_ticks, labels=t_labels)
-
-        ax[0, 0].set_yticks(p_ticks, labels=p_labels)
-        ax[0, 0].secondary_yaxis(location=0).set_yticks(t_ticks, labels=t_labels)
-
-        if out_sim is not None:
-            ax[1, 0].imshow(out_sim.cpu().numpy(), aspect="equal")
-            ax[1, 0].set_title("Out Projection")
-
-            ax[1, 0].set_xticks(p_ticks, labels=p_labels)
-            ax[1, 0].secondary_xaxis(location=0).set_xticks(t_ticks, labels=t_labels)
-
-            ax[1, 0].set_yticks(p_ticks, labels=p_labels)
-            ax[1, 0].secondary_yaxis(location=0).set_yticks(t_ticks, labels=t_labels)
-
-        fig.tight_layout()
-        fig.suptitle("Learnt Projection Similarity")
-
-        return fig
-
-    def _log_plots(self, fig_grids, fig_sims, trainer):
-        plot_grids = wandb.Image(fig_grids)
-        plot_sims = wandb.Image(fig_sims)
-        wandb.log(
-            {"projection": plot_grids, "proj_similarity": plot_sims},
-            step=trainer.global_step,
-        )
-        plt.close(fig_grids)
-        plt.close(fig_sims)
-
-    def on_validation_epoch_end(self, trainer, pl_module) -> None:
-        if not isinstance(pl_module, KSinFlowMatchingModule):
-            return
-
-        if not isinstance(pl_module.vector_field, ApproxEquivTransformer):
-            return
-
-        if not isinstance(pl_module.vector_field.projection, LearntProjection):
-            return
-
-        grids = self._compute_grids(pl_module)
-        sims = self._compute_similarity(pl_module)
-        fig_grids = self._plot_grids(*grids)
-        fig_sims = self._plot_similarities(*sims)
-        self._log_plots(fig_grids, fig_sims, trainer)
-
-
-class PlotLearntProjectionII(Callback):
     def _get_assignment(self, pl_module):
         return pl_module.vector_field.projection.assignment
 
@@ -370,7 +257,7 @@ class PlotLearntProjectionII(Callback):
         if not isinstance(pl_module.vector_field, ApproxEquivTransformer):
             return
 
-        if not isinstance(pl_module.vector_field.projection, LearntProjectionII):
+        if not isinstance(pl_module.vector_field.projection, LearntProjection):
             return
 
         fig_ass = self._plot_assignments(pl_module)

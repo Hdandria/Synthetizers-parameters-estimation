@@ -1,5 +1,5 @@
 import math
-from typing import Literal, Optional, Sequence
+from typing import Literal, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -9,9 +9,17 @@ from src.models.components.sinkhorn import SinkhornAttention, sinkhorn_C
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, size: int, num_pos: int):
+    def __init__(
+        self, size: int, num_pos: int, init: Literal["zeros", "norm0.02"] = "zeros"
+    ):
         super().__init__()
-        self.pe = nn.Parameter(torch.zeros(1, num_pos, size))
+
+        if init == "zeros":
+            pe = torch.zeros(1, num_pos, size)
+        else:
+            pe = torch.randn(1, num_pos, size) * 0.02
+
+        self.pe = nn.Parameter(pe)
 
     def penalty(self) -> torch.Tensor:
         # structured sparsity
@@ -20,68 +28,6 @@ class PositionalEncoding(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         pe = self.pe[:, : x.shape[1], :]
         return x + pe
-
-
-def _make_block_diagonal_projections(
-    param_group_lengths: Sequence[int], d_model: int
-) -> nn.Module:
-    n_params = sum(param_group_lengths)
-    n_groups = len(param_group_lengths)
-    params = torch.zeros(2, n_params, d_model * n_groups)
-
-    i, j = 0, 0
-    for length in param_group_lengths:
-        data = torch.empty(2, length, d_model)
-        nn.init.kaiming_uniform_(data)
-        params[:, i : i + length, j : j + d_model].copy_(data)
-        i += length
-        j += d_model
-
-    return nn.Parameter(params)
-
-
-def _make_block_diagonal_mask(
-    param_group_lengths: Sequence[int], d_model: int
-) -> nn.Module:
-    n_params = sum(param_group_lengths)
-    n_groups = len(param_group_lengths)
-    params = torch.ones(1, n_params, d_model * n_groups)
-
-    i, j = 0, 0
-    for length in param_group_lengths:
-        params[:, i : i + length, j : j + d_model].fill_(0.0)
-        i += length
-        j += d_model
-
-    return nn.Parameter(params)
-
-
-class ParamToTokenProjection(nn.Module):
-    def __init__(self, d_model: int, param_group_lengths: Sequence[int]):
-        super().__init__()
-        self.proj = _make_block_diagonal_projections(param_group_lengths, d_model)
-        self.register_buffer(
-            "penalty_mask", _make_block_diagonal_mask(param_group_lengths, d_model)
-        )
-        self.n_groups = len(param_group_lengths)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x
-
-    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.matmul(x, self.proj[0])
-        x = rearrange(x, "b (k d) -> b k d", k=self.n_groups)
-
-        return x
-
-    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        x = rearrange(x, "b k d -> b (k d)")
-        return torch.matmul(x, self.proj[1].transpose(0, 1))
-
-    def penalty(self) -> torch.Tensor:
-        masked = self.proj * self.penalty_mask
-
-        return masked.abs().mean()
 
 
 class KSinParamToTokenProjection(nn.Module):
@@ -122,87 +68,6 @@ class KSinParamToTokenProjection(nn.Module):
 
 
 class LearntProjection(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        num_params: int,
-        num_tokens: int,
-        init: Literal["zero", "normal", "kaiming"],
-        penalty: Literal["l1", "group"] = "l1",
-        tying: bool = False,
-    ):
-        super().__init__()
-        proj_in = torch.empty(num_tokens, d_model, num_params)
-        proj_out = torch.empty(d_model, num_tokens, num_params)
-
-        if init == "zero":
-            nn.init.zeros_(proj_in)
-            nn.init.zeros_(proj_out)
-        elif init == "normal":
-            nn.init.normal_(proj_in)
-            nn.init.normal_(proj_out)
-        elif init == "kaiming":
-            nn.init.kaiming_uniform_(proj_in)
-            nn.init.kaiming_uniform_(proj_out)
-
-        self.proj_in = nn.Parameter(proj_in)
-        self.proj_out = nn.Parameter(proj_out) if not tying else None
-        self.penalty_type = penalty
-
-    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b n)
-        return torch.einsum("bn,kdn->bkd", x, self.proj_in)
-
-    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b k d)
-        if self.proj_out is None:
-            # we are using tied weights
-            return torch.einsum("bkd,kdn->bn", x, self.proj_in)
-
-        # otherwise
-        return torch.einsum("bkd,dkn->bn", x, self.proj_out)
-
-    def _l1_penalty(self) -> torch.Tensor:
-        penalty = self.proj_in.abs().mean()
-        if self.proj_out is not None:
-            penalty = penalty + self.proj_out.abs().mean()
-
-        return penalty
-
-    def _group_penalty(self) -> torch.Tensor:
-        penalty = self.proj_in.norm(2.0, dim=1).mean()
-        if self.proj_out is not None:
-            penalty = penalty + self.proj_out.norm(2.0, dim=0).mean()
-
-        return penalty
-
-    def penalty(self) -> torch.Tensor:
-        if self.penalty_type == "l1":
-            return self._l1_penalty()
-        elif self.penalty_type == "group":
-            return self._group_penalty()
-
-        raise ValueError(f"Unknown penalty {self.penalty}")
-
-
-class SemiReLU(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x):
-        ctx.save_for_backward(x)
-        return x.clamp(min=0.0)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x = ctx.saved_tensors[0]
-        positive_mask = x > 0.0
-        direction_mask = grad_output <= 0.0
-        mask = positive_mask | direction_mask
-
-        grad_input = torch.where(mask, grad_output, 0.0)
-        return grad_input
-
-
-class LearntProjectionII(nn.Module):
     """Smarter learnt projection that factorises into:
     (i) assignment matrix
     (ii) value coding
@@ -214,12 +79,8 @@ class LearntProjectionII(nn.Module):
         d_model: int,
         num_params: int,
         num_tokens: int,
-        value_code: Literal["scale", "sin", "proto"] = "scale",
-        assignment_type: Literal["linear", "sinkhorn", "exp", "semi_relu"] = "linear",
         sym_init: bool = True,
         filler_tokens: int = 0,
-        sinkhorn_iters: int = 10,
-        sinkhorn_reg: float = 0.2,
         var_penalty: bool = False,
         initial_ffn: bool = False,
         final_ffn: bool = False,
@@ -227,68 +88,24 @@ class LearntProjectionII(nn.Module):
     ):
         super().__init__()
 
-        if assignment_type == "linear":
-            # assignment = torch.rand(num_tokens, num_params)
-            # assignment = assignment / assignment.sum(1, keepdim=True)
-            assignment = torch.full(
-                (num_tokens, num_params), 1.0 / math.sqrt(num_tokens * num_params)
-            )
-            assignment = assignment + 1e-4 * torch.randn_like(assignment)
-        elif assignment_type == "sinkhorn":
-            assignment = torch.randn(num_tokens, num_params) * 0.1
-        elif assignment_type == "exp":
-            assignment = torch.randn(num_tokens, num_params)
-            assignment = assignment - torch.logsumexp(assignment, dim=(0, 1))
-        elif assignment_type == "semi_relu":
-            assignment = torch.rand(num_tokens, num_params)
-            assignment = assignment / assignment.sum()
-        else:
-            raise ValueError(f"Unknown assignment type {assignment_type}")
-
+        assignment = torch.full(
+            (num_tokens, num_params), 1.0 / math.sqrt(num_tokens * num_params)
+        )
+        assignment = assignment + 1e-4 * torch.randn_like(assignment)
         self._assignment = nn.Parameter(assignment)
 
-        # self._assignment = nn.Parameter(torch.randn(num_tokens, num_params) * 0.1)
-        # self._assignment = nn.Parameter(torch.empty(num_tokens, num_params))
-        # nn.init.xavier_normal_(self._assignment)
+        if sym_init:
+            proj = torch.randn(1, d_model) / math.sqrt(d_model)
+            proj = proj.repeat(num_params, 1)
+            proj = proj + 1e-4 * torch.randn_like(proj)
 
-        # proj = torch.randn(1, d_model) / math.sqrt(d_model)
-        # self.value_encoding = nn.Parameter(proj.repeat(num_params, 1))
-
-        if value_code == "sin":
-            self.sinusoidal_encoding = SinusoidalEncoding(d_model)
+            self._in_projection = nn.Parameter(proj)
+            self._out_projection = nn.Parameter(proj.T)
+        else:
             proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
             self._in_projection = nn.Parameter(proj)
             self._out_projection = nn.Parameter(proj.T)
-        elif value_code == "proto":
-            proto = torch.randn(num_prototypes, d_model) / math.sqrt(d_model)
-            self.in_prototypes = nn.Parameter(proto)
-            self.out_prototypes = nn.Parameter(proto)
-            mappings = torch.rand(num_params, num_prototypes)
-            self.in_proto_mappings = nn.Parameter(mappings)
-            self.out_proto_mappings = nn.Parameter(mappings)
-        elif value_code == "scale":
-            if sym_init:
-                # proj = torch.randn(1, d_model) / math.sqrt(d_model)
-                #
-                # self._in_projection = nn.Parameter(proj.repeat(num_params, 1))
-                # self._out_projection = nn.Parameter(proj.T.repeat(1, num_params))
 
-                proj = torch.randn(1, d_model) / math.sqrt(d_model)
-                proj = proj.repeat(num_params, 1)
-                proj = proj + 1e-4 * torch.randn_like(proj)
-
-                self._in_projection = nn.Parameter(proj)
-                self._out_projection = nn.Parameter(proj.T)
-            else:
-                proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
-                self._in_projection = nn.Parameter(proj)
-                self._out_projection = nn.Parameter(proj.T)
-
-        self.value_code = value_code
-
-        self.assignment_type = assignment_type
-        self.sinkhorn_iters = sinkhorn_iters
-        self.sinkhorn_reg = sinkhorn_reg
         self.var_penalty = var_penalty
 
         if initial_ffn:
@@ -318,41 +135,18 @@ class LearntProjectionII(nn.Module):
 
     @property
     def assignment(self):
-        if self.assignment_type == "linear":
-            return self._assignment
-        elif self.assignment_type == "exp":
-            return torch.exp(self._assignment)
-        elif self.assignment_type == "sinkhorn":
-            return sinkhorn_C(self._assignment, self.sinkhorn_iters, self.sinkhorn_reg)
-        elif self.assignment_type == "semi_relu":
-            return SemiReLU.apply(self._assignment)
+        return self._assignment
 
     @property
     def in_projection(self):
-        if self.value_code == "scale":
-            return self._in_projection
-        elif self.value_code == "sin":
-            return self._in_projection
-        elif self.value_code == "proto":
-            return torch.einsum("np,pd->nd", self.in_proto_mappings, self.in_prototypes)
+        return self._in_projection
 
     @property
     def out_projection(self):
-        if self.value_code == "scale":
-            return self._out_projection
-        elif self.value_code == "sin":
-            return self._out_projection
-        elif self.value_code == "proto":
-            return torch.einsum(
-                "np,pd->dn", self.out_proto_mappings, self.out_prototypes
-            )
+        return self._out_projection
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        if self.value_code == "sin":
-            values = self.sinusoidal_encoding(x)
-            values = values * self.in_projection
-        else:
-            values = torch.einsum("bn,nd->bnd", x, self.in_projection)
+        values = torch.einsum("bn,nd->bnd", x, self.in_projection)
 
         if self.initial_ffn is not None:
             values = self.initial_ffn(values)
@@ -388,7 +182,7 @@ class LearntProjectionII(nn.Module):
         return penalty
 
 
-class LearntProjectionIII(nn.Module):
+class LearntProjectionXAttn(nn.Module):
     def __init__(
         self,
         d_model: int,
@@ -412,7 +206,9 @@ class LearntProjectionIII(nn.Module):
         self._param_embeds = nn.Parameter(_param_embeds)
         self._param_outputs = nn.Parameter(_param_outputs)
 
+        # self.p2t_attn = MultiheadAttention(d_model, num_heads)
         self.p2t_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
+        # self.t2p_attn = MultiheadAttention(d_model, num_heads)
         self.t2p_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
 
         self.p2t_norm = nn.LayerNorm(d_model)
@@ -662,9 +458,9 @@ class DiTransformerBlock(nn.Module):
         conditioning_dim: int,
         num_heads: int,
         d_ff: int,
-        dropout: float = 0.0,
         norm: Literal["layer", "rms"] = "layer",
         first_norm: bool = True,
+        adaln_mode: Literal["basic", "zero", "res"] = "basic",
     ):
         super().__init__()
         if first_norm:
@@ -674,52 +470,119 @@ class DiTransformerBlock(nn.Module):
         else:
             self.norm1 = nn.Identity()
         self.norm2 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
-        self.attn = nn.MultiheadAttention(
-            d_model, num_heads, dropout=dropout, batch_first=True
-        )
+        self.attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
+        # self.attn = MultiheadAttention(d_model, num_heads)
+
         self.ff = nn.Sequential(
             nn.Linear(d_model, d_ff),
             nn.GELU(),
-            nn.Dropout(dropout),
             nn.Linear(d_ff, d_model),
         )
+
+        cond_out_dim = d_model * 6 if adaln_mode != "res" else d_model * 4
+        self.adaln_mode = adaln_mode
         self.cond = nn.Sequential(
             nn.Linear(conditioning_dim, d_model),
             nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model, d_model * 6),
+            nn.Linear(d_model, cond_out_dim),
         )
 
+        self._init_adaln(adaln_mode)
+        self._init_ffn()
+        self._init_attn()
+
+    def _init_adaln(self, mode: Literal["basic", "zero"]):
+        if mode == "zero":
+            nn.init.constant_(self.cond[-1].weight, 0.0)
+            nn.init.constant_(self.cond[-1].bias, 0.0)
+
+    def _init_ffn(self):
+        nn.init.xavier_normal_(self.ff[0].weight)
+        nn.init.zeros_(self.ff[0].bias)
+        nn.init.zeros_(self.ff[-1].weight)
+        nn.init.zeros_(self.ff[-1].bias)
+
+    def _init_attn(self):
+        nn.init.zeros_(self.attn.out_proj.weight)
+        nn.init.zeros_(self.attn.out_proj.bias)
+
     def forward(self, x: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
-        g1, b1, a1, g2, b2, a2 = self.cond(z)[:, None].chunk(6, dim=-1)
+        if self.adaln_mode == "res":
+            g1, b1, g2, b2 = self.cond(z)[:, None].chunk(4, dim=-1)
+        else:
+            g1, b1, a1, g2, b2, a2 = self.cond(z)[:, None].chunk(6, dim=-1)
 
         res = x
         x = self.norm1(x)
         x = g1 * x + b1
         x = self.attn(x, x, x)[0]
-        x = a1 * x + res
+
+        if self.adaln_mode == "res":
+            x = x + res
+        else:
+            x = a1 * x + res
 
         res = x
         x = self.norm2(x)
         x = g2 * x + b2
         x = self.ff(x)
-        x = a2 * x + res
+
+        if self.adaln_mode == "res":
+            x = x + res
+        else:
+            x = a2 * x + res
 
         return x
 
 
-class ApproxEquivTransformer(nn.Module):
-    """Implements a simple transformer that enforces approximate permutation
-    equivariance. This happens by:
-        (i) Positional encodings initialised to zero (enforces equivariance at
-            init)
-        (ii) Regularization on the positional encodings (encourages equivariance)
-        (iii) Block diagonal parameter-to-token projection matrix (enforces separation
-              between units of synthesiser)
-        (iv) Regularization on the off-diagonal elements of the projection matrix
-             (encourages separation of units of synthesiser)
-    """
+class MultiheadAttention(nn.Module):
+    def __init__(self, d_model: int, num_heads: int):
+        super().__init__()
 
+        self.q_proj = nn.Parameter(torch.empty(d_model, d_model))
+        self.k_proj = nn.Parameter(torch.empty(d_model, d_model))
+        self.v_proj = nn.Parameter(torch.empty(d_model, d_model))
+
+        self.out_proj = nn.Linear(d_model, d_model)
+
+        self.q_norm = nn.LayerNorm(d_model)
+        self.k_norm = nn.LayerNorm(d_model)
+
+        nn.init.xavier_uniform_(self.q_proj)
+        nn.init.xavier_uniform_(self.k_proj)
+        nn.init.xavier_uniform_(self.v_proj)
+
+        nn.init.xavier_uniform_(self.out_proj.weight)
+        nn.init.zeros_(self.out_proj.bias)
+
+        self.scale = 1.0 / (d_model**0.5)
+        self.num_heads = num_heads
+
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor):
+        # assume batch first
+        q = q @ self.q_proj
+        k = k @ self.k_proj
+        v = v @ self.v_proj
+
+        q = self.q_norm(q)
+        k = self.k_norm(k)
+
+        # compute attn heads
+        q = q.view(q.shape[0], q.shape[1], self.num_heads, -1).permute(0, 2, 1, 3)
+        kT = k.view(k.shape[0], k.shape[1], self.num_heads, -1).permute(0, 2, 3, 1)
+        v = v.view(v.shape[0], v.shape[1], self.num_heads, -1).permute(0, 2, 1, 3)
+
+        attn = torch.matmul(q, kT) * self.scale
+        attn = torch.softmax(attn, dim=-1)
+
+        x = torch.matmul(attn, v)
+        x = x.permute(0, 2, 1, 3).contiguous()
+        x = x.view(x.shape[0], x.shape[1], -1)
+
+        return self.out_proj(x)
+
+
+class ApproxEquivTransformer(nn.Module):
     def __init__(
         self,
         projection: nn.Module,
@@ -728,7 +591,6 @@ class ApproxEquivTransformer(nn.Module):
         conditioning_dim: int = 128,
         num_heads: int = 8,
         d_ff: int = 1024,
-        dropout: float = 0.0,
         num_tokens: int = 32,
         learn_pe: bool = False,
         learn_projection: bool = False,
@@ -737,6 +599,7 @@ class ApproxEquivTransformer(nn.Module):
         projection_penalty: float = 0.0,
         norm: Literal["layer", "rms"] = "layer",
         skip_first_norm: bool = False,
+        adaln_mode: Literal["basic", "zero"] = "basic",
     ):
         super().__init__()
 
@@ -747,9 +610,9 @@ class ApproxEquivTransformer(nn.Module):
                     conditioning_dim + 1,
                     num_heads,
                     d_ff,
-                    dropout,
                     norm,
                     first_norm=False if i == 0 and skip_first_norm else True,
+                    adaln_mode=adaln_mode,
                 )
                 for i in range(num_layers)
             ]
@@ -828,4 +691,118 @@ class ApproxEquivTransformer(nn.Module):
 
         x = self.projection.token_to_param(x)
 
+        return x
+
+
+class PatchEmbed(nn.Module):
+    """Convolutional patch encoder like in ViT, with overlap from AST.
+    Difference is we zero pad up to next whole patch.
+    """
+
+    def __init__(
+        self,
+        patch_size: int,
+        stride: int,
+        in_channels: int,
+        d_model: int,
+        spec_shape: Tuple[int] = (128, 401),
+    ):
+        super().__init__()
+        assert stride < patch_size, "Overlap must be less than patch size"
+
+        self.patch_size = patch_size
+
+        mel_padding = (stride - (spec_shape[0] - patch_size)) % stride
+        time_padding = (stride - (spec_shape[1] - patch_size)) % stride
+
+        padded_shape = (
+            spec_shape[0] + mel_padding,
+            spec_shape[1] + time_padding,
+        )
+
+        self.num_tokens = (
+            (padded_shape[0] - patch_size) // stride + 1,
+            (padded_shape[1] - patch_size) // stride + 1,
+        )
+        self.pad = nn.ZeroPad2d((0, mel_padding, 0, time_padding))
+        self.projection = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=d_model,
+            kernel_size=patch_size,
+            stride=stride,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.pad(x)
+        x = self.projection(x)
+        x = x.flatten(2).transpose(1, 2)
+        return x
+
+
+class AudioSpectrogramTransformer(nn.Module):
+    """Based on the AST from https://arxiv.org/abs/2104.01778, but adapted to pre-norm
+    transformer.
+
+    Components:
+        1. patch split with overlap
+        2. linear token projection
+        3. class (embedding) token
+        4. transformer encoder
+        5. output linear projection
+    """
+
+    def __init__(
+        self,
+        d_model: int = 768,
+        n_heads: int = 8,
+        n_layers: int = 16,
+        patch_size: int = 16,
+        patch_stride: int = 10,
+        input_channels: int = 2,
+        spec_shape: Tuple[int] = (128, 401),
+    ):
+        super().__init__()
+
+        self.patch_embed = PatchEmbed(
+            patch_size=patch_size,
+            stride=patch_stride,
+            in_channels=input_channels,
+            d_model=d_model,
+            spec_shape=spec_shape,
+        )
+
+        self.positional_encoding = PositionalEncoding(
+            d_model, self.patch_embed.num_tokens, init="norm0.02"
+        )
+        self.embed_token = nn.Parameter(torch.empty(1, 1, d_model).normal_(0.0, 1e-6))
+
+        self.blocks = nn.ModuleList(
+            [
+                nn.TransformerEncoderLayer(
+                    d_model,
+                    n_heads,
+                    d_model,
+                    0.0,
+                    "gelu",
+                    batch_first=True,
+                    norm_first=True,
+                )
+                for _ in range(n_layers)
+            ]
+        )
+        self.out_proj = nn.Linear(d_model, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # produce input sequence
+        x = self.patch_embed(x)
+        cls_tokens = self.embed_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        x = self.positional_encoding(x)
+
+        # apply transformer
+        for block in self.blocks:
+            x = block(x)
+
+        # take just the embed token
+        x = self.out_proj(x[:, 0])
         return x
