@@ -720,9 +720,11 @@ class PatchEmbed(nn.Module):
             spec_shape[1] + time_padding,
         )
 
-        self.num_tokens = (
-            (padded_shape[0] - patch_size) // stride + 1,
-            (padded_shape[1] - patch_size) // stride + 1,
+        self.num_tokens = math.prod(
+            (
+                (padded_shape[0] - patch_size) // stride + 1,
+                (padded_shape[1] - patch_size) // stride + 1,
+            )
         )
         self.pad = nn.ZeroPad2d((0, mel_padding, 0, time_padding))
         self.projection = nn.Conv2d(
