@@ -25,9 +25,9 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         self.read_audio = read_audio
         self.rescale_params = rescale_params
 
+        self.fake = fake
         if fake:
             self.dataset_file = None
-            self.fake = True
             return
 
         self.dataset_file = h5py.File(dataset_file, "r")
