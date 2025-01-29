@@ -164,30 +164,27 @@ class SurgeDataModule(LightningDataModule):
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_dataset,
-            batch_size=1,
+            batch_size=None,
             shuffle=True,
             num_workers=self.num_workers,
-            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_dataset,
-            batch_size=1,
+            batch_size=None,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_dataset,
-            batch_size=1,
+            batch_size=None,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=lambda x: x,
             pin_memory=True,
         )
 
