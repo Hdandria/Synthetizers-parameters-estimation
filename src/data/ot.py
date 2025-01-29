@@ -33,13 +33,14 @@ def _collate_tuple(batch):
 
 
 def _collate_dict(batch):
-    params = batch["params"]
-    mel_spec = batch["mel_spec"]
-    audio = batch["audio"]
+    # batch is a list of dicts and we want a dict of lists
+    params = [d["params"] for d in batch]
+    mel_spec = [d["mel_spec"] for d in batch]
+    audio = [d["audio"] for d in batch]
 
     params = torch.cat(params, dim=0)
     mel_spec = torch.cat(mel_spec, dim=0)
-    if audio is not None:
+    if audio[0] is not None:
         audio = torch.cat(audio, dim=0)
 
     noise = torch.randn_like(params)
@@ -53,13 +54,14 @@ def _collate_dict(batch):
 
 
 def regular_collate_fn(batch):
-    if isinstance(batch, tuple) or isinstance(batch, list):
+    item = batch[0]
+    if isinstance(item, tuple) or isinstance(item, list):
         fn = _collate_tuple
-    elif isinstance(batch, dict):
+    elif isinstance(item, dict):
         fn = _collate_dict
     else:
         raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(batch)}"
+            f"Expected tuple or dict for batch type, got {type(item)}"
         )
 
     return fn(batch)
@@ -78,13 +80,13 @@ def _ot_collate_tuple(batch):
 
 
 def _ot_collate_dict(batch):
-    params = batch["params"]
-    mel_spec = batch["mel_spec"]
-    audio = batch["audio"]
+    params = [d["params"] for d in batch]
+    mel_spec = [d["mel_spec"] for d in batch]
+    audio = [d["audio"] for d in batch]
 
     params = torch.cat(params, dim=0)
     mel_spec = torch.cat(mel_spec, dim=0)
-    if audio is not None:
+    if audio[0] is not None:
         audio = torch.cat(audio, dim=0)
 
     noise = torch.randn_like(params)
@@ -100,13 +102,14 @@ def _ot_collate_dict(batch):
 
 
 def ot_collate_fn(batch):
-    if isinstance(batch, tuple) or isinstance(batch, list):
+    item = batch[0]
+    if isinstance(item, tuple) or isinstance(item, list):
         fn = _ot_collate_tuple
-    elif isinstance(batch, dict):
+    elif isinstance(item, dict):
         fn = _ot_collate_dict
     else:
         raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(batch)}"
+            f"Expected tuple or dict for batch type, got {type(item)}"
         )
 
     return fn(batch)
