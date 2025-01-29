@@ -13,6 +13,7 @@ from src.models.components.transformer import (
     PositionalEncoding,
 )
 from src.models.ksin_flow_matching_module import KSinFlowMatchingModule
+from src.models.surge_flow_matching_module import SurgeFlowMatchingModule
 
 
 class PlotLossPerTimestep(Callback):
@@ -258,7 +259,10 @@ class PlotLearntProjection(Callback):
         plt.close(fig_value)
 
     def _do_plotting(self, trainer, pl_module):
-        if not isinstance(pl_module, KSinFlowMatchingModule):
+        if not (
+            isinstance(pl_module, KSinFlowMatchingModule)
+            or isinstance(pl_module, SurgeFlowMatchingModule)
+        ):
             return
 
         if not isinstance(pl_module.vector_field, ApproxEquivTransformer):
