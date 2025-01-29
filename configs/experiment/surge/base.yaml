@@ -1,0 +1,30 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: surge
+  - override /callbacks: default
+  - override /trainer: gpu
+  - _self_
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+experiment_name: surge
+
+tags:
+  - surge
+
+seed: 3123123
+
+logger:
+  wandb:
+    tags: ${tags}
+    name: surge_${run_name}
+
+callbacks:
+  model_checkpoint:
+    monitor: null
+  early_stopping: null

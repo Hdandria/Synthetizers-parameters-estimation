@@ -28,7 +28,7 @@ vector_field:
   d_model: 1152
   conditioning_dim: ${model.encoder.d_model}
   num_heads: 16
-  d_ff: 1152
+  d_ff: 1024
   dropout: 0.0
   num_tokens: ${model.vector_field.projection.num_tokens}
   learn_pe: false

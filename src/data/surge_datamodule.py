@@ -110,6 +110,7 @@ class SurgeDataModule(LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             collate_fn=ot_collate_fn if self.ot else regular_collate_fn,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
@@ -119,6 +120,7 @@ class SurgeDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             collate_fn=regular_collate_fn,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
@@ -128,6 +130,7 @@ class SurgeDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             collate_fn=regular_collate_fn,
+            pin_memory=True,
         )
 
     def teardown(self, stage: Optional[str] = None):
