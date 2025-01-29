@@ -7,6 +7,11 @@ from threadpoolctl import threadpool_limits
 
 
 def _hungarian_match(noise: torch.Tensor, params: torch.Tensor, *args):
+    if isinstance(noise, np.ndarray):
+        noise = torch.from_numpy(noise)
+    if isinstance(params, np.ndarray):
+        params = torch.from_numpy(params)
+
     cost = torch.cdist(noise, params)
     cost = cost.numpy()
 

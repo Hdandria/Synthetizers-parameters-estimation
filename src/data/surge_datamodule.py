@@ -7,7 +7,7 @@ import torch
 from lightning import LightningDataModule
 from tqdm import trange
 
-from src.data.ot import ot_collate_fn, regular_collate_fn
+from src.data.ot import _hungarian_match, ot_collate_fn, regular_collate_fn
 
 
 class SurgeXTDataset(torch.utils.data.Dataset):
@@ -105,7 +105,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         if self.rescale_params:
             param_array = param_array * 2 - 1
 
-        noise = torch.randn_like(param_array)
+        noise = np.random.randn(param_array.shape)
         if self.ot:
             noise, param_array, mel_spec, audio = _hungarian_match(
                 mel_spec, param_array, noise, audio
