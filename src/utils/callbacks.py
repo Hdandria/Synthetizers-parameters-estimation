@@ -1,3 +1,5 @@
+from typing import Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -153,6 +155,11 @@ class PlotPositionalEncodingSimilarity(Callback):
 
 
 class PlotLearntProjection(Callback):
+    def __init__(self, after_val: bool = True, every_n_steps: Optional[int] = None):
+        super().__init__()
+        self.after_val = after_val
+        self.every_n_steps = every_n_steps
+
     def _get_assignment(self, pl_module):
         return pl_module.vector_field.projection.assignment
 
@@ -250,7 +257,7 @@ class PlotLearntProjection(Callback):
         plt.close(fig_ass)
         plt.close(fig_value)
 
-    def on_validation_epoch_end(self, trainer, pl_module) -> None:
+    def _do_plotting(self, trainer, pl_module):
         if not isinstance(pl_module, KSinFlowMatchingModule):
             return
 
@@ -263,3 +270,18 @@ class PlotLearntProjection(Callback):
         fig_ass = self._plot_assignments(pl_module)
         fig_value = self._plot_projections(pl_module)
         self._log_plots(fig_ass, fig_value, trainer)
+
+    def on_validation_epoch_end(self, trainer, pl_module) -> None:
+        if not self.after_val:
+            return
+
+        self._do_plotting(trainer, pl_module)
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        if self.every_n_steps is None:
+            return
+
+        if trainer.global_step % self.every_n_steps != 0:
+            return
+
+        self._do_plotting(trainer, pl_module)
