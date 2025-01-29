@@ -81,6 +81,7 @@ class SurgeFlowMatchingModule(LightningModule):
     def on_train_start(self):
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
+        pass
 
     def _sample_time(self, n: int, device: torch.device) -> torch.Tensor:
         return torch.rand(n, 1, device=device)
