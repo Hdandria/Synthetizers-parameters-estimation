@@ -24,11 +24,11 @@ vector_field:
     var_penalty: false
     initial_ffn: true
     final_ffn: false
-  num_layers: 16
-  d_model: 1152
+  num_layers: 12
+  d_model: 768
   conditioning_dim: ${model.encoder.d_model}
-  num_heads: 16
-  d_ff: 1024
+  num_heads: 12
+  d_ff: 768
   num_tokens: ${model.vector_field.projection.num_tokens}
   learn_pe: false
   learn_projection: true
@@ -51,4 +51,4 @@ test_sample_steps: 200
 test_cfg_strength: 2.0
 
 # compile model for faster training with pytorch 2.0
-compile: false
+compile: true
