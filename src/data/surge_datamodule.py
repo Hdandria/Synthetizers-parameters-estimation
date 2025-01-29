@@ -94,19 +94,19 @@ class SurgeXTDataset(torch.utils.data.Dataset):
 
         if self.read_audio:
             audio = self.dataset_file["audio"][start_idx:end_idx, :, :]
-            audio = torch.from_numpy(audio, dtype=torch.float32)
+            audio = torch.from_numpy(audio).to(dtype=torch.float32)
         else:
             audio = None
 
         mel_spec = self.dataset_file["mel_spec"][start_idx:end_idx, :, :, :]
         if self.mean is not None and self.std is not None:
             mel_spec = (mel_spec - self.mean) / self.std
-        mel_spec = torch.from_numpy(mel_spec, dtype=torch.float32)
+        mel_spec = torch.from_numpy(mel_spec).to(dtype=torch.float32)
 
         param_array = self.dataset_file["param_array"][start_idx:end_idx, :]
         if self.rescale_params:
             param_array = param_array * 2 - 1
-        param_array = torch.from_numpy(param_array, dtype=torch.float32)
+        param_array = torch.from_numpy(param_array).to(dtype=torch.float32)
         noise = torch.randn_like(param_array)
         if self.ot:
             noise, param_array, mel_spec, audio = _hungarian_match(
