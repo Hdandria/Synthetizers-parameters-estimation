@@ -167,7 +167,7 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
         indices = np.reshape(indices, (-1, self.batch_size))
 
         for row in indices:
-            row = row.sort()
+            row.sort()
             yield row.tolist()
 
 
