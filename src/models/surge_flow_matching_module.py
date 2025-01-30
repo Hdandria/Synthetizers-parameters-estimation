@@ -242,7 +242,7 @@ class SurgeFlowMatchingModule(LightningModule):
 
         if self.hparams.warmup_steps > 0:
             warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-                optimizer, 0.0, 1.0, self.hparams.warmup_steps
+                optimizer, 1e-10, 1.0, self.hparams.warmup_steps
             )
         else:
             warmup_scheduler = None
