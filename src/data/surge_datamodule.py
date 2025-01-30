@@ -155,7 +155,8 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
         indices = [idxs + i * self.chunk_size for i, idxs in enumerate(indices)]
         indices = np.concatenate(indices, axis=0)
         indices = np.reshape(indices, (-1, self.batch_size))
-        return iter(indices)
+        for row in indices:
+            yield row.tolist()
 
 
 class SurgeDataModule(LightningDataModule):
