@@ -147,7 +147,7 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
         self.batch_size = batch_size
         self.num_batches = num_batches
         self.chunk_size = chunk_size
-        self.num_shards
+        self.num_shards = num_shards
 
     def __len__(self):
         return self.num_batches
