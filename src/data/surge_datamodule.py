@@ -205,7 +205,6 @@ class SurgeDataModule(LightningDataModule):
         return torch.utils.data.DataLoader(
             self.train_dataset,
             batch_size=None,
-            shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
             sampler=WithinChunkShuffledSampler(
