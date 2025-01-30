@@ -85,25 +85,31 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             audio=audio,
         )
 
-    def __getitem__(self, idx):
+    def _index_dataset(self, ds: h5py.Dataset, idx: Union[int, Sequence[int]]):
+        if isinstance(idx, int):
+            start_idx = idx * self.batch_size
+            end_idx = start_idx + self.batch_size
+
+            return ds[start_idx:end_idx]
+
+        return ds[idx]
+
+    def __getitem__(self, idx: Union[int, Sequence[int]]):
         if self.fake:
             return self._get_fake_item()
 
-        start_idx = idx * self.batch_size
-        end_idx = start_idx + self.batch_size
-
         if self.read_audio:
-            audio = self.dataset_file["audio"][start_idx:end_idx, :, :]
+            audio = self._index_dataset(self.dataset_file["audio"], idx)
             audio = torch.from_numpy(audio).to(dtype=torch.float32)
         else:
             audio = None
 
-        mel_spec = self.dataset_file["mel_spec"][start_idx:end_idx, :, :, :]
+        mel_spec = self._index_dataset(self.dataset_file["mel_spec"], idx)
         if self.mean is not None and self.std is not None:
             mel_spec = (mel_spec - self.mean) / self.std
         mel_spec = torch.from_numpy(mel_spec).to(dtype=torch.float32)
 
-        param_array = self.dataset_file["param_array"][start_idx:end_idx, :]
+        param_array = self._index_dataset(self.dataset_file["params"], idx)
         if self.rescale_params:
             param_array = param_array * 2 - 1
         param_array = torch.from_numpy(param_array).to(dtype=torch.float32)
@@ -119,6 +125,37 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             noise=noise,
             audio=audio,
         )
+
+
+class WithinChunkShuffledSampler(torch.utils.data.Sampler):
+    """When we have a hdf5 dataset on disk with layout:
+        shard1.h5
+        shard2.h5
+        ...
+        shardN.h5
+    and each shard is 10,000 samples long, we want to sample items within each block of
+    10,000 rather than randomly sampling across the entire dataset, to reduce the
+    number of concurrent file handles that h5py has to deal with.
+    This is not always exactly possible, but we can minimize the number of inter-shard
+    reads to only the boundaries.
+    """
+
+    def __init__(self, batch_size: int, num_batches: int, chunk_size: int):
+        self.batch_size = batch_size
+        self.num_batches = num_batches
+        self.chunk_size = chunk_size
+
+    def __len__(self):
+        return self.num_batches
+
+    def __iter__(self):
+        indices = [
+            np.random.permutation(self.chunk_size) for _ in range(self.num_batches)
+        ]
+        indices = [idxs + i * self.chunk_size for i, idxs in enumerate(indices)]
+        indices = np.concatenate(indices, axis=0)
+        indices = np.reshape(indices, (-1, self.batch_size))
+        return iter(indices)
 
 
 class SurgeDataModule(LightningDataModule):
@@ -170,6 +207,9 @@ class SurgeDataModule(LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
+            sampler=WithinChunkShuffledSampler(
+                self.batch_size, len(self.train_dataset), 10_000
+            ),
         )
 
     def val_dataloader(self):
