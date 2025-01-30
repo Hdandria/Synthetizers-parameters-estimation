@@ -219,9 +219,10 @@ class SurgeDataModule(LightningDataModule):
             batch_size=None,
             num_workers=self.num_workers,
             pin_memory=True,
-            sampler=WithinChunkShuffledSampler(
-                self.batch_size, len(self.train_dataset), 10_000
-            ),
+            # sampler=WithinChunkShuffledSampler(
+            #     self.batch_size, len(self.train_dataset), 10_000
+            # ),
+            shuffle=True,
         )
 
     def val_dataloader(self):
