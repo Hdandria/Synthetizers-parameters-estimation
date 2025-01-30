@@ -4,18 +4,11 @@ defaults:
 
 _target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
 
+warmup_steps: 5000
 scheduler:
-  # 5k warmup steps followed by cosine decay to 600k steps
-  _target_: torch.optim.lr_scheduler.SequentialLR
-  schedulers:
-    - _target_: torch.optim.lr_scheduler.LinearLR
-      _partial_: true
-      start_factor: 0.0
-      end_factor: 1.0
-      total_iters: 5000
-    - _target_: torch.optim.lr_scheduler.CosineAnnealingLR
-      _partial_: true
-      T_max: 600000
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  T_max: 600000
 
 optimizer:
   _target_: torch.optim.Adam

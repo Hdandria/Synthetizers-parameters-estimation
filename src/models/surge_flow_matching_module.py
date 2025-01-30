@@ -43,6 +43,7 @@ class SurgeFlowMatchingModule(LightningModule):
         vector_field: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
+        warmup_steps: int = 5000,
         cfg_dropout_rate: float = 0.1,
         rectified_sigma_min: float = 0.0,
         validation_sample_steps: int = 50,
@@ -239,8 +240,28 @@ class SurgeFlowMatchingModule(LightningModule):
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
 
+        if self.hparams.warmup_steps > 0:
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 0.0, 1.0, self.hparams.warmup_steps
+            )
+        else:
+            warmup_scheduler = None
+
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
+        else:
+            scheduler = None
+
+        if warmup_scheduler is not None and scheduler is None:
+            scheduler = warmup_scheduler
+        elif warmup_scheduler is not None and scheduler is not None:
+            scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer,
+                schedulers=[warmup_scheduler, scheduler],
+                milestones=[self.hparams.warmup_steps],
+            )
+
+        if scheduler is not None:
             return {
                 "optimizer": optimizer,
                 "lr_scheduler": {
