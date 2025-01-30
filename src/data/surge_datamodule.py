@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -140,21 +141,31 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
     reads to only the boundaries.
     """
 
-    def __init__(self, batch_size: int, num_batches: int, chunk_size: int):
+    def __init__(
+        self, batch_size: int, num_batches: int, chunk_size: int, num_shards: int = 200
+    ):
         self.batch_size = batch_size
         self.num_batches = num_batches
         self.chunk_size = chunk_size
+        self.num_shards
 
     def __len__(self):
         return self.num_batches
 
     def __iter__(self):
         indices = [
-            np.random.permutation(self.chunk_size) for _ in range(self.num_batches)
+            np.random.permutation(self.chunk_size) for _ in range(self.num_shards)
         ]
         indices = [idxs + i * self.chunk_size for i, idxs in enumerate(indices)]
+        random.shuffle(indices)  # so we don't always chop off the same chunk
+
         indices = np.concatenate(indices, axis=0)
+        total_indices = indices.shape[-1]
+        max_indices = total_indices - (total_indices % self.batch_size)
+        indices = indices[:max_indices]
+
         indices = np.reshape(indices, (-1, self.batch_size))
+
         for row in indices:
             yield row.tolist()
 
