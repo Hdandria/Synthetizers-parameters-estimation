@@ -88,9 +88,13 @@ def main(
         # 5. iterate over its internal rows and render the audio
         for j, row in tqdm(enumerate(params)):
             file_idx = current_offset + j
+
+            row_params = (row + 1) / 2
+            row_params, note = SURGE_XT_PARAM_SPEC.from_numpy(row_params)
             pred_audio = render_params(
                 plugin,
-                row,
+                row_params,
+                note,
                 velocity,
                 note_duration_seconds,
                 signal_duration_seconds,
