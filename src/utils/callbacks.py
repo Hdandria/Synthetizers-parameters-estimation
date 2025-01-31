@@ -300,6 +300,7 @@ class PredictionWriter(BasePredictionWriter):
     def __init__(self, output_dir, write_interval):
         super().__init__(write_interval)
         self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def write_on_batch_end(
         self,
