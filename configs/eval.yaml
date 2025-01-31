@@ -9,7 +9,7 @@ defaults:
   - paths: default
   - extras: default
   - hydra: default
-
+  - callbacks: eval_surge
   - experiment: null
 
 task_name: "eval"
