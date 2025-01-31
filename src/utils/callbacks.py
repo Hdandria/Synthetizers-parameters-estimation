@@ -312,9 +312,7 @@ class PredictionWriter(BasePredictionWriter):
         batch_idx,
         dataloader_idx,
     ):
-        torch.save(
-            prediction, os.path.join(self.output_dir, dataloader_idx, f"{batch_idx}.pt")
-        )
+        torch.save(prediction, os.path.join(self.output_dir, f"pred-{batch_idx}.pt"))
 
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
         torch.save(predictions, os.path.join(self.output_dir, "predictions.pt"))
