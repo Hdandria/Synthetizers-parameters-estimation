@@ -1,108 +1,29 @@
-import _thread
 import hashlib
 import random
-import threading
-import time
-from concurrent.futures import ProcessPoolExecutor, wait
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable
 
 import click
 import h5py
 import librosa
-import mido
 import numpy as np
 import rootutils
 from loguru import logger
 from pedalboard import VST3Plugin
-from pedalboard.io import AudioFile
 from pyloudnorm import Meter
 from tqdm import trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.data.vst.param_spec import ParamSpec
-from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC
+from src.data.vst import load_plugin, load_preset, render_params  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
 
 
-def call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
-    """
-    Calls the function fn on the main thread, while another thread
-    sends a KeyboardInterrupt (SIGINT) to the main thread.
-    """
-
-    def send_interrupt():
-        # Brief sleep so that fn starts before we send the interrupt
-        time.sleep(sleep_time)
-        _thread.interrupt_main()
-
-    # Create and start the thread that sends the interrupt
-    t = threading.Thread(target=send_interrupt)
-    t.start()
-
-    try:
-        fn()
-    except KeyboardInterrupt:
-        print("Interrupted main thread.")
-    finally:
-        t.join()
-
-
-def prepare_plugin(plugin: VST3Plugin) -> None:
-    call_with_interrupt(plugin.show_editor)
-
-
-def load_plugin(plugin_path: str) -> VST3Plugin:
-    logger.info(f"Loading plugin {plugin_path}")
-    p = VST3Plugin(plugin_path)
-    logger.info(f"Plugin {plugin_path} loaded")
-    logger.info("Preparing plugin for preset load...")
-    prepare_plugin(p)
-    logger.info("Plugin ready")
-    return p
-
-
-def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
-    logger.info(f"Loading preset {preset_path}")
-    plugin.load_preset(preset_path)
-    logger.info(f"Preset {preset_path} loaded")
-
-
-def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
-    for k, v in params.items():
-        plugin.parameters[k].raw_value = v
-
-
-def sample_midi_note(
-    min_pitch: int = 32,
-    max_pitch: int = 96,
-    velocity: int = 100,
-    duration_seconds: float = 1.0,
-):
-    """
-    Creates a MIDI sequence with a single note on followed by a note off after one second.
-
-    Parameters:
-        min_pitch (int): The minimum pitch value (inclusive).
-        max_pitch (int): The maximum pitch value (inclusive).
-        velocity (int): The velocity of the note (default is 100).
-
-    Returns:
-        list of tuples: Each tuple contains MIDI bytes and timestamp in seconds.
-    """
+def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
     # Validate pitch range
     if min_pitch > max_pitch:
         raise ValueError("min_pitch must be less than or equal to max_pitch.")
 
     pitch = random.randint(min_pitch, max_pitch)
-
-    events = []
-    note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
-    events.append((note_on.bytes(), 0.0))
-    note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
-    events.append((note_off.bytes(), duration_seconds))
-
-    return tuple(events), pitch
+    return pitch
 
 
 def _hash_params(params: dict[str, float]) -> str:
@@ -112,12 +33,6 @@ def _hash_params(params: dict[str, float]) -> str:
     param_str = "".join(param_str)
     md5 = hashlib.md5()
     md5.update(param_str.encode("utf-8"))
-    return md5.hexdigest()
-
-
-def _hash_float(v: float) -> str:
-    md5 = hashlib.md5()
-    md5.update(str(v).encode("utf-8"))
     return md5.hexdigest()
 
 
@@ -178,26 +93,24 @@ def generate_sample(
     min_loudness: float = -55.0,
 ) -> VSTDataSample:
     while True:
-        logger.debug("flushing plugin")
-        plugin.process([], 1.0, sample_rate, channels, 8192, True)  # flush
-
         logger.debug("sampling params")
         params = SURGE_XT_PARAM_SPEC.sample()
 
-        logger.debug("setting params")
-        set_params(plugin, params)
-
         logger.debug("sampling note")
-        events, note = sample_midi_note(
+        note = sample_midi_note(
             min_pitch=min_pitch,
             max_pitch=max_pitch,
-            velocity=velocity,
-            duration_seconds=note_duration_seconds,
         )
 
-        logger.debug("rendering audio")
-        output = plugin.process(
-            events, signal_duration_seconds, sample_rate, channels, 8192, True
+        output = render_params(
+            plugin,
+            params,
+            note,
+            velocity,
+            note_duration_seconds,
+            signal_duration_seconds,
+            sample_rate,
+            channels,
         )
 
         meter = Meter(sample_rate)
@@ -222,11 +135,6 @@ def generate_sample(
         sample_rate=sample_rate,
         channels=channels,
     )
-
-
-def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -> None:
-    with AudioFile(str(path), "w", sample_rate, channels) as f:
-        f.write(audio.T)
 
 
 def save_sample(

@@ -208,29 +208,30 @@ class SurgeFlowMatchingModule(LightningModule):
         pass
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        preds, targets, inputs = self._sample(
-            batch, self.hparams.test_sample_steps, self.hparams.test_cfg_strength
+        pred_params = self._sample(
+            batch["mel_spec"],
+            torch.randn_like(batch["params"]),
+            self.hparams.test_sample_steps,
+            self.hparams.test_cfg_strength,
         )
 
-        *_, synth_fn = batch
-        self.test_lsd(preds, inputs, synth_fn)
-        self.test_chamfer(preds, targets)
-        self.test_lad(preds, targets)
-        self.log("test/lsd", self.test_lsd, on_step=False, on_epoch=True, prog_bar=True)
+        param_mse = (pred_params - batch["params"]).square().mean()
         self.log(
-            "test/chamfer",
-            self.test_chamfer,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
+            "test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
         )
-        self.log("test/lad", self.test_lad, on_step=False, on_epoch=True, prog_bar=True)
+
+        return param_mse
 
     def on_test_epoch_end(self) -> None:
-        # TODO: implement metrics
-        # self.log("test/lsd", self.test_lsd, on_step=False, on_epoch=True, prog_bar=True)
-        # etc...
         pass
+
+    def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        return self._sample(
+            batch["mel_spec"],
+            torch.randn_like(batch["params"]),
+            self.hparams.test_sample_steps,
+            self.hparams.test_cfg_strength,
+        )
 
     def setup(self, stage: str) -> None:
         if self.hparams.compile and stage == "fit":

@@ -1,0 +1,100 @@
+import _thread
+import threading
+import time
+from typing import Callable
+
+import numpy as np
+from loguru import logger
+
+import mido
+from pedalboard import VST3Plugin
+from pedalboard.io import AudioFile
+
+
+def _call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
+    """
+    Calls the function fn on the main thread, while another thread
+    sends a KeyboardInterrupt (SIGINT) to the main thread.
+    """
+
+    def send_interrupt():
+        # Brief sleep so that fn starts before we send the interrupt
+        time.sleep(sleep_time)
+        _thread.interrupt_main()
+
+    # Create and start the thread that sends the interrupt
+    t = threading.Thread(target=send_interrupt)
+    t.start()
+
+    try:
+        fn()
+    except KeyboardInterrupt:
+        print("Interrupted main thread.")
+    finally:
+        t.join()
+
+
+def _prepare_plugin(plugin: VST3Plugin) -> None:
+    _call_with_interrupt(plugin.show_editor)
+
+
+def load_plugin(plugin_path: str) -> VST3Plugin:
+    logger.info(f"Loading plugin {plugin_path}")
+    p = VST3Plugin(plugin_path)
+    logger.info(f"Plugin {plugin_path} loaded")
+    logger.info("Preparing plugin for preset load...")
+    _prepare_plugin(p)
+    logger.info("Plugin ready")
+    return p
+
+
+def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
+    logger.info(f"Loading preset {preset_path}")
+    plugin.load_preset(preset_path)
+    logger.info(f"Preset {preset_path} loaded")
+
+
+def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
+    for k, v in params.items():
+        plugin.parameters[k].raw_value = v
+
+
+def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -> None:
+    with AudioFile(str(path), "w", sample_rate, channels) as f:
+        f.write(audio.T)
+
+
+def render_params(
+    plugin: VST3Plugin,
+    params: dict[str, float],
+    midi_note: int,
+    velocity: int,
+    note_duration_seconds: float,
+    signal_duration_seconds: float,
+    sample_rate: float,
+    channels: int,
+) -> np.ndarray:
+    logger.debug("flushing plugin")
+    plugin.process([], 1.0, sample_rate, channels, 8192, True)  # flush
+
+    logger.debug("setting params")
+    set_params(plugin, params)
+
+    midi_events = midi_pitch_to_event(midi_note, velocity, note_duration_seconds)
+
+    logger.debug("rendering audio")
+    output = plugin.process(
+        midi_events, signal_duration_seconds, sample_rate, channels, 8192, True
+    )
+
+    return output
+
+
+def midi_pitch_to_event(pitch: int, velocity: int, duration_seconds: float):
+    events = []
+    note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
+    events.append((note_on.bytes(), 0.0))
+    note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
+    events.append((note_off.bytes(), duration_seconds))
+
+    return tuple(events)

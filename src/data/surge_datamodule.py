@@ -180,6 +180,7 @@ class SurgeDataModule(LightningDataModule):
         ot: bool = True,
         num_workers: int = 0,
         fake: bool = False,
+        predict_file: Optional[str] = None,
     ):
         super().__init__()
 
@@ -189,6 +190,7 @@ class SurgeDataModule(LightningDataModule):
         self.ot = ot
         self.num_workers = num_workers
         self.fake = fake
+        self.predict_file = predict_file
 
     def setup(self, stage: Optional[str] = None):
         self.train_dataset = SurgeXTDataset(
@@ -201,17 +203,27 @@ class SurgeDataModule(LightningDataModule):
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
             batch_size=self.batch_size,
-            ot=self.ot,
+            ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
         )
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
             batch_size=self.batch_size,
-            ot=self.ot,
+            ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
         )
+        if self.predict_file is not None:
+            self.predict_dataset = SurgeXTDataset(
+                self.predict_file,
+                batch_size=self.batch_size,
+                ot=False,
+                use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+                fake=self.fake,
+            )
+        else:
+            self.predict_dataset = None
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -237,6 +249,15 @@ class SurgeDataModule(LightningDataModule):
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_dataset,
+            batch_size=None,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=True,
+        )
+
+    def predict_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.predict_dataset,
             batch_size=None,
             shuffle=False,
             num_workers=self.num_workers,

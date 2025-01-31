@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -5,7 +6,7 @@ import numpy as np
 import torch
 import wandb
 from einops import rearrange
-from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.callbacks import BasePredictionWriter, Callback
 
 from src.models.components.transformer import (
     ApproxEquivTransformer,
@@ -293,3 +294,26 @@ class PlotLearntProjection(Callback):
 
         with torch.no_grad():
             self._do_plotting(trainer, pl_module)
+
+
+class PredictionWriter(BasePredictionWriter):
+    def __init__(self, output_dir, write_interval):
+        super().__init__(write_interval)
+        self.output_dir = output_dir
+
+    def write_on_batch_end(
+        self,
+        trainer,
+        pl_module,
+        prediction,
+        batch_indices,
+        batch,
+        batch_idx,
+        dataloader_idx,
+    ):
+        torch.save(
+            prediction, os.path.join(self.output_dir, dataloader_idx, f"{batch_idx}.pt")
+        )
+
+    def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
+        torch.save(predictions, os.path.join(self.output_dir, "predictions.pt"))
