@@ -2,10 +2,12 @@ from typing import Optional
 
 import click
 import h5py
+import rootutils
 import torch
 from pedalboard.io import AudioFile
 from tqdm import tqdm
 
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC
 
