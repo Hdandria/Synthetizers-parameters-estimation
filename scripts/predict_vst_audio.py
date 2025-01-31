@@ -4,6 +4,7 @@ from typing import Optional
 
 import click
 import h5py
+import numpy as np
 import rootutils
 import torch
 from pedalboard.io import AudioFile
@@ -107,7 +108,7 @@ def main(
             # 6. save {file_idx}_pred.wav and {file_idx}_target.wav, with target
             # coming from the hdf5 file
             if batch_target is not None:
-                row_target = target_audio[j]
+                row_target = target_audio[j].astype(np.float32)
                 with AudioFile(
                     f"{file_idx}_target.wav", "w", sample_rate, channels
                 ) as f:
