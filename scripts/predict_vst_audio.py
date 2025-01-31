@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Optional
 
 import click
@@ -61,6 +62,7 @@ def main(
 
     # 2. list the .pt files with accompanying indices (each file has name
     # pred-{index}.pt, and we want to sort by index)
+    pred_dir = Path(pred_dir)
     pt_files = [f for f in pred_dir.glob("*.pt") if f.is_file()]
     pt_files = sorted(pt_files, key=lambda f: int(f.stem.split("-")[1]))
 
