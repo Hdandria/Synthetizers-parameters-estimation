@@ -243,6 +243,7 @@ def main(
     note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
+    param_spec: str = "surge_xt",
 ):
     if param_spec in ("surge", "surge_xt"):
         param_spec = SURGE_XT_PARAM_SPEC
