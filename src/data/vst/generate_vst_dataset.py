@@ -212,6 +212,7 @@ def make_dataset(
             sample_rate=sample_rate,
             channels=channels,
             min_loudness=min_loudness,
+            param_spec=param_spec,
         )
         save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)
 
