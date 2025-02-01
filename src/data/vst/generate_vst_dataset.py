@@ -12,10 +12,9 @@ from pedalboard import VST3Plugin
 from pyloudnorm import Meter
 from tqdm import trange
 
-from src.data.vst.param_spec import ParamSpec
-
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params  # noqa
+from src.data.vst.param_spec import ParamSpec  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
 
