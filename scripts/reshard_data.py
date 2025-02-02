@@ -2,9 +2,9 @@ import h5py
 import numpy as np
 
 splits = dict(
-    train=(0, 228),
-    val=(229, 238),
-    test=(239, 248),
+    train=(1, 200),
+    val=(201, 210),
+    test=(211, 220),
 )
 
 for split, (lo, hi) in splits.items():
@@ -15,7 +15,7 @@ for split, (lo, hi) in splits.items():
     vl_mel = h5py.VirtualLayout(shape=(split_len, 2, 128, 401), dtype=np.float32)
     vl_param = h5py.VirtualLayout(shape=(split_len, 189), dtype=np.float32)
 
-    for i in range(lo, hi):
+    for i in range(lo, hi + 1):
         source_name = f"/data/home/acw585/data_scratch/surge/shard-{i}.h5"
         vs_audio = h5py.VirtualSource(
             source_name, "audio", dtype=np.float32, shape=(10_000, 2, 44100 * 4)
