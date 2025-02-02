@@ -8,6 +8,7 @@ defaults:
   # - plot_pos_enc
   # - plot_proj
   - plot_projii
+  - log_per_param_mse
   - _self_
 
 model_checkpoint:

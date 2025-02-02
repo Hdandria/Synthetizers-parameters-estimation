@@ -8,6 +8,7 @@ import wandb
 from einops import rearrange
 from lightning.pytorch.callbacks import BasePredictionWriter, Callback
 
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_XT_PARAM_SPEC
 from src.models.components.transformer import (
     ApproxEquivTransformer,
     LearntProjection,
@@ -157,16 +158,36 @@ class PlotPositionalEncodingSimilarity(Callback):
 
 
 class PlotLearntProjection(Callback):
-    def __init__(self, after_val: bool = True, every_n_steps: Optional[int] = None):
+    def __init__(
+        self,
+        after_val: bool = True,
+        every_n_steps: Optional[int] = None,
+        sort_assignments: bool = True,
+    ):
         super().__init__()
         self.after_val = after_val
         self.every_n_steps = every_n_steps
+        self.sort_assignments = sort_assignments
 
     def _get_assignment(self, pl_module):
         return pl_module.vector_field.projection.assignment
 
+    def _sort_assignments(self, assignment):
+        assignment = assignment.abs()
+        k = torch.arange(assignment.shape[-1], device=assignment.device)[None]
+        positional_average = torch.sum(assignment * k, dim=-1) / torch.sum(
+            assignment, dim=-1
+        )
+        sorted_idxs = torch.argsort(positional_average)
+        assignment = assignment[sorted_idxs]
+        return assignment
+
     def _plot_assignments(self, pl_module):
         assignment = self._get_assignment(pl_module)
+
+        if self.sort_assignments:
+            assignment = self._sort_assignments(assignment)
+
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
 
         maxval = assignment.abs().max().item()
@@ -316,3 +337,44 @@ class PredictionWriter(BasePredictionWriter):
 
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
         torch.save(predictions, os.path.join(self.output_dir, "predictions.pt"))
+
+
+class LogPerParamMSE(Callback):
+    def __init__(self, param_spec: str = "surge_mini"):
+        super().__init__()
+        self.param_spec = (
+            SURGE_MINI_PARAM_SPEC if param_spec == "surge_mini" else SURGE_XT_PARAM_SPEC
+        )
+
+    def on_validation_epoch_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        self.per_param_mse = 0.0
+        self.count = 0
+
+    def on_validation_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+        dataloader_idx,
+    ) -> None:
+        per_param_mse = outputs["per_param_mse"]
+        self.per_param_mse += per_param_mse.detach().cpu().numpy()
+        self.count += 1
+
+    def on_validation_epoch_end(
+        self,
+        trainer,
+        pl_module,
+    ) -> None:
+        per_param_mse = self.per_param_mse / self.count
+        names = self.param_spec.names
+        pl_module.log_dict(
+            {
+                f"val/per_param_mse/{name}": mse
+                for name, mse in zip(names, per_param_mse)
+            },
+        )

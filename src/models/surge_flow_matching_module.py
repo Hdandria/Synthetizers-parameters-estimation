@@ -197,12 +197,13 @@ class SurgeFlowMatchingModule(LightningModule):
             self.hparams.validation_cfg_strength,
         )
 
-        param_mse = (pred_params - batch["params"]).square().mean()
+        per_param_mse = (pred_params - batch["params"]).square()
+        param_mse = per_param_mse.mean()
         self.log(
             "val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
         )
 
-        return param_mse
+        return {"param_mse": param_mse, "per_param_mse": per_param_mse}
 
     def on_validation_epoch_end(self):
         pass

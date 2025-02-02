@@ -113,3 +113,7 @@ class ParamSpec(list):
     ) -> Tuple[dict[str, float], int]:
         note = params[-1] * (max_pitch - min_pitch) + min_pitch
         return {p.name: params[i] for i, p in enumerate(self)}, note
+
+    @property
+    def names(self) -> List[str]:
+        return [p.name for p in self] + ["note"]
