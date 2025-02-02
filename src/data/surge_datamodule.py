@@ -141,27 +141,31 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
     reads to only the boundaries.
     """
 
-    def __init__(
-        self, batch_size: int, num_batches: int, chunk_size: int, num_shards: int = 200
-    ):
+    def __init__(self, batch_size: int, num_batches: int, batches_per_group: int):
         self.batch_size = batch_size
         self.num_batches = num_batches
-        self.chunk_size = chunk_size
-        self.num_shards = num_shards
+        self.batches_per_group = batches_per_group
 
     def __len__(self):
         return self.num_batches
 
     def __iter__(self):
+        num_groups = self.num_batches // self.batches_per_group
+        samples_per_group = self.batches_per_group * self.batch_size
+        group_sizes = [samples_per_group] * num_groups
+
+        remaining = self.num_batches % self.batches_per_group
+        if remaining > 0:
+            num_groups += 1
+            group_sizes.append(remaining * self.batch_size)
+
         indices = [
-            np.random.permutation(self.chunk_size) for _ in range(self.num_shards)
+            np.random.permutation(group_size).reshape(-1, self.batch_size)
+            + i * samples_per_group
+            for i, group_size in enumerate(group_sizes)
         ]
-        max_idx = self.chunk_size - (self.chunk_size % self.batch_size)
-        indices = [idxs[:max_idx] for idxs in indices]
-        indices = [idxs + i * self.chunk_size for i, idxs in enumerate(indices)]
 
         indices = np.concatenate(indices, axis=0)
-        indices = np.reshape(indices, (-1, self.batch_size))
 
         # shuffle by rows
         np.random.shuffle(indices)
@@ -231,10 +235,10 @@ class SurgeDataModule(LightningDataModule):
             batch_size=None,
             num_workers=self.num_workers,
             pin_memory=True,
-            # sampler=WithinChunkShuffledSampler(
-            #     self.batch_size, len(self.train_dataset), 10_000
-            # ),
-            shuffle=True,
+            sampler=WithinChunkShuffledSampler(
+                self.batch_size, len(self.train_dataset), 8
+            ),
+            # shuffle=True,
         )
 
     def val_dataloader(self):
