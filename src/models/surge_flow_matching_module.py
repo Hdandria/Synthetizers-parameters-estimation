@@ -197,7 +197,7 @@ class SurgeFlowMatchingModule(LightningModule):
             self.hparams.validation_cfg_strength,
         )
 
-        per_param_mse = (pred_params - batch["params"]).square()
+        per_param_mse = (pred_params - batch["params"]).square().mean(dim=0)
         param_mse = per_param_mse.mean()
         self.log(
             "val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
