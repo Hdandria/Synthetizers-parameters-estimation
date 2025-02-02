@@ -4,7 +4,7 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: surge
+  - override /data: surge-mini
   - override /callbacks: default_surge
   - override /trainer: gpu
   - _self_
@@ -12,17 +12,18 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: surge
+experiment_name: surge-mini
 
 tags:
-  - surge
+  - surge-mini
 
 seed: 3123123
 
 logger:
   wandb:
     tags: ${tags}
-    name: surge_${run_name}
+    name: surge-mini_${run_name}
+    group: ${experiment_name}
 
 callbacks:
   model_checkpoint:
@@ -32,3 +33,5 @@ callbacks:
 trainer:
   limit_val_batches: 10
   precision: bf16-mixed
+  min_steps: 1_000_000
+  max_steps: 1_000_000

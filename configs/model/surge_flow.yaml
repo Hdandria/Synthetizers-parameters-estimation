@@ -8,7 +8,7 @@ warmup_steps: 0
 scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   _partial_: true
-  T_max: 600000
+  T_max: ${trainer.max_steps}
 
 optimizer:
   _target_: torch.optim.Adam
