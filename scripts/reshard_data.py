@@ -13,7 +13,7 @@ for split, (lo, hi) in splits.items():
 
     vl_audio = h5py.VirtualLayout(shape=(split_len, 2, 44100 * 4), dtype=np.float32)
     vl_mel = h5py.VirtualLayout(shape=(split_len, 2, 128, 401), dtype=np.float32)
-    vl_param = h5py.VirtualLayout(shape=(split_len, 189), dtype=np.float32)
+    vl_param = h5py.VirtualLayout(shape=(split_len, 116), dtype=np.float32)
 
     for i in range(lo, hi + 1):
         source_name = f"/data/home/acw585/data_scratch/surge-mini/shard-{i}.h5"
