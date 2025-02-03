@@ -120,10 +120,10 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             )
 
         return dict(
-            mel_spec=mel_spec,
-            params=param_array,
-            noise=noise,
-            audio=audio,
+            mel_spec=mel_spec.contiguous(),
+            params=param_array.contiguous(),
+            noise=noise.contiguous(),
+            audio=audio.contiguous(),
         )
 
 
