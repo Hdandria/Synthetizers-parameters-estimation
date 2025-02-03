@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -173,6 +174,23 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
             yield row.tolist()
 
 
+class ShiftedBatchSampler(torch.utils.data.BatchSampler):
+    def __init__(self, batch_size: int, num_batches: int):
+        self.batch_size = batch_size
+        self.num_batches = num_batches
+
+    def __len__(self):
+        return self.num_batches - 1
+
+    def __iter__(self):
+        offset = random.randint(0, self.num_batches - 1)
+        perm = np.random.permutation(self.num_batches - 1)
+        for i in perm:
+            yield slice(
+                i * self.batch_size + offset, (i + 1) * self.batch_size + offset
+            )
+
+
 class SurgeDataModule(LightningDataModule):
     def __init__(
         self,
@@ -233,9 +251,10 @@ class SurgeDataModule(LightningDataModule):
             batch_size=None,
             num_workers=self.num_workers,
             pin_memory=True,
-            sampler=WithinChunkShuffledSampler(
-                self.batch_size, len(self.train_dataset), 4
-            ),
+            # sampler=WithinChunkShuffledSampler(
+            #     self.batch_size, len(self.train_dataset), 4
+            # ),
+            sampler=ShiftedBatchSampler(self.batch_size, len(self.train_dataset)),
             # shuffle=True,
         )
 
