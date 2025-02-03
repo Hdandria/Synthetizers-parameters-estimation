@@ -374,7 +374,7 @@ class LogPerParamMSE(Callback):
         names = self.param_spec.names
         pl_module.log_dict(
             {
-                f"val/per_param_mse/{name}": mse
+                f"per_param_mse/{name}": mse
                 for name, mse in zip(names, per_param_mse)
             },
         )

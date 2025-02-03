@@ -247,8 +247,8 @@ class SurgeFlowMatchingModule(LightningModule):
         vf_norms = {f"vector_field/{k}": v for k, v in vf_norms.items()}
         encoder_norms = {f"encoder/{k}": v for k, v in encoder_norms.items()}
 
-        self.log_dict(vf_norms, on_step=True, on_epoch=True)
-        self.log_dict(encoder_norms, on_step=True, on_epoch=True)
+        self.log_dict(vf_norms, on_step=True, on_epoch=False)
+        self.log_dict(encoder_norms, on_step=True, on_epoch=False)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
