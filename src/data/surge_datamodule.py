@@ -92,6 +92,9 @@ class SurgeXTDataset(torch.utils.data.Dataset):
 
             return ds[start_idx:end_idx]
 
+        elif isinstance(idx, tuple) and len(idx) == 2:
+            return ds[idx[0] : idx[1]]
+
         return ds[idx]
 
     def __getitem__(self, idx: Union[int, Sequence[int]]):
@@ -186,7 +189,7 @@ class ShiftedBatchSampler(torch.utils.data.BatchSampler):
         offset = random.randint(0, self.num_batches - 1)
         perm = np.random.permutation(self.num_batches - 1)
         for i in perm:
-            yield slice(
+            yield (
                 i * self.batch_size + offset, (i + 1) * self.batch_size + offset
             )
 
