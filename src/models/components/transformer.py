@@ -635,14 +635,14 @@ class MutualAttentionProjection(nn.Module):
     final ffn to 1d
     """
 
-    def __init__(self, d_model: int, n_params: int, n_tokens: int):
+    def __init__(self, d_model: int, num_params: int, num_tokens: int):
         super().__init__()
 
         self.token_queries = nn.Parameter(
-            torch.randn(1, n_tokens, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+            torch.randn(1, num_tokens, d_model) * 1e-4 + torch.randn(1, 1, d_model)
         )
         self.param_queries = nn.Parameter(
-            torch.randn(1, n_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+            torch.randn(1, num_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
         )
 
         self.in_attn = nn.MultiheadAttention(d_model, 8, batch_first=True)
@@ -650,7 +650,7 @@ class MutualAttentionProjection(nn.Module):
 
         self.sin = SinusoidalConditioning(d_model, 256)
         self.pos = nn.Parameter(
-            torch.randn(1, n_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+            torch.randn(1, num_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
         )
 
         self.mlp = nn.Sequential(
