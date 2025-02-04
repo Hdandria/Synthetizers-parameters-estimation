@@ -6,3 +6,6 @@ defaults:
   - _self_
 
 run_name: flow_attnproj
+
+callbacks:
+  plot_projii: null

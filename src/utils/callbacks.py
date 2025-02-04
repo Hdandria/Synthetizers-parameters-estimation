@@ -378,3 +378,4 @@ class LogPerParamMSE(Callback):
                 for name, mse in zip(names, per_param_mse)
             },
         )
+
