@@ -31,6 +31,7 @@ callbacks:
   early_stopping: null
 
 trainer:
+  gradient_clip_val: 0.5
   limit_val_batches: 10
   precision: bf16-mixed
   min_steps: 1_000_000

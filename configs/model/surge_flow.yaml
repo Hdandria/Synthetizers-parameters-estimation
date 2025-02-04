@@ -22,7 +22,7 @@ vector_field:
     _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
     num_params: 116
-    num_tokens: 256
+    num_tokens: 128
     filler_tokens: 0
     sym_init: true
     var_penalty: false
