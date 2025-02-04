@@ -573,10 +573,15 @@ class SinusoidalEncoding(nn.Module):
         k = torch.arange(0, half)
         basis = 1 / torch.pow(10000, k / half)
 
-        self.register_buffer("basis", basis[None, :])
+        self.register_buffer("basis", basis)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x has shape (b t)
+        if x.shape[-1] == 1:
+            basis = self.basis[None, :]
+        else:
+            basis = self.basis[None, None, :]
+            x = x[:, :, None]
+
         cos_part = torch.cos(x * self.basis)
         sin_part = torch.sin(x * self.basis)
         return torch.cat([cos_part, sin_part], dim=-1)
