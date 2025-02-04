@@ -21,8 +21,8 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.MutualAttentionProjection
     d_model: ${model.vector_field.d_model}
-    num_params: 116
-    num_tokens: 64
+    n_params: 116
+    n_tokens: 64
   num_layers: 12
   d_model: 768
   conditioning_dim: ${model.encoder.d_model}
