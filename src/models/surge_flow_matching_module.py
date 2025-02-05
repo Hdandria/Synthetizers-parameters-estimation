@@ -233,7 +233,7 @@ class SurgeFlowMatchingModule(LightningModule):
             torch.randn_like(batch["params"]),
             self.hparams.test_sample_steps,
             self.hparams.test_cfg_strength,
-        ), batch["params"]
+        ), batch
 
     def setup(self, stage: str) -> None:
         if self.hparams.compile:
