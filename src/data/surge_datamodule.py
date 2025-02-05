@@ -189,9 +189,7 @@ class ShiftedBatchSampler(torch.utils.data.BatchSampler):
         offset = random.randint(0, self.num_batches - 1)
         perm = np.random.permutation(self.num_batches - 1)
         for i in perm:
-            yield (
-                i * self.batch_size + offset, (i + 1) * self.batch_size + offset
-            )
+            yield (i * self.batch_size + offset, (i + 1) * self.batch_size + offset)
 
 
 class SurgeDataModule(LightningDataModule):
@@ -242,6 +240,7 @@ class SurgeDataModule(LightningDataModule):
                 self.predict_file,
                 batch_size=self.batch_size,
                 ot=False,
+                read_audio=True,
                 use_saved_mean_and_variance=self.use_saved_mean_and_variance,
                 fake=self.fake,
             )
