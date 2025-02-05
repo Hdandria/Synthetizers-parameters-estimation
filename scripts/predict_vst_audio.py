@@ -9,7 +9,7 @@ import numpy as np
 import rootutils
 import torch
 from pedalboard.io import AudioFile
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
@@ -59,6 +59,7 @@ def write_spectrograms(
             ax=axs[i],
             cmap="magma",
         )
+        axs[i].set_title(f"Pred (Chan {i+1})")
 
     for i, spec in enumerate(target_specs):
         spec = librosa.amplitude_to_db(spec, ref=np.max)
@@ -71,6 +72,7 @@ def write_spectrograms(
             ax=axs[i + len(pred_specs)],
             cmap="magma",
         )
+        axs[i + len(pred_specs)].set_title(f"Target (Chan {i+1})")
 
     plt.tight_layout()
     plt.savefig(save_path)
@@ -124,6 +126,9 @@ def main(
         # 5. iterate over its internal rows and render the audio
         for j in trange(pred_params.shape[0]):
             file_idx = current_offset + j
+            sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
+            os.makedirs(sample_dir)
+
 
             row_params = pred_params[j].numpy()
             row_params = np.clip(row_params, 0, 1)
@@ -139,15 +144,15 @@ def main(
                 channels,
             )
 
-            out_pred = os.path.join(output_dir, f"{file_idx}_pred.wav")
+            out_pred = os.path.join(sample_dir, f"pred.wav")
             with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
 
-            out_target = os.path.join(output_dir, f"{file_idx}_target.wav")
+            out_target = os.path.join(sample_dir, f"target.wav")
             with AudioFile(out_target, "w", sample_rate, channels) as f:
                 f.write(target_audio[j].T)
 
-            write_spectrograms(pred_audio[j], target_audio[j], out_pred, out_target)
+            write_spectrograms(pred_audio, target_audio[j], sample_rate, os.path.join(sample_dir, "spec.png"))
 
         current_offset += pred_params.shape[0]
 
