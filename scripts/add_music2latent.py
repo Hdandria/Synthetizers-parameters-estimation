@@ -67,6 +67,7 @@ def process_shard(
     """
     # First, create (or verify) the output dataset.
     with h5py.File(str(shard_path), "r+", libver="latest") as f:
+        f.swmr_mode = True
         num_samples = f["audio"].shape[0]
         if "music2latent" not in f:
             # Adjust the shape and dtype as needed.
@@ -74,6 +75,8 @@ def process_shard(
                 "music2latent", shape=(num_samples, 128, 42), dtype=np.float32
             )
         f.flush()
+
+    f.close()
 
     # Compute the number of batches.
     num_batches = (num_samples + batch_size - 1) // batch_size
