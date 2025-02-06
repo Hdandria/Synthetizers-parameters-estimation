@@ -27,7 +27,14 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
         num_samples, _ = f["audio"].shape
 
         outer_pbar.set_description(f"Creating dataset for shard {data_shard.stem}")
-        f.create_dataset("music2latent", shape=(num_samples, 128, 42), dtype=np.float32)
+        try:
+            f.create_dataset(
+                "music2latent", shape=(num_samples, 128, 42), dtype=np.float32
+            )
+        except ValueError:
+            logger.error(
+                f"Dataset already exists for shard {data_shard.stem}... continuing to overwrite."
+            )
 
         num_batches = num_samples // batch_size
         if num_samples % batch_size != 0:
