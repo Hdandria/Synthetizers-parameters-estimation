@@ -86,6 +86,10 @@ def process_shard(
     # Use round-robin partitioning.
     split_batches = [all_batch_indices[i::num_readers] for i in range(num_readers)]
 
+    # Start the writer process.
+    writer_proc = Process(target=writer_process, args=(shard_path, write_queue))
+    writer_proc.start()
+
     # Start the reader processes.
     reader_procs = []
     for sub_batch_indices in split_batches:
@@ -96,9 +100,6 @@ def process_shard(
         proc.start()
         reader_procs.append(proc)
 
-    # Start the writer process.
-    writer_proc = Process(target=writer_process, args=(shard_path, write_queue))
-    writer_proc.start()
 
     # Main loop: get batches from the read_queue, process on GPU, send to writer.
     finished_readers = 0
