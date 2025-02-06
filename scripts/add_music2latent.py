@@ -100,7 +100,6 @@ def process_shard(
         proc.start()
         reader_procs.append(proc)
 
-
     # Main loop: get batches from the read_queue, process on GPU, send to writer.
     finished_readers = 0
     pbar = tqdm(total=num_batches, desc=f"Processing {shard_path.name}")
@@ -147,6 +146,7 @@ def process_shard(
 @click.option(
     "--shard-range", "-r", type=int, nargs=2, default=None, help="Optional shard range."
 )
+@click.option("--shard", "-s", type=int, default=None, help="Optional shard index.")
 @click.option(
     "--num-readers",
     "-n",
@@ -158,15 +158,25 @@ def main(
     data_dir: str,
     batch_size: int,
     shard_range: Optional[Tuple[int, int]],
+    shard: Optional[int],
     num_readers: int,
 ):
     data_dir = Path(data_dir)
     data_shards = list(data_dir.glob("shard-*.h5"))
 
+    if shard_range is not None and shard is not None:
+        raise ValueError("Cannot specify both --shard-range and --shard.")
+
     if shard_range is not None:
         data_shards = [
             ds for ds in data_shards if get_shard_id(ds) in range(*shard_range)
         ]
+    if shard is not None:
+        data_shards = [ds for ds in data_shards if get_shard_id(ds) == shard]
+
+    if not data_shards:
+        click.echo("No valid data shards found.")
+        return
 
     # Create the model instance (holds GPU inference code).
     m2l = EncoderDecoder()
