@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional, Tuple
 
 import click
 import h5py
@@ -9,6 +10,10 @@ from music2latent import EncoderDecoder
 from tqdm import tqdm, trange
 
 
+def get_shard_id(shard_path: Path) -> int:
+    return int(shard_path.stem.split("-")[1])
+
+
 @click.command()
 @click.argument("data_dir", type=str)
 @click.option("--batch-size", "-c", type=int, default=1024)
@@ -16,6 +21,11 @@ from tqdm import tqdm, trange
 def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] = None):
     data_dir = Path(data_dir)
     data_shards = data_dir.glob("shard-*.h5")
+
+    if shard_range is not None:
+        data_shards = [
+            ds for ds in data_shards if get_shard_id(ds) in range(*shard_range)
+        ]
 
     logger.info("Initializing M2L")
     m2l = EncoderDecoder()
