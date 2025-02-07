@@ -57,7 +57,7 @@ class EmbeddingPool(nn.Module):
             nn.LayerNorm(embed_dim),
             nn.Linear(embed_dim, d_model),
             nn.SiLU(),
-            nn.Linear(d_model, embed_dim),
+            nn.Linear(d_model, d_model),
         )
         self.residual = nn.Linear(embed_dim, d_model, bias=False)
 
