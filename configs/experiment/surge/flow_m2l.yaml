@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - surge/base
+  - override /model: surge_flow_m2l
+  - _self_
+
+run_name: flow
+
+data:
+  read_mel: false
+  read_m2l: true

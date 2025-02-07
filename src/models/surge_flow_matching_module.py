@@ -1,6 +1,6 @@
 import math
 from functools import partial
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Literal, Optional, Tuple
 
 import torch
 from lightning import LightningModule
@@ -44,6 +44,7 @@ class SurgeFlowMatchingModule(LightningModule):
         vector_field: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
+        conditioning: Literal["mel", "m2l"] = "mel",
         warmup_steps: int = 5000,
         cfg_dropout_rate: float = 0.1,
         rectified_sigma_min: float = 0.0,
@@ -109,13 +110,23 @@ class SurgeFlowMatchingModule(LightningModule):
         target = self._rectified_vector_field(x0, x1)
         return target
 
+    def _get_conditioning_from_batch(
+        self, batch: dict[str, torch.Tensor]
+    ) -> torch.Tensor:
+        if self.hparams.conditioning == "mel":
+            return batch["mel_spec"]
+        elif self.hparams.conditioning == "m2l":
+            return batch["m2l"]
+        else:
+            raise ValueError(f"Unknown conditioning {self.hparams.conditioning}")
+
     def _train_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
-        mel_spec = batch["mel_spec"]
+        conditioning = self._get_conditioning_from_batch(batch)
         params = batch["params"]
         noise = batch["noise"]
 
         # Get conditioning vector
-        conditioning = self.encoder(mel_spec)
+        conditioning = self.encoder(conditioning)
         z = self.vector_field.apply_dropout(conditioning, self.hparams.cfg_dropout_rate)
 
         with torch.no_grad():
@@ -191,8 +202,9 @@ class SurgeFlowMatchingModule(LightningModule):
         return sample
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        conditioning = self._get_conditioning_from_batch(batch)
         pred_params = self._sample(
-            batch["mel_spec"],
+            conditioning,
             torch.randn_like(batch["params"]),
             self.hparams.validation_sample_steps,
             self.hparams.validation_cfg_strength,
@@ -210,8 +222,9 @@ class SurgeFlowMatchingModule(LightningModule):
         pass
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        conditioning = self._get_conditioning_from_batch(batch)
         pred_params = self._sample(
-            batch["mel_spec"],
+            conditioning,
             torch.randn_like(batch["params"]),
             self.hparams.test_sample_steps,
             self.hparams.test_cfg_strength,
@@ -228,12 +241,16 @@ class SurgeFlowMatchingModule(LightningModule):
         pass
 
     def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        return self._sample(
-            batch["mel_spec"],
-            torch.randn_like(batch["params"]),
-            self.hparams.test_sample_steps,
-            self.hparams.test_cfg_strength,
-        ), batch
+        conditioning = self._get_conditioning_from_batch(batch)
+        return (
+            self._sample(
+                conditioning,
+                torch.randn_like(batch["params"]),
+                self.hparams.test_sample_steps,
+                self.hparams.test_cfg_strength,
+            ),
+            batch,
+        )
 
     def setup(self, stage: str) -> None:
         if self.hparams.compile:

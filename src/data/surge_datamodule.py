@@ -20,6 +20,8 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         batch_size: int,
         ot: bool = True,
         read_audio: bool = False,
+        read_mel: bool = True,
+        read_m2l: bool = False,
         use_saved_mean_and_variance: bool = True,
         rescale_params: bool = True,
         fake: bool = False,
@@ -28,6 +30,9 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         self.ot = ot
 
         self.read_audio = read_audio
+        self.read_mel = read_mel
+        self.read_m2l = read_m2l
+
         self.rescale_params = rescale_params
 
         self.fake = fake
@@ -70,7 +75,8 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         audio = (
             torch.randn(self.batch_size, 2, 44100 * 4) if not self.read_audio else None
         )
-        mel_spec = torch.randn(self.batch_size, 2, 128, 401)
+        mel_spec = torch.randn(self.batch_size, 2, 128, 401) if self.read_mel else None
+        m2l = torch.randn(self.batch_size, 128, 42) if self.read_m2l else None
         param_array = torch.rand(self.batch_size, 189)
 
         if self.rescale_params:
@@ -80,6 +86,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
 
         return dict(
             mel_spec=mel_spec,
+            m2l=m2l,
             params=param_array,
             noise=noise,
             audio=audio,
@@ -107,10 +114,19 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         else:
             audio = None
 
-        mel_spec = self._index_dataset(self.dataset_file["mel_spec"], idx)
-        if self.mean is not None and self.std is not None:
-            mel_spec = (mel_spec - self.mean) / self.std
-        mel_spec = torch.from_numpy(mel_spec).to(dtype=torch.float32)
+        if self.read_mel:
+            mel_spec = self._index_dataset(self.dataset_file["mel_spec"], idx)
+            if self.mean is not None and self.std is not None:
+                mel_spec = (mel_spec - self.mean) / self.std
+            mel_spec = torch.from_numpy(mel_spec).to(dtype=torch.float32)
+        else:
+            mel_spec = None
+
+        if self.read_m2l:
+            m2l = self._index_dataset(self.dataset_file["music2latent"], idx)
+            m2l = torch.from_numpy(m2l).to(dtype=torch.float32)
+        else:
+            m2l = None
 
         param_array = self._index_dataset(self.dataset_file["param_array"], idx)
         if self.rescale_params:
@@ -123,7 +139,8 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             )
 
         return dict(
-            mel_spec=mel_spec.contiguous(),
+            mel_spec=mel_spec.contiguous() if mel_spec is not None else None,
+            m2l=m2l.contiguous() if m2l is not None else None,
             params=param_array.contiguous(),
             noise=noise.contiguous(),
             audio=audio.contiguous() if audio is not None else None,
