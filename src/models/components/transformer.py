@@ -443,6 +443,7 @@ class DiTransformerBlock(nn.Module):
         norm: Literal["layer", "rms"] = "layer",
         first_norm: bool = True,
         adaln_mode: Literal["basic", "zero", "res"] = "basic",
+        zero_init: bool = True,
     ):
         super().__init__()
         if first_norm:
@@ -469,23 +470,28 @@ class DiTransformerBlock(nn.Module):
         )
 
         self._init_adaln(adaln_mode)
-        self._init_ffn()
-        self._init_attn()
+        self._init_ffn(zero_init)
+        self._init_attn(zero_init)
 
     def _init_adaln(self, mode: Literal["basic", "zero"]):
         if mode == "zero":
             nn.init.constant_(self.cond[-1].weight, 0.0)
             nn.init.constant_(self.cond[-1].bias, 0.0)
 
-    def _init_ffn(self):
+    def _init_ffn(self, zero_init: bool):
         nn.init.xavier_normal_(self.ff[0].weight)
         nn.init.zeros_(self.ff[0].bias)
-        nn.init.zeros_(self.ff[-1].weight)
         nn.init.zeros_(self.ff[-1].bias)
 
-    def _init_attn(self):
-        nn.init.zeros_(self.attn.out_proj.weight)
-        nn.init.zeros_(self.attn.out_proj.bias)
+        if zero_init:
+            nn.init.zeros_(self.ff[-1].weight)
+        else:
+            nn.init.xavier_normal_(self.ff[-1].weight)
+
+    def _init_attn(self, zero_init: bool):
+        if zero_init:
+            nn.init.zeros_(self.attn.out_proj.weight)
+            nn.init.zeros_(self.attn.out_proj.bias)
 
     def forward(self, x: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
         if self.adaln_mode == "res":
@@ -701,6 +707,7 @@ class ApproxEquivTransformer(nn.Module):
         norm: Literal["layer", "rms"] = "layer",
         skip_first_norm: bool = False,
         adaln_mode: Literal["basic", "zero"] = "basic",
+        zero_init: bool = True,
         use_conditioning_ffn: bool = False,
     ):
         super().__init__()
@@ -731,6 +738,7 @@ class ApproxEquivTransformer(nn.Module):
                     norm,
                     first_norm=False if i == 0 and skip_first_norm else True,
                     adaln_mode=adaln_mode,
+                    zero_init=zero_init,
                 )
                 for i in range(num_layers)
             ]
