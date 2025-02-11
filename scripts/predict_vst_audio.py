@@ -144,7 +144,7 @@ def main(
         for j in trange(pred_params.shape[0]):
             file_idx = current_offset + j
             sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
-            os.makedirs(sample_dir)
+            os.makedirs(sample_dir, exist_ok=True)
 
             row_params = pred_params[j].numpy()
             row_params = (row_params + 1) / 2
