@@ -6,6 +6,7 @@ import click
 import librosa
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import rootutils
 import torch
 from pedalboard.io import AudioFile
@@ -13,6 +14,7 @@ from tqdm import tqdm, trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
+from src.data.vst.param_spec import ParamSpec
 from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_XT_PARAM_SPEC
 
 
@@ -79,6 +81,16 @@ def write_spectrograms(
     plt.close()
 
 
+def params_to_csv(
+    target_params: np.ndarray,
+    pred_params: np.ndarray,
+    save_path: str,
+    param_spec: ParamSpec,
+) -> None:
+    """Write the target and predicted parameters to a CSV file."""
+    row_names = param_spec.names()
+
+
 @click.command()
 @click.argument("pred_dir", type=str)
 @click.argument("output_dir", type=str)
@@ -129,13 +141,13 @@ def main(
             sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
             os.makedirs(sample_dir)
 
-
             row_params = pred_params[j].numpy()
+            row_params = (row_params + 1) / 2
             row_params = np.clip(row_params, 0, 1)
-            row_params, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
+            row_params_dict, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
             pred_audio = render_params(
                 plugin,
-                row_params,
+                row_params_dict,
                 int(note),
                 velocity,
                 note_duration_seconds,
@@ -152,7 +164,19 @@ def main(
             with AudioFile(out_target, "w", sample_rate, channels) as f:
                 f.write(target_audio[j].T)
 
-            write_spectrograms(pred_audio, target_audio[j], sample_rate, os.path.join(sample_dir, "spec.png"))
+            write_spectrograms(
+                pred_audio,
+                target_audio[j],
+                sample_rate,
+                os.path.join(sample_dir, "spec.png"),
+            )
+
+            params_to_csv(
+                (target_params[j].numpy() + 1) / 2.0,
+                row_params,
+                os.path.join(sample_dir, "params.csv"),
+                SURGE_MINI_PARAM_SPEC,
+            )
 
         current_offset += pred_params.shape[0]
 
