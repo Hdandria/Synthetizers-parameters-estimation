@@ -936,7 +936,6 @@ class AudioSpectrogramTransformer(nn.Module):
         x = self.positional_encoding(x)
 
         # apply transformer
-        x = x.contiguous()
         for block in self.blocks:
             x = block(x)
 
