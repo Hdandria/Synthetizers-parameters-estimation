@@ -8,7 +8,11 @@ import wandb
 from einops import rearrange
 from lightning.pytorch.callbacks import BasePredictionWriter, Callback
 
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_XT_PARAM_SPEC
+from src.data.vst.surge_xt_param_spec import (
+    SURGE_MINI_PARAM_SPEC,
+    SURGE_SIMPLE_PARAM_SPEC,
+    SURGE_XT_PARAM_SPEC,
+)
 from src.models.components.transformer import (
     ApproxEquivTransformer,
     LearntProjection,
@@ -355,7 +359,13 @@ class LogPerParamMSE(Callback):
     def __init__(self, param_spec: str = "surge_mini"):
         super().__init__()
         self.param_spec = (
-            SURGE_MINI_PARAM_SPEC if param_spec == "surge_mini" else SURGE_XT_PARAM_SPEC
+            SURGE_MINI_PARAM_SPEC
+            if param_spec == "surge_mini"
+            else (
+                SURGE_XT_PARAM_SPEC
+                if param_spec == "surge_xt"
+                else SURGE_SIMPLE_PARAM_SPEC
+            )
         )
 
     def on_validation_epoch_start(

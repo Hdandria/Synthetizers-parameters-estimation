@@ -13,9 +13,9 @@ from pyloudnorm import Meter
 from tqdm import trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.data.vst import load_plugin, load_preset, render_params  # noqa
+from src.data.vst import load_plugin, render_params  # noqa
 from src.data.vst.param_spec import ParamSpec  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_SIMPLE_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
 
 
@@ -96,6 +96,7 @@ def generate_sample(
     channels: int = 2,
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
+    preset_path: str = "presets/surge-mini.vstpreset",
 ) -> VSTDataSample:
     while True:
         logger.debug("sampling params")
@@ -116,6 +117,7 @@ def generate_sample(
             signal_duration_seconds,
             sample_rate,
             channels,
+            preset_path=preset_path,
         )
 
         meter = Meter(sample_rate)
@@ -171,7 +173,6 @@ def make_dataset(
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
     plugin = load_plugin(plugin_path)
-    load_preset(plugin, preset_path)
 
     audio_dataset = hdf5_file.create_dataset(
         "audio",
@@ -213,6 +214,7 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
             param_spec=param_spec,
+            preset_path=preset_path,
         )
         save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)
 
@@ -250,6 +252,8 @@ def main(
         param_spec = SURGE_XT_PARAM_SPEC
     elif param_spec in ("mini", "surge_mini", "surge_xt_mini"):
         param_spec = SURGE_MINI_PARAM_SPEC
+    elif param_spec in ("simple", "surge_simple", "surge_xt_simple"):
+        param_spec = SURGE_SIMPLE_PARAM_SPEC
     else:
         raise ValueError(f"Invalid param_spec: {param_spec}")
 

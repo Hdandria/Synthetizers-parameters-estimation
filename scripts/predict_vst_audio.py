@@ -15,7 +15,11 @@ from tqdm import tqdm, trange
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
 from src.data.vst.param_spec import ParamSpec
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_XT_PARAM_SPEC
+from src.data.vst.surge_xt_param_spec import (
+    SURGE_MINI_PARAM_SPEC,
+    SURGE_SIMPLE_PARAM_SPEC,
+    SURGE_XT_PARAM_SPEC,
+)
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
@@ -107,6 +111,7 @@ def params_to_csv(
 @click.option("--note_duration_seconds", "-n", type=float, default=1.5)
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
+@click.option("--param_spec", "-t", type=str, default="surge_xt")
 def main(
     pred_dir: str,
     output_dir: str,
@@ -117,8 +122,18 @@ def main(
     velocity: int = 100,
     note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
+    param_spec: str = "surge_xt",
     rerender_target: bool = False,
 ):
+    if param_spec in ("surge", "surge_xt"):
+        param_spec = SURGE_XT_PARAM_SPEC
+    elif param_spec in ("mini", "surge_mini", "surge_xt_mini"):
+        param_spec = SURGE_MINI_PARAM_SPEC
+    elif param_spec in ("simple", "surge_simple", "surge_xt_simple"):
+        param_spec = SURGE_SIMPLE_PARAM_SPEC
+    else:
+        raise ValueError(f"Invalid param_spec: {param_spec}")
+
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. load and prepare the VST
@@ -151,7 +166,7 @@ def main(
             row_params = pred_params[j].numpy()
             row_params = (row_params + 1) / 2
             row_params = np.clip(row_params, 0, 1)
-            row_params_dict, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
+            row_params_dict, note = param_spec.from_numpy(row_params)
 
             load_preset(plugin, preset_path)
             pred_audio = render_params(
@@ -169,9 +184,7 @@ def main(
                 target_params_ = target_params[j].numpy()
                 target_params_ = (target_params_ + 1) / 2
                 target_params_ = np.clip(target_params_, 0, 1)
-                target_param_dict, target_note = SURGE_MINI_PARAM_SPEC.from_numpy(
-                    target_params_
-                )
+                target_param_dict, target_note = param_spec.from_numpy(target_params_)
 
                 load_preset(plugin, preset_path)
                 new_target = render_params(
@@ -209,7 +222,7 @@ def main(
                 (target_params[j].numpy() + 1) / 2.0,
                 row_params,
                 os.path.join(sample_dir, "params.csv"),
-                SURGE_MINI_PARAM_SPEC,
+                param_spec,
             )
 
         current_offset += pred_params.shape[0]

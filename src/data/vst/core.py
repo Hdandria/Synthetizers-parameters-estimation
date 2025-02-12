@@ -1,7 +1,7 @@
 import _thread
 import threading
 import time
-from typing import Callable
+from typing import Callable, Optional
 
 import mido
 import numpy as np
@@ -72,10 +72,14 @@ def render_params(
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
+    preset_path: Optional[str] = None,
 ) -> np.ndarray:
     logger.debug("flushing plugin")
     plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
     plugin.reset()
+
+    if preset_path is not None:
+        load_preset(plugin, preset_path)
 
     logger.debug("setting params")
     set_params(plugin, params)
