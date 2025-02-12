@@ -110,7 +110,7 @@ def params_to_csv(
 @click.option("--velocity", "-v", type=int, default=100)
 @click.option("--note_duration_seconds", "-n", type=float, default=1.5)
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
-@click.option("--param_spec", "-t", type=str, default="surge_xt")
+@click.option("--param_spec", type=str, default="surge_xt")
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
 def main(
     pred_dir: str,
