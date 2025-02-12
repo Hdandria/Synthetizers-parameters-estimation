@@ -15,8 +15,9 @@ from tqdm import trange
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params  # noqa
 from src.data.vst.param_spec import ParamSpec  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_SIMPLE_PARAM_SPEC  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_SIMPLE_PARAM_SPEC
 
 
 def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
@@ -86,7 +87,6 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
 
 
 def generate_sample(
-    plugin: VST3Plugin,
     min_pitch: int = 36,
     max_pitch: int = 84,
     velocity: int = 100,
@@ -96,6 +96,7 @@ def generate_sample(
     channels: int = 2,
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
+    plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-mini.vstpreset",
 ) -> VSTDataSample:
     while True:
@@ -108,6 +109,7 @@ def generate_sample(
             max_pitch=max_pitch,
         )
 
+        plugin = load_plugin(plugin_path)
         output = render_params(
             plugin,
             params,
@@ -172,8 +174,6 @@ def make_dataset(
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
-    plugin = load_plugin(plugin_path)
-    load_preset(plugin, preset_path)
 
     audio_dataset = hdf5_file.create_dataset(
         "audio",
@@ -205,7 +205,6 @@ def make_dataset(
 
     for i in trange(num_samples):
         sample = generate_sample(
-            plugin,
             min_pitch=min_pitch,
             max_pitch=max_pitch,
             velocity=velocity,
@@ -215,6 +214,7 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
             param_spec=param_spec,
+            plugin_path=plugin_path,
             preset_path=preset_path,
         )
         save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)
