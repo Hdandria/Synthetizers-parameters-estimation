@@ -144,7 +144,6 @@ def main(
 
         # 5. iterate over its internal rows and render the audio
         for j in trange(pred_params.shape[0]):
-            load_preset(plugin, preset_path)
             file_idx = current_offset + j
             sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
             os.makedirs(sample_dir, exist_ok=True)
@@ -153,6 +152,8 @@ def main(
             row_params = (row_params + 1) / 2
             row_params = np.clip(row_params, 0, 1)
             row_params_dict, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
+
+            load_preset(plugin, preset_path)
             pred_audio = render_params(
                 plugin,
                 row_params_dict,
@@ -171,6 +172,8 @@ def main(
                 target_param_dict, target_note = SURGE_MINI_PARAM_SPEC.from_numpy(
                     target_params_
                 )
+
+                load_preset(plugin, preset_path)
                 new_target = render_params(
                     plugin,
                     target_param_dict,
