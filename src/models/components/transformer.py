@@ -779,7 +779,7 @@ class ApproxEquivTransformer(nn.Module):
             return z
 
         dropout_mask = torch.rand(z.shape[0], 1, device=z.device) > rate
-        if z.ndim() == 3:
+        if z.ndim == 3:
             dropout_mask = dropout_mask.unsqueeze(-1)
         return z.where(dropout_mask, self.cfg_dropout_token)
 
@@ -813,7 +813,7 @@ class ApproxEquivTransformer(nn.Module):
         x = self.projection.param_to_token(x)
 
         layerwise_conditioning = False
-        if conditioning.ndim() == 3:
+        if conditioning.ndim == 3:
             t = t.unsqueeze(1).repeat(1, conditioning.shape[1], 1)
             layerwise_conditioning = True
 
