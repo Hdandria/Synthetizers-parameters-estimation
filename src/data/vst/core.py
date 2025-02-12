@@ -77,9 +77,9 @@ def render_params(
     # if preset_path is not None:
     #     load_preset(plugin, preset_path)
 
-    # logger.debug("flushing plugin")
-    # plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
-    # plugin.reset()
+    logger.debug("flushing plugin")
+    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.reset()
 
     logger.debug("setting params")
     set_params(plugin, params)
