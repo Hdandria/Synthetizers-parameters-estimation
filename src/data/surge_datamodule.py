@@ -223,6 +223,7 @@ class SurgeDataModule(LightningDataModule):
         ot: bool = True,
         num_workers: int = 0,
         fake: bool = False,
+        repeat_first_batch: bool = False,
         predict_file: Optional[str] = None,
         conditioning: Literal["mel", "m2l"] = "mel",
     ):
@@ -234,6 +235,7 @@ class SurgeDataModule(LightningDataModule):
         self.ot = ot
         self.num_workers = num_workers
         self.fake = fake
+        self.repeat_first_batch = repeat_first_batch
         self.predict_file = predict_file
         self.conditioning = conditioning
 
@@ -244,6 +246,7 @@ class SurgeDataModule(LightningDataModule):
             ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
         )
@@ -253,6 +256,7 @@ class SurgeDataModule(LightningDataModule):
             ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
         )
@@ -262,6 +266,7 @@ class SurgeDataModule(LightningDataModule):
             ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
         )
