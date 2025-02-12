@@ -878,9 +878,12 @@ class PatchEmbed(nn.Module):
             stride=stride,
         )
 
-    @cached_property
-    def num_tokens(self):
-        x = torch.randn(1, self.in_channels, *self.spec_shape)
+        self.num_tokens = self._get_num_tokens()
+
+    def _get_num_tokens(self):
+        x = torch.randn(
+            1, self.in_channels, *self.spec_shape, device=self.projection.weight.device
+        )
         out_shape = self.projection(self.pad(x)).shape
         return math.prod(out_shape[-2:])
 
