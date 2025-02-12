@@ -220,7 +220,7 @@ def main(
 
             params_to_csv(
                 target_params[j].numpy(),
-                row_params_scaled,
+                row_params,
                 os.path.join(sample_dir, "params.csv"),
                 param_spec,
             )
