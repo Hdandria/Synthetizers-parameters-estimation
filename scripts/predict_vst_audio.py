@@ -106,6 +106,7 @@ def params_to_csv(
 @click.option("--velocity", "-v", type=int, default=100)
 @click.option("--note_duration_seconds", "-n", type=float, default=1.5)
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
+@click.option("--rerender_target", "-t", is_flag=True, default=False)
 def main(
     pred_dir: str,
     output_dir: str,
@@ -116,6 +117,7 @@ def main(
     velocity: int = 100,
     note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
+    rerender_target: bool = False,
 ):
     os.makedirs(output_dir, exist_ok=True)
 
@@ -161,13 +163,30 @@ def main(
                 channels,
             )
 
-            out_pred = os.path.join(sample_dir, f"pred.wav")
+            if rerender_target:
+                new_target = render_params(
+                    plugin,
+                    target_params[j].numpy(),
+                    int(note),
+                    velocity,
+                    note_duration_seconds,
+                    signal_duration_seconds,
+                    sample_rate,
+                    channels,
+                )
+
+            out_pred = os.path.join(sample_dir, "pred.wav")
             with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
 
-            out_target = os.path.join(sample_dir, f"target.wav")
+            out_target = os.path.join(sample_dir, "target.wav")
             with AudioFile(out_target, "w", sample_rate, channels) as f:
                 f.write(target_audio[j].T)
+
+            if rerender_target:
+                out_new_target = os.path.join(sample_dir, "new_target.wav")
+                with AudioFile(out_new_target, "w", sample_rate, channels) as f:
+                    f.write(new_target.T)
 
             write_spectrograms(
                 pred_audio,
