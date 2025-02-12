@@ -13,7 +13,7 @@ from pyloudnorm import Meter
 from tqdm import trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.data.vst import load_plugin, render_params  # noqa
+from src.data.vst import load_plugin, load_preset, render_params  # noqa
 from src.data.vst.param_spec import ParamSpec  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_SIMPLE_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
@@ -173,6 +173,7 @@ def make_dataset(
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
     plugin = load_plugin(plugin_path)
+    load_preset(plugin, preset_path)
 
     audio_dataset = hdf5_file.create_dataset(
         "audio",
