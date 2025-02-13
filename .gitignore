@@ -156,3 +156,5 @@ notebooks/
 vst_data/
 .nvim/
 .DS_Store
+audio/
+checkpoints/
