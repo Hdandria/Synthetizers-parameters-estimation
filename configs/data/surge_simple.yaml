@@ -4,4 +4,4 @@ use_saved_mean_and_variance: true
 batch_size: 128
 ot: true
 num_workers: 11
-predict_file: /data/scratch/acw585/surge-simple/shard-201.h5
+predict_file: /data/scratch/acw585/surge-simple/shard-131.h5
