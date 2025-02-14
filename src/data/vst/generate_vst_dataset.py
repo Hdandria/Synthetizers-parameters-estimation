@@ -86,7 +86,6 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
 
 
 def generate_sample(
-    plugin: VST3Plugin,
     min_pitch: int = 36,
     max_pitch: int = 84,
     velocity: int = 100,
@@ -96,6 +95,7 @@ def generate_sample(
     channels: int = 2,
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
+    plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-mini.vstpreset",
 ) -> VSTDataSample:
     while True:
@@ -117,6 +117,7 @@ def generate_sample(
             signal_duration_seconds,
             sample_rate,
             channels,
+            plugin_path=plugin_path,
             preset_path=preset_path,
         )
 
@@ -172,8 +173,6 @@ def make_dataset(
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
-    plugin = load_plugin(plugin_path)
-
     audio_dataset = hdf5_file.create_dataset(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
@@ -204,7 +203,6 @@ def make_dataset(
 
     for i in trange(num_samples):
         sample = generate_sample(
-            plugin,
             min_pitch=min_pitch,
             max_pitch=max_pitch,
             velocity=velocity,
@@ -214,6 +212,7 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
             param_spec=param_spec,
+            plugin_path=plugin_path,
             preset_path=preset_path,
         )
         save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)

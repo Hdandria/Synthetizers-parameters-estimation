@@ -64,7 +64,6 @@ def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -
 
 
 def render_params(
-    plugin: VST3Plugin,
     params: dict[str, float],
     midi_note: int,
     velocity: int,
@@ -72,8 +71,10 @@ def render_params(
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
+    plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: Optional[str] = None,
 ) -> np.ndarray:
+    plugin = load_plugin(plugin_path)
     if preset_path is not None:
         load_preset(plugin, preset_path)
 
