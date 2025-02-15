@@ -98,6 +98,8 @@ def generate_sample(
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-mini.vstpreset",
 ) -> VSTDataSample:
+    plugin = load_plugin(plugin_path)
+
     while True:
         logger.debug("sampling params")
         params = param_spec.sample()
@@ -109,6 +111,7 @@ def generate_sample(
         )
 
         output = render_params(
+            plugin,
             params,
             note,
             velocity,
@@ -116,7 +119,6 @@ def generate_sample(
             signal_duration_seconds,
             sample_rate,
             channels,
-            plugin_path=plugin_path,
             preset_path=preset_path,
         )
 

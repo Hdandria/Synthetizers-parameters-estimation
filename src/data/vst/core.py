@@ -34,7 +34,7 @@ def _call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
 
 
 def _prepare_plugin(plugin: VST3Plugin) -> None:
-    _call_with_interrupt(plugin.show_editor)
+    _call_with_interrupt(plugin.show_editor, sleep_time=2.0)
 
 
 def load_plugin(plugin_path: str) -> VST3Plugin:
@@ -64,6 +64,7 @@ def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -
 
 
 def render_params(
+    plugin: VST3Plugin,
     params: dict[str, float],
     midi_note: int,
     velocity: int,
@@ -71,10 +72,8 @@ def render_params(
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
-    plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: Optional[str] = None,
 ) -> np.ndarray:
-    plugin = load_plugin(plugin_path)
     if preset_path is not None:
         load_preset(plugin, preset_path)
 
