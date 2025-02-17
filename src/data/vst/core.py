@@ -77,7 +77,7 @@ def render_params(
     if preset_path is not None:
         load_preset(plugin, preset_path)
 
-    logger.debug("flushing plugin")
+    logger.debug("post-load flush")
     plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
     plugin.reset()
 
@@ -85,7 +85,7 @@ def render_params(
     set_params(plugin, params)
     # plugin.reset()
 
-    logger.debug("flushing plugin")
+    logger.debug("post-param flush")
     plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
     plugin.reset()
 
@@ -96,13 +96,17 @@ def render_params(
         midi_events, signal_duration_seconds, sample_rate, channels, 8192, True
     )
 
+    logger.debug("post-render flush")
+    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.reset()
+
     return output
 
 
 def midi_pitch_to_event(pitch: int, velocity: int, duration_seconds: float):
     events = []
     note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
-    events.append((note_on.bytes(), 0.0))
+    events.append((note_on.bytes(), 0.05))
     note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
     events.append((note_off.bytes(), duration_seconds))
 

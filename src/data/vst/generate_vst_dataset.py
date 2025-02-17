@@ -1,8 +1,7 @@
 import hashlib
-import os
 import random
 from dataclasses import dataclass
-from typing import Tuple
+from typing import List, Tuple
 
 import click
 import h5py
@@ -89,6 +88,7 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
 
 
 def generate_sample(
+    plugin: VST3Plugin,
     min_pitch: int = 36,
     max_pitch: int = 84,
     velocity: int = 100,
@@ -98,11 +98,8 @@ def generate_sample(
     channels: int = 2,
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
-    plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-mini.vstpreset",
 ) -> VSTDataSample:
-    plugin = load_plugin(plugin_path)
-
     while True:
         logger.debug("sampling params")
         params = param_spec.sample()
@@ -157,9 +154,30 @@ def save_sample(
     param_dataset: h5py.Dataset,
     idx: int,
 ) -> None:
+    logger.info(f"Saving sample {idx}...")
     audio_dataset[idx, :, :] = sample.audio.T
     mel_dataset[idx, :, :] = sample.mel_spec
     param_dataset[idx, :] = sample.param_array
+    logger.info(f"Sample {idx} written!")
+
+
+def save_samples(
+    samples: List[VSTDataSample],
+    audio_dataset: h5py.Dataset,
+    mel_dataset: h5py.Dataset,
+    param_dataset: h5py.Dataset,
+    start_idx: int,
+) -> None:
+    logger.info(f"Saving {len(samples)} samples...")
+    audios = np.stack([s.audio.T for s in samples], axis=0)
+    mel_specs = np.stack([s.mel_spec for s in samples], axis=0)
+    param_arrays = np.stack([s.param_array for s in samples], axis=0)
+
+    audio_dataset[start_idx : start_idx + len(samples), :, :] = audios
+    mel_dataset[start_idx : start_idx + len(samples), :, :] = mel_specs
+    param_dataset[start_idx : start_idx + len(samples), :] = param_arrays
+
+    logger.info(f"{len(samples)} samples written!")
 
 
 def get_first_unwritten_idx(dataset: h5py.Dataset) -> int:
@@ -244,6 +262,7 @@ def make_dataset(
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
+    sample_batch_size: int = 32,
 ) -> None:
 
     audio_dataset, mel_dataset, param_dataset, start_idx = (
@@ -266,9 +285,15 @@ def make_dataset(
     audio_dataset.attrs["channels"] = channels
     audio_dataset.attrs["min_loudness"] = min_loudness
 
+    plugin = load_plugin(plugin_path)
+
+    sample_batch = []
+    sample_batch_start = 0
+
     for i in trange(start_idx, num_samples):
         logger.info(f"Making sample {i}")
         sample = generate_sample(
+            plugin,
             min_pitch=min_pitch,
             max_pitch=max_pitch,
             velocity=velocity,
@@ -278,10 +303,14 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
             param_spec=param_spec,
-            plugin_path=plugin_path,
             preset_path=preset_path,
         )
-        save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)
+
+        sample_batch.append(sample)
+        if len(sample_batch) == sample_batch_size:
+            save_samples(sample_batch, audio_dataset, mel_dataset, param_dataset)
+            sample_batch = []
+            sample_batch_start += sample_batch_size
 
 
 @click.command()
