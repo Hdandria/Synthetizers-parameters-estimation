@@ -1,6 +1,8 @@
 import hashlib
+import os
 import random
 from dataclasses import dataclass
+from typing import Tuple
 
 import click
 import h5py
@@ -15,8 +17,9 @@ from tqdm import trange
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params  # noqa
 from src.data.vst.param_spec import ParamSpec  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_SIMPLE_PARAM_SPEC  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_SIMPLE_PARAM_SPEC
 
 
 def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
@@ -159,6 +162,74 @@ def save_sample(
     param_dataset[idx, :] = sample.param_array
 
 
+def get_first_unwritten_idx(dataset: h5py.Dataset) -> int:
+    num_rows, *_ = dataset.shape
+    for i in range(num_rows):
+        row = dataset[num_rows - i - 1]
+        if not np.all(row == 0):
+            return num_rows - i
+        logger.debug(f"Row {num_rows - i - 1} is empty...")
+
+    return 0
+
+
+def create_dataset_and_get_first_unwritten_idx(
+    h5py_file: h5py.File,
+    name: str,
+    shape: Tuple[int, ...],
+    dtype: np.dtype,
+    compression: str,
+) -> Tuple[h5py.Dataset, int]:
+    logger.info(f"Looking for dataset {name}...")
+    if name in h5py_file:
+        logger.info(f"Found dataset {name}, looking for first unwritten row.")
+        dataset = h5py_file[name]
+        return dataset, get_first_unwritten_idx(dataset)
+
+    dataset = h5py_file.create_dataset(
+        name, shape=shape, dtype=dtype, compression=compression
+    )
+    return dataset, 0
+
+
+def create_datasets_and_get_start_idx(
+    hdf5_file: h5py.File,
+    num_samples: int,
+    channels: int,
+    sample_rate: float,
+    signal_duration_seconds: float,
+    num_params: int,
+):
+    audio_dataset, audio_start_idx = create_dataset_and_get_first_unwritten_idx(
+        hdf5_file,
+        "audio",
+        (num_samples, channels, sample_rate * signal_duration_seconds),
+        dtype=np.float16,
+        compression="gzip",
+    )
+    mel_dataset, mel_start_idx = create_dataset_and_get_first_unwritten_idx(
+        hdf5_file,
+        "mel_spec",
+        (num_samples, 2, 128, 401),
+        dtype=np.float32,
+        compression="gzip",
+    )
+    param_dataset, param_start_idx = create_dataset_and_get_first_unwritten_idx(
+        hdf5_file,
+        "param_array",
+        (num_samples, num_params),  # +1 for MIDI note
+        dtype=np.float32,
+        compression="gzip",
+    )
+
+    return (
+        audio_dataset,
+        mel_dataset,
+        param_dataset,
+        min(audio_start_idx, mel_start_idx, param_start_idx),
+    )
+
+
 def make_dataset(
     hdf5_file: h5py.File,
     num_samples: int,
@@ -174,23 +245,16 @@ def make_dataset(
     min_loudness: float = -55.0,
     param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
-    audio_dataset = hdf5_file.create_dataset(
-        "audio",
-        (num_samples, channels, sample_rate * signal_duration_seconds),
-        dtype=np.float16,
-        compression="gzip",
-    )
-    mel_dataset = hdf5_file.create_dataset(
-        "mel_spec",
-        (num_samples, 2, 128, 401),
-        dtype=np.float32,
-        compression="gzip",
-    )
-    param_dataset = hdf5_file.create_dataset(
-        "param_array",
-        (num_samples, len(param_spec) + 1),  # +1 for MIDI note
-        dtype=np.float32,
-        compression="gzip",
+
+    audio_dataset, mel_dataset, param_dataset, start_idx = (
+        create_datasets_and_get_start_idx(
+            hdf5_file=hdf5_file,
+            num_samples=num_samples,
+            channels=channels,
+            sample_rate=sample_rate,
+            signal_duration_seconds=signal_duration_seconds,
+            num_params=len(param_spec) + 1,
+        )
     )
 
     audio_dataset.attrs["min_pitch"] = min_pitch
@@ -202,7 +266,8 @@ def make_dataset(
     audio_dataset.attrs["channels"] = channels
     audio_dataset.attrs["min_loudness"] = min_loudness
 
-    for i in trange(num_samples):
+    for i in trange(start_idx, num_samples):
+        logger.info(f"Making sample {i}")
         sample = generate_sample(
             min_pitch=min_pitch,
             max_pitch=max_pitch,
@@ -257,6 +322,8 @@ def main(
     else:
         raise ValueError(f"Invalid param_spec: {param_spec}")
 
+    file_already_exists = os.path.exists(data_file)
+
     with h5py.File(data_file, "w") as f:
         make_dataset(
             f,
@@ -272,6 +339,7 @@ def main(
             signal_duration_seconds,
             min_loudness,
             param_spec,
+            file_already_exists,
         )
 
 
