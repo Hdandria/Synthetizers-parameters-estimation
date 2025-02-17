@@ -351,7 +351,7 @@ def main(
     else:
         raise ValueError(f"Invalid param_spec: {param_spec}")
 
-    with h5py.File(data_file, "w") as f:
+    with h5py.File(data_file, "a") as f:
         make_dataset(
             f,
             num_samples,
