@@ -109,10 +109,18 @@ class ParamSpec(list):
         return np.array(params, dtype=np.float32)
 
     def from_numpy(
-        self, params: np.ndarray, min_pitch: int = 36, max_pitch: int = 84
+        self,
+        params: np.ndarray,
+        min_pitch: int = 36,
+        max_pitch: int = 84,
+        exclude: Optional[List[str]] = None,
     ) -> Tuple[dict[str, float], int]:
         note = params[-1] * (max_pitch - min_pitch) + min_pitch
-        return {p.name: params[i] for i, p in enumerate(self)}, note
+        if exclude is None:
+            exclude = []
+        params_to_process = [p for p in self if p.name not in exclude]
+
+        return {p.name: params[i] for i, p in enumerate(params_to_process)}, note
 
     @property
     def names(self) -> List[str]:

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import click
 import librosa
@@ -112,6 +112,7 @@ def params_to_csv(
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--param_spec", type=str, default="surge_xt")
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
+@click.option("--exclude", "-x", multiple=True, default=[])
 def main(
     pred_dir: str,
     output_dir: str,
@@ -124,6 +125,7 @@ def main(
     signal_duration_seconds: float = 4.0,
     param_spec: str = "surge_xt",
     rerender_target: bool = False,
+    exclude: List[str] = [],
 ):
     if param_spec in ("surge", "surge_xt"):
         param_spec = SURGE_XT_PARAM_SPEC
@@ -166,7 +168,7 @@ def main(
             row_params = pred_params[j].numpy()
             row_params_scaled = (row_params + 1) / 2
             row_params_scaled = np.clip(row_params_scaled, 0, 1)
-            row_params_dict, note = param_spec.from_numpy(row_params_scaled)
+            row_params_dict, note = param_spec.from_numpy(row_params_scaled, exclude=exclude)
 
             load_preset(plugin, preset_path)
             pred_audio = render_params(
