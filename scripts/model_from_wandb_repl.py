@@ -17,10 +17,10 @@ def wandb_dir_to_ckpt_and_hparams(
     ckpt_dir = log_dir / "checkpoints"
 
     if ckpt_type == "last":
-        logger.info(f"Using last checkpoint for {log_dir(log_dir)}")
+        logger.info(f"Using last checkpoint for {log_dir}")
         ckpt_file = ckpt_dir / "last.ckpt"
     elif ckpt_type == "best":
-        logger.info(f"Using best checkpoint for {log_dir(log_dir)}")
+        logger.info(f"Using best checkpoint for {log_dir}")
         ckpt_files = ckpt_dir.glob("epoch*.ckpt")
 
         # most recent file
