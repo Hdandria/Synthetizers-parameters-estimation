@@ -46,14 +46,18 @@ def get_state_dict(ckpt_file: Path, map_location: str = "cuda") -> dict:
 def instantiate_model(
     model_cfg: DictConfig, ckpt_file: Path, map_location: str = "cuda"
 ) -> torch.nn.Module:
+
     logger.info(f"Instantiating model from {ckpt_file} with config:")
     logger.info(OmegaConf.to_yaml(model_cfg))
+    model = hydra.utils.instantiate(model_cfg)
+
+    logger.info("Model instantiated")
+    model.to(device=map_location)
 
     state_dict = get_state_dict(ckpt_file, map_location=map_location)
 
-    model = hydra.utils.instantiate(model_cfg)
-    model.to(device=map_location)
-
+    logger.info("Mapping state dict to params")
+    model.setup(None)
     model.load_state_dict(state_dict)
 
     return model
