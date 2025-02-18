@@ -74,8 +74,8 @@ def main(
     possible_wandb_dirs = list(log_dir.glob(f"**/*{wandb_id}/"))
     logger.info(f"Found {len(possible_wandb_dirs)} log dirs matching wandb id")
 
-    ckpts_and_hparams = map(
-        lambda x: wandb_dir_to_ckpt_and_hparams(x, ckpt_type), possible_wandb_dirs
+    ckpts_and_hparams = list(
+        map(lambda x: wandb_dir_to_ckpt_and_hparams(x, ckpt_type), possible_wandb_dirs)
     )
 
     if len(ckpts_and_hparams) > 1:
