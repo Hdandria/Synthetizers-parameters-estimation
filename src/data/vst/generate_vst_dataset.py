@@ -314,6 +314,15 @@ def make_dataset(
             sample_batch = []
             sample_batch_start += sample_batch_size
 
+    if len(sample_batch) > 0:
+        save_samples(
+            sample_batch,
+            audio_dataset,
+            mel_dataset,
+            param_dataset,
+            sample_batch_start,
+        )
+
 
 @click.command()
 @click.argument("data_file", type=str, required=True)
