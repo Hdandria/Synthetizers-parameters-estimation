@@ -175,7 +175,9 @@ class SurgeFlowMatchingModule(LightningModule):
         steps: int,
         cfg_strength: float,
     ):
-        conditioning = self.encoder(conditioning)
+        if conditioning is not None:
+            conditioning = self.encoder(conditioning)
+
         t = torch.zeros(noise.shape[0], 1, device=noise.device)
         dt = 1.0 / steps
 
