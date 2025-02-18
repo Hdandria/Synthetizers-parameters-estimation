@@ -87,6 +87,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if cfg.get("ckpt_path", False):
         log.info(f"Force loading checkpoint from {cfg.ckpt_path}")
         ckpt = torch.load(cfg.ckpt_path, map_location="cuda", weights_only=False)
+        model.setup(None)
         model.load_state_dict(ckpt["state_dict"])
 
     if mode == "test":
