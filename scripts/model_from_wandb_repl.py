@@ -107,7 +107,19 @@ def main(
     datamodule = instantiate_datamodule(cfg.data)
 
     logger.info("Starting REPL...")
-    embed(user_ns={"model": model, "datamodule": datamodule, "cfg": cfg}, colors="neutral")
+
+    datamodule.setup("fit")
+    ds = datamodule.val_dataset
+    state = {
+        "model": model,
+        "datamodule": datamodule,
+        "cfg": cfg,
+        "ds": ds,
+        "torch": torch,
+    }
+
+    torch.set_grad_enabled(False)
+    embed(user_ns=state, colors="neutral")
 
 
 if __name__ == "__main__":
