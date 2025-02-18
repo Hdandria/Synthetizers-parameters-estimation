@@ -104,7 +104,7 @@ def main(
     datamodule = instantiate_datamodule(cfg.data)
 
     logger.info("Starting REPL...")
-    embed(user_ns={"model": model, "datamodule": datamodule, "cfg": cfg})
+    embed(user_ns={"model": model, "datamodule": datamodule, "cfg": cfg}, colors="neutral")
 
 
 if __name__ == "__main__":
