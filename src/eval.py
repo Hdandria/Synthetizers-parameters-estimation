@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple
 
 import hydra
 import rootutils
+import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
@@ -64,7 +65,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger, callbacks=callbacks)
+    trainer: Trainer = hydra.utils.instantiate(
+        cfg.trainer, logger=logger, callbacks=callbacks
+    )
 
     object_dict = {
         "cfg": cfg,
@@ -80,6 +83,11 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         log_hyperparameters(object_dict)
 
     mode = cfg.get("mode", "test")
+
+    if cfg.get("ckpt_path", False):
+        log.info(f"Force loading checkpoint from {cfg.ckpt_path}")
+        ckpt = torch.load(cfg.ckpt_path, map_location="cuda", weights_only=False)
+        model.load_state_dict(ckpt["state_dict"])
 
     if mode == "test":
         log.info("Starting testing!")
