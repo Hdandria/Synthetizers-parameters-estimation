@@ -3,10 +3,13 @@ from typing import Literal, Tuple
 
 import click
 import hydra
+import rootutils
 import torch
 from IPython import embed
 from loguru import logger
 from omegaconf import DictConfig, OmegaConf
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def wandb_dir_to_ckpt_and_hparams(
@@ -35,7 +38,7 @@ def wandb_dir_to_ckpt_and_hparams(
 
 def get_state_dict(ckpt_file: Path, map_location: str = "cuda") -> dict:
     logger.info(f"Loading checkpoint from {ckpt_file}")
-    ckpt = torch.load(ckpt_file, map_location=map_location, weight_only=False)
+    ckpt = torch.load(ckpt_file, map_location=map_location, weights_only=False)
     state_dict = ckpt["state_dict"]
     return state_dict
 
