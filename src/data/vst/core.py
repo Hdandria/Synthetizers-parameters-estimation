@@ -78,7 +78,7 @@ def render_params(
         load_preset(plugin, preset_path)
 
     logger.debug("post-load flush")
-    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
     logger.debug("setting params")
@@ -86,18 +86,18 @@ def render_params(
     # plugin.reset()
 
     logger.debug("post-param flush")
-    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
     midi_events = midi_pitch_to_event(midi_note, velocity, note_duration_seconds)
 
     logger.debug("rendering audio")
     output = plugin.process(
-        midi_events, signal_duration_seconds, sample_rate, channels, 8192, True
+        midi_events, signal_duration_seconds, sample_rate, channels, 2048, True
     )
 
     logger.debug("post-render flush")
-    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
     return output
