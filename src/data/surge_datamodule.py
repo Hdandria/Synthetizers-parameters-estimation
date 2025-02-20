@@ -311,8 +311,8 @@ class SurgeDataModule(LightningDataModule):
             # sampler=WithinChunkShuffledSampler(
             #     self.batch_size, len(self.train_dataset), 4
             # ),
-            # sampler=ShiftedBatchSampler(self.batch_size, len(self.train_dataset)),
-            sampler=ShuffledSampler(self.batch_size, len(self.train_dataset)),
+            sampler=ShiftedBatchSampler(self.batch_size, len(self.train_dataset)),
+            # sampler=ShuffledSampler(self.batch_size, len(self.train_dataset)),
             # shuffle=True,
         )
 
