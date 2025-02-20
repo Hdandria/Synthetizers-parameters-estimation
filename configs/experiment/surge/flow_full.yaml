@@ -15,4 +15,4 @@ tags:
 callbacks:
   log_per_param_mse:
     _target_: src.utils.callbacks.LogPerParamMSE
-    param_spec: surge_simple
+    param_spec: surge
