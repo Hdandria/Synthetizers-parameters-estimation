@@ -6,4 +6,8 @@ defaults:
   - override /data: surge
   - _self_
 
-run_name: flow_full
+run_name: flow
+experiment_name: surge-full
+
+tags:
+  - surge

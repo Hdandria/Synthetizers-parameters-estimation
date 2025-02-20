@@ -15,14 +15,14 @@ defaults:
 experiment_name: surge-full
 
 tags:
-  - surge-mini
+  - surge
 
 seed: 3123123
 
 logger:
   wandb:
     tags: ${tags}
-    name: surge-mini_${run_name}
+    name: ${experiment_name}_${run_name}
     group: ${experiment_name}
 
 callbacks:
