@@ -1019,7 +1019,7 @@ class ASTWithProjectionHead(AudioSpectrogramTransformer):
         self.final_proj = nn.Linear(d_model, d_out)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = super().forward(x)
+        x = super().forward(x)[:, 0]
 
         x = self.prediction_head(x) + x
         x = self.final_proj(x)
