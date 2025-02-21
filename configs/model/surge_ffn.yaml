@@ -12,7 +12,7 @@ net:
   patch_size: 16
   patch_stride: 10
   input_channels: 2
-  spec_space: [128, 401]
+  spec_shape: [128, 401]
 
 scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
