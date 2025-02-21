@@ -812,12 +812,13 @@ class ApproxEquivTransformer(nn.Module):
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)
         x = self.projection.param_to_token(x)
 
+        t = self.time_encoding(t)
+
         layerwise_conditioning = False
         if conditioning.ndim == 3:
             t = t.unsqueeze(1).repeat(1, conditioning.shape[1], 1)
             layerwise_conditioning = True
 
-        t = self.time_encoding(t)
         z = torch.cat((conditioning, t), dim=-1)
         z = self.conditioning_ffn(z)
 

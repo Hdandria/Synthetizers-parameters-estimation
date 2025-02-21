@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - surge/base
+  - override /model: surge_flowmlp_full
+  - override /data: surge
+  - _self_
+
+run_name: flowmlp
+experiment_name: surge-full
+
+tags:
+  - surge
+
+callbacks:
+  log_per_param_mse:
+    _target_: src.utils.callbacks.LogPerParamMSE
+    param_spec: surge_xt

@@ -2,8 +2,8 @@
 
 defaults:
   - surge/base
-  - override /model: surge_flow
+  - override /model: surge_flowmlp
   - _self_
 
 experiment_name: surge-simple
-run_name: flow
+run_name: flowmlp

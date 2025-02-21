@@ -1,0 +1,41 @@
+defaults:
+  - encoder: ast_for_mlp
+  - _self_
+
+_target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
+
+warmup_steps: 0
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  T_max: ${trainer.max_steps}
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 1e-4
+  weight_decay: 0.0
+
+vector_field:
+  _target_: src.models.components.residual_mlp.ConditionalResidualMLP
+  n_params: 90
+  d_model: 768
+  d_enc: 256
+  conditioning_dim: ${model.encoder.d_model}
+  num_layers: 16
+
+
+# training
+cfg_dropout_rate: 0.1
+
+
+rectified_sigma_min: 0.0
+
+# sampling
+validation_sample_steps: 50
+validation_cfg_strength: 2.0
+test_sample_steps: 200
+test_cfg_strength: 2.0
+
+# compile model for faster training with pytorch 2.0
+compile: true
