@@ -182,6 +182,7 @@ def main(
                 channels,
             )
 
+            out_target = os.path.join(sample_dir, "target.wav")
             if rerender_target:
                 target_params_ = target_params[j].numpy()
                 target_params_ = (target_params_ + 1) / 2
@@ -199,19 +200,16 @@ def main(
                     sample_rate,
                     channels,
                 )
+                with AudioFile(out_target, "w", sample_rate, channels) as f:
+                    f.write(new_target.T)
+
+            else:
+                with AudioFile(out_target, "w", sample_rate, channels) as f:
+                    f.write(target_audio[j].T)
 
             out_pred = os.path.join(sample_dir, "pred.wav")
             with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
-
-            out_target = os.path.join(sample_dir, "target.wav")
-            with AudioFile(out_target, "w", sample_rate, channels) as f:
-                f.write(target_audio[j].T)
-
-            if rerender_target:
-                out_new_target = os.path.join(sample_dir, "new_target.wav")
-                with AudioFile(out_new_target, "w", sample_rate, channels) as f:
-                    f.write(new_target.T)
 
             write_spectrograms(
                 pred_audio,
