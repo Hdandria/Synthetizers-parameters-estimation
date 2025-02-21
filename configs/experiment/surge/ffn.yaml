@@ -9,4 +9,4 @@ experiment_name: surge-simple
 run_name: ffn
 
 callbacks:
-  plot_projii: null
+  plot_proj_ii: null
