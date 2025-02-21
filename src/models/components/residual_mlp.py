@@ -97,7 +97,7 @@ class ConditionalResidualMLP(nn.Module):
     ):
         super().__init__()
 
-        self.cfg_dropout_token = nn.Parameter(torch.randn(1, conditioning_dim))
+        self.cfg_dropout_token = nn.Parameter(torch.randn(1, 1, conditioning_dim))
 
         self.in_proj = nn.Linear(n_params, d_model)
         self.out_proj = nn.Linear(d_model, n_params)
@@ -120,14 +120,15 @@ class ConditionalResidualMLP(nn.Module):
         if rate == 0.0:
             return z
 
-        dropout_mask = torch.rand(z.shape[0], 1, device=z.device) > rate
-        if z.ndim == 3:
-            dropout_mask = dropout_mask.unsqueeze(-1)
+        dropout_mask = torch.rand(z.shape[0], 1, 1, device=z.device) > rate
         return z.where(dropout_mask, self.cfg_dropout_token)
 
     def forward(
-        self, x: torch.Tensor, t: torch.Tensor, c: torch.Tensor
+        self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]
     ) -> torch.Tensor:
+        if c is None:
+            c = self.cfg_dropout_token.expand(x.shape[0], len(self.net), -1)
+
         t = self.time_encoding(t)
 
         t = t.unsqueeze(1).repeat(1, c.shape[1], 1)
