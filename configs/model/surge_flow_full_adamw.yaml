@@ -1,0 +1,61 @@
+defaults:
+  - encoder: ast
+  - _self_
+
+_target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
+
+warmup_steps: 0
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  T_max: ${trainer.max_steps}
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 1e-4
+  weight_decay: 0.01
+
+vector_field:
+  _target_: src.models.components.transformer.ApproxEquivTransformer
+  projection:
+    _target_: src.models.components.transformer.LearntProjection
+    d_model: ${model.vector_field.d_model}
+    num_params: 163
+    num_tokens: 128
+    filler_tokens: 0
+    sym_init: true
+    var_penalty: false
+    initial_ffn: true
+    final_ffn: false
+  num_layers: 8
+  d_model: 768
+  conditioning_dim: ${model.encoder.d_model}
+  num_heads: 12
+  d_ff: 768
+  num_tokens: ${model.vector_field.projection.num_tokens}
+  learn_pe: false
+  learn_projection: true
+  pe_type: none
+  pe_penalty: 0.0
+  time_encoding: sinusoidal
+  projection_penalty: 0.01
+  norm: layer
+  skip_first_norm: false
+  adaln_mode: basic
+  zero_init: false
+
+# training
+cfg_dropout_rate: 0.1
+
+
+rectified_sigma_min: 0.0
+
+# sampling
+validation_sample_steps: 50
+validation_cfg_strength: 2.0
+test_sample_steps: 200
+test_cfg_strength: 2.0
+
+# compile model for faster training with pytorch 2.0
+compile: true
