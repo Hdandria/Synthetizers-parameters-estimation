@@ -94,9 +94,11 @@ def params_to_csv(
     """Write the target and predicted parameters to a CSV file."""
     row_names = param_spec.names
 
-    df = pd.DataFrame(
-        data={"Target": target_params, "Pred": pred_params}, index=row_names
-    )
+    data = {"Pred": pred_params}
+    if target_params is not None:
+        data["Target"] = target_params
+
+    df = pd.DataFrame(data, index=row_names)
     df.to_csv(save_path)
 
 
@@ -112,6 +114,7 @@ def params_to_csv(
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--param_spec", type=str, default="surge_xt")
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
+@click.option("--no-params", "-X", is_flag=True, default=False)
 @click.option("--exclude", "-x", multiple=True, default=[])
 def main(
     pred_dir: str,
@@ -125,6 +128,7 @@ def main(
     signal_duration_seconds: float = 4.0,
     param_spec: str = "surge_xt",
     rerender_target: bool = False,
+    no_params: bool = False,
     exclude: List[str] = [],
 ):
     if param_spec in ("surge", "surge_xt"):
@@ -147,8 +151,12 @@ def main(
     pred_dir = Path(pred_dir)
     pred_files = [f for f in pred_dir.glob("pred-*.pt") if f.is_file()]
     indices = [int(f.stem.split("-")[1]) for f in pred_files]
-    target_param_files = [pred_dir / f"target-params-{i}.pt" for i in indices]
     target_audio_files = [pred_dir / f"target-audio-{i}.pt" for i in indices]
+
+    if no_params:
+        target_param_files = [None] * len(pred_files)
+    else:
+        target_param_files = [pred_dir / f"target-params-{i}.pt" for i in indices]
 
     # 4. foreach .pt file
     current_offset = 0
@@ -156,8 +164,12 @@ def main(
         enumerate(zip(pred_files, target_param_files, target_audio_files))
     ):
         pred_params = torch.load(pred_file, map_location="cpu")
-        target_params = torch.load(target_param_file, map_location="cpu")
         target_audio = torch.load(target_audio_file, map_location="cpu").numpy()
+
+        if target_param_file is None:
+            target_params = None
+        else:
+            target_params = torch.load(target_param_file, map_location="cpu")
 
         # 5. iterate over its internal rows and render the audio
         for j in trange(pred_params.shape[0]):
@@ -185,7 +197,7 @@ def main(
             )
 
             out_target = os.path.join(sample_dir, "target.wav")
-            if rerender_target:
+            if rerender_target and target_params is not None:
                 target_params_ = target_params[j].numpy()
                 target_params_ = (target_params_ + 1) / 2
                 target_params_ = np.clip(target_params_, 0, 1)
@@ -221,7 +233,7 @@ def main(
             )
 
             params_to_csv(
-                target_params[j].numpy(),
+                target_params[j].numpy() if target_params is not None else None,
                 row_params,
                 os.path.join(sample_dir, "params.csv"),
                 param_spec,
