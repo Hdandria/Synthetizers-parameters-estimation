@@ -42,7 +42,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx: int):
         file = self.files[idx]
 
-        with AudioFile(file, "r") as f:
+        with AudioFile(str(file), "r") as f:
             sample_rate = f.sample_rate
             num_frames = int(sample_rate * self.segment_length_seconds)
             audio = f.read(num_frames)
