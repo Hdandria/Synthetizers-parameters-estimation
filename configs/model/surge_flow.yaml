@@ -21,7 +21,7 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
-    num_params: 90
+    num_params: ${model.num_params}
     num_tokens: 128
     filler_tokens: 0
     sym_init: true
@@ -45,6 +45,8 @@ vector_field:
   adaln_mode: basic
   zero_init: false
   outer_residual: false
+
+num_params: 90
 
 # training
 cfg_dropout_rate: 0.1

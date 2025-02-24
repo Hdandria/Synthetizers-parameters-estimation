@@ -2,5 +2,4 @@ defaults:
   - surge_flowmlp
   - _self_
 
-vector_field:
-  n_params: 163
+num_params: 163

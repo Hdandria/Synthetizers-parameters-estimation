@@ -1,0 +1,2 @@
+_target_: src.data.audio_datamodule.AudioDataModule
+root: /data/EECS-C4DM-Fazekas/benhayes/FSD50K.eval_audio/

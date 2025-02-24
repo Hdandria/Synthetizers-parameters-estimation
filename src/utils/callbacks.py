@@ -340,19 +340,25 @@ class PredictionWriter(BasePredictionWriter):
         prediction, batch = prediction
         torch.save(prediction, os.path.join(self.output_dir, f"pred-{batch_idx}.pt"))
         torch.save(
-            batch["params"],
-            os.path.join(self.output_dir, f"target-params-{batch_idx}.pt"),
-        )
-        torch.save(
             batch["audio"],
             os.path.join(self.output_dir, f"target-audio-{batch_idx}.pt"),
         )
 
+        if "params" in batch:
+            torch.save(
+                batch["params"],
+                os.path.join(self.output_dir, f"target-params-{batch_idx}.pt"),
+            )
+
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
         predictions, batch = predictions
         torch.save(predictions, os.path.join(self.output_dir, "predictions.pt"))
-        torch.save(batch["params"], os.path.join(self.output_dir, "target-params.pt"))
         torch.save(batch["audio"], os.path.join(self.output_dir, "target-audio.pt"))
+
+        if "params" in batch:
+            torch.save(
+                batch["params"], os.path.join(self.output_dir, "target-params.pt")
+            )
 
 
 class LogPerParamMSE(Callback):
