@@ -53,7 +53,7 @@ class SurgeFlowMatchingModule(LightningModule):
         test_sample_steps: int = 100,
         test_cfg_strength: float = 4.0,
         compile: bool = False,
-        params_per_token: int = 2,
+        num_params: int = 90,
     ):
         super().__init__()
 
@@ -239,12 +239,16 @@ class SurgeFlowMatchingModule(LightningModule):
     def on_test_epoch_end(self) -> None:
         pass
 
-    def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def predict_step(self, batch: dict[str, Any], batch_idx: int):
         conditioning = self._get_conditioning_from_batch(batch)
         return (
             self._sample(
                 conditioning,
-                torch.randn_like(batch["params"]),
+                torch.randn(
+                    conditioning.shape[0],
+                    self.hparams.num_params,
+                    device=conditioning.device,
+                ),
                 self.hparams.test_sample_steps,
                 self.hparams.test_cfg_strength,
             ),
