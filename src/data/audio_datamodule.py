@@ -35,7 +35,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         root: str,
         segment_length_seconds: float = 4.0,
         stats_file: Optional[str] = None,
-        sample_rate: float = 44100.0
+        sample_rate: float = 44100.0,
     ):
         self.segment_length_seconds = segment_length_seconds
 
@@ -74,13 +74,16 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             )
 
         start_samples = int(0.05 * sample_rate)
-        target_samples = int(sample_rate * length_seconds)
+        target_samples = int(sample_rate * self.segment_length_seconds)
         audio = np.pad(audio, [(0, 0), (start_samples, 0)], mode="constant")
 
         if audio.shape[1] > target_samples:
             audio = audio[:, :num_frames]
+
         elif audio.shape[1] < target_samples:
-            audio = np.pad(audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant")
+            audio = np.pad(
+                audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant"
+            )
 
         spec = make_spectrogram(audio, sample_rate)
         if self.mean is not None:
