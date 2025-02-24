@@ -1,0 +1,7 @@
+_target_: src.data.audio_datamodule.AudioDataModule
+root: /data/EECS-C4DM-Fazekas/benhayes/nsynth/
+batch_size: 32
+num_workers: 4
+segment_length_seconds: 4.0
+shuffle: true
+stats_file: /data/scratch/acw585/surge/stats.npz

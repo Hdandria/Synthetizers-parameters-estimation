@@ -35,6 +35,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         root: str,
         segment_length_seconds: float = 4.0,
         stats_file: Optional[str] = None,
+        sample_rate: float = 44100.0
     ):
         self.segment_length_seconds = segment_length_seconds
 
@@ -49,15 +50,17 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             self.mean = None
             self.std = None
 
+        self.sample_rate = sample_rate
+
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, idx: int):
         file = self.files[idx]
 
-        length_seconds = self.segment_length_seconds - 0.05
+        length_seconds = max(self.segment_length_seconds - 0.05, 0.0)
 
-        with AudioFile(str(file), "r") as f:
+        with AudioFile(str(file), "r").resampled_to(self.sample_rate) as f:
             sample_rate = f.samplerate
             num_frames = int(sample_rate * length_seconds)
             audio = f.read(num_frames)
@@ -71,8 +74,13 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             )
 
         start_samples = int(0.05 * sample_rate)
-        end_samples = num_frames - (start_samples + samples)
-        audio = np.pad(audio, [(0, 0), (start_samples, end_samples)], mode="constant")
+        target_samples = int(sample_rate * length_seconds)
+        audio = np.pad(audio, [(0, 0), (start_samples, 0)], mode="constant")
+
+        if audio.shape[1] > target_samples:
+            audio = audio[:, :num_frames]
+        elif audio.shape[1] < target_samples:
+            audio = np.pad(audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant")
 
         spec = make_spectrogram(audio, sample_rate)
         if self.mean is not None:
