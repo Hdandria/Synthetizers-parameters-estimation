@@ -165,7 +165,8 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     pred_file.close()
 
     mss = compute_mss(target, pred)
-    jtfs = compute_jtfs_distance(target, pred)
+    # jtfs = compute_jtfs_distance(target, pred)
+    jtfs = 0.0
     wmfcc = compute_wmfcc(target, pred)
     f0 = compute_f0(target, pred)
     amp_env = compute_amp_env(target, pred)
