@@ -66,20 +66,20 @@ def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
 
 
 def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
-    target = AudioFile(str(audio_dir / "target.wav"))
-    pred = AudioFile(str(audio_dir / "pred.wav"))
+    target_file = AudioFile(str(audio_dir / "target.wav"))
+    pred_file = AudioFile(str(audio_dir / "pred.wav"))
 
-    target = target.read(target.frames)
-    pred = pred.read(pred.frames)
+    target = target_file.read(target_file.frames)
+    pred = pred_file.read(pred_file.frames)
+
+    target_file.close()
+    pred_file.close()
 
     mss = compute_mss(target, pred)
     jtfs = compute_jtfs(target, pred)
     wmfcc = compute_wmfcc(target, pred)
     f0 = compute_f0(target, pred)
     amp_env = compute_amp_env(target, pred)
-
-    target.close()
-    pred.close()
 
     return dict(mss=mss, jtfs=jtfs, wmfcc=wmfcc, f0=f0, amp_env=amp_env)
 
