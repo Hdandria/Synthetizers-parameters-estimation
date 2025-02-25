@@ -127,7 +127,7 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
 
     metric_dfs = []
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = [executor.submit(compute_metrics, sublist) for sublist in sublists]
+        futures = [executor.submit(compute_metrics, sublist, output_dir) for sublist in sublists]
 
         for future in as_completed(futures):
             metric_file = future.result()
