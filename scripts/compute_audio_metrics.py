@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import List
 
 import click
+import librosa
 import numpy as np
 import pandas as pd
 from pedalboard.io import AudioFile
@@ -45,8 +46,43 @@ def find_possible_subdirs(audio_dir: Path) -> List[Path]:
     return matching_dirs
 
 
+MEL_PARAMS = [
+    (10, 5, 32),
+    (25, 10, 64),
+    (100, 50, 128),
+]
+
+
+def compute_mel_specs(y: np.ndarray, sample_rate: float = 44100.0):
+    mel_specs = []
+    for window_size, hop_size, n_mels in MEL_PARAMS:
+        window_size = int(window_size * sample_rate / 1000.0)
+        hop_size = int(hop_size * sample_rate / 1000.0)
+
+        spec = librosa.feature.melspectrogram(
+            y=y,
+            sr=sample_rate,
+            n_mels=n_mels,
+            n_fft=window_size,
+            hop_length=hop_size,
+            window="hann",
+        )
+        spec_db = librosa.power_to_db(spec, ref=np.max)
+        mel_specs.append(spec_db)
+
+    return mel_specs
+
+
 def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
-    return 0.0
+    target_specs = compute_mel_specs(target)
+    pred_specs = compute_mel_specs(pred)
+
+    dist = 0.0
+    for target_spec, pred_spec in zip(target_specs, pred_specs):
+        dist += np.mean(np.abs(target_spec - pred_spec))
+
+    dist = dist / len(target_specs)
+    return dist
 
 
 def compute_jtfs(target: np.ndarray, pred: np.ndarray) -> float:
