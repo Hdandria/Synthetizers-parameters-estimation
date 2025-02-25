@@ -134,7 +134,10 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
 
         for future in as_completed(futures):
             metric_file = future.result()
-            metric_dfs.append(pd.read_csv(metric_file))
+            metric_df = pd.read_csv(metric_file)
+            # set index to first column
+            metric_df.set_index(metric_df.columns[0], inplace=True)
+            metric_dfs.append(metric_df)
 
     df = pd.concat(metric_dfs)
     df.to_csv(output_dir / "metrics.csv")
