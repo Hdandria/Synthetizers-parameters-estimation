@@ -159,8 +159,8 @@ def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
     target_activations = get_pesto_activations(target)
     pred_activations = get_pesto_activations(pred)
 
-    target_norm = np.linalg.norm(target, 2)
-    pred_norm = np.linalg.norm(pred, 2)
+    target_norm = np.linalg.vector_norm(target, axis=-1, ord=2)
+    pred_norm = np.linalg.vector_norm(pred, axis=-1, ord=2)
     cosine_sim = np.einsum("ij,ij->i", target_activations, pred_activations) / (
         target_norm * pred_norm
     )
