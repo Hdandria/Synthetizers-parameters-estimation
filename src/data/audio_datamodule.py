@@ -54,6 +54,11 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         self.amp_scale = amp_scale
         self.sample_rate = sample_rate
 
+    @staticmethod
+    def get_stats_file_path(root: Union[str, Path]) -> Path:
+        data_dir = Path(root)
+        return data_dir / "stats.npz"
+
     def __len__(self):
         return len(self.files)
 

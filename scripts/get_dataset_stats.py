@@ -1,3 +1,4 @@
+import os
 import sys
 
 import dask.array as da
@@ -5,14 +6,14 @@ import h5py
 import numpy as np
 import rootutils
 from dask.distributed import Client, progress
+from loguru import logger
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+from src.data.audio_datamodule import AudioFolderDataset
 from src.data.surge_datamodule import SurgeXTDataset
 
-if __name__ == "__main__":
 
-    # filename = "/data/scratch/acw585/surge/train.hdf5"
-    filename = sys.argv[1]
+def get_stats_hdf5(filename):
     dataset_name = "mel_spec"
 
     num_workers = 4
@@ -48,3 +49,51 @@ if __name__ == "__main__":
     mean = mean_val.compute()
     std = std_val.compute()
     np.savez(out_file, mean=mean, std=std)
+
+
+def update(existing, new):
+    count, mean, M2 = existing
+    count += 1
+    delta = new - mean
+    mean += delta / count
+    delta2 = new - mean
+    M2 += delta * delta2
+    return count, mean, M2
+
+
+def finalize(existing):
+    count, mean, M2 = existing
+    variance = M2 / count if count > 1 else 0
+    return mean, np.sqrt(variance)
+
+
+def get_stats_directory(directory):
+    dataset = AudioFolderDataset(directory)
+    out_file = AudioFolderDataset.get_stats_file_path(directory)
+
+    existing = (0, 0, 0)
+    # we run Welford's online algorithm
+    for i in range(len(dataset)):
+        x = dataset[i]["mel_spec"]
+        existing = update(existing, x)
+
+        if i % 10 == 0:
+            logger.info(f"Processed {i + 1} files...")
+
+    mean, std = finalize(existing)
+    
+
+    logger.info(f"Saving to {str(out_file)}")
+
+    np.savez(out_file, mean=mean, std=std)
+
+
+if __name__ == "__main__":
+
+    # filename = "/data/scratch/acw585/surge/train.hdf5"
+    filename = sys.argv[1]
+
+    if os.splitext(filename)[-1] == ".hdf5":
+        get_stats_hdf5(filename)
+    else:
+        get_stats_directory(filename)
