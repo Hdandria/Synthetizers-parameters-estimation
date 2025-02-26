@@ -190,7 +190,7 @@ def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
     target_norm = np.linalg.vector_norm(target_rms, axis=-1, ord=2)
     pred_norm = np.linalg.vector_norm(pred_rms, axis=-1, ord=2)
 
-    cosine_sim = np.dot(target_rms, pred_rms) / (target_norm * pred_norm)
+    cosine_sim = np.dot(target_rms[0], pred_rms[0]) / (target_norm * pred_norm)
 
     return cosine_sim.mean()
 
