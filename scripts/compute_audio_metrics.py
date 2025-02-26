@@ -146,10 +146,15 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
     return dist.normalizedDistance
 
 
+pesto_model = None
 def get_pesto_activations(audio: np.ndarray, sample_rate: float = 44100.0) -> np.ndarray:
+    global pesto_model
+    if pesto_model is None:
+        pesto_model = pesto.load_model("mir-1k_g7", step_size=20.0)
+
     x = torch.from_numpy(audio)
     x = x.mean(0)
-    _, _, _, activations = pesto.predict(x, sample_rate)
+    _, _, _, activations = pesto_model(x, sample_rate)
 
     return activations.numpy()
 
@@ -159,8 +164,8 @@ def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
     target_activations = get_pesto_activations(target)
     pred_activations = get_pesto_activations(pred)
 
-    target_norm = np.linalg.vector_norm(target, axis=-1, ord=2)
-    pred_norm = np.linalg.vector_norm(pred, axis=-1, ord=2)
+    target_norm = np.linalg.vector_norm(target_activations, axis=-1, ord=2)
+    pred_norm = np.linalg.vector_norm(pred_activations, axis=-1, ord=2)
     cosine_sim = np.einsum("ij,ij->i", target_activations, pred_activations) / (
         target_norm * pred_norm
     )
