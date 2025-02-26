@@ -204,14 +204,16 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
-    target_stft = target_stft / np.clip(target_stft.sum(axis=-1, keepdims=True), 1e-6, None)
+    target_stft = target_stft / np.clip(
+        target_stft.sum(axis=-1, keepdims=True), 1e-6, None
+    )
     pred_stft = pred_stft / np.clip(pred_stft.sum(axis=-1, keepdims=True), 1e-6, None)
 
     dists = batched_wasserstein_distance_np(target_stft, pred_stft)
     return dists.mean()
 
 
-def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
+def compute_rms(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing amp env...")
     win_length = int(0.05 * 44100)
     hop_length = int(0.025 * 44100)
@@ -242,13 +244,11 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     pred_file.close()
 
     mss = compute_mss(target, pred)
-    # jtfs = compute_jtfs_distance(target, pred)
-    jtfs = 0.0
     wmfcc = compute_wmfcc(target, pred)
     sot = compute_sot(target, pred)
-    amp_env = compute_amp_env(target, pred)
+    rms = compute_rms(target, pred)
 
-    return dict(mss=mss, jtfs=jtfs, wmfcc=wmfcc, sot=sot, amp_env=amp_env)
+    return dict(mss=mss, wmfcc=wmfcc, sot=sot, rms=rms)
 
 
 def compute_metrics(audio_dirs: List[Path], output_dir: Path):
