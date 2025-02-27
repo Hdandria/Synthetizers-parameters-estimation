@@ -20,4 +20,4 @@ AUDIO_DIR=${JOB_DIR}/audio
 mkdir -p $AUDIO_DIR
 
 module load hdf5-parallel
-apptainer exec ../containers/hdf5.sif ./renderscript.sh $PRED_DIR $AUDIO_DIR $DATASET
+apptainer exec ../containers/torch.sif ./renderscript.sh $PRED_DIR $AUDIO_DIR $DATASET

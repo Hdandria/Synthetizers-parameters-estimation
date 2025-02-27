@@ -116,6 +116,7 @@ def params_to_csv(
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
 @click.option("--no-params", "-X", is_flag=True, default=False)
 @click.option("--exclude", "-x", multiple=True, default=[])
+@click.option("--skip-spectrogram", "-S", is_flag=True, default=False)
 def main(
     pred_dir: str,
     output_dir: str,
@@ -130,6 +131,7 @@ def main(
     rerender_target: bool = False,
     no_params: bool = False,
     exclude: List[str] = [],
+    skip_spectrogram: bool = False,
 ):
     if param_spec in ("surge", "surge_xt"):
         param_spec = SURGE_XT_PARAM_SPEC
@@ -225,12 +227,13 @@ def main(
             with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
 
-            write_spectrograms(
-                pred_audio,
-                target_audio[j],
-                sample_rate,
-                os.path.join(sample_dir, "spec.png"),
-            )
+            if not skip_spectrogram:
+                write_spectrograms(
+                    pred_audio,
+                    target_audio[j],
+                    sample_rate,
+                    os.path.join(sample_dir, "spec.png"),
+                )
 
             params_to_csv(
                 target_params[j].numpy() if target_params is not None else None,
