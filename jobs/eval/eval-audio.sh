@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ -l h_rt=1:0:0
+#$ -l h_rt=24:0:0
 #$ -l h_vmem=4G
 #$ -pe smp 16
 #$ -l centos
