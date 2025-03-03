@@ -8,7 +8,7 @@
 #$ -j y
 #$ -o dlogs/
 #$ -e dlogs/
-#$ -t 1-8
+#$ -t 11-12
 
 JOB_PARAMS=$(sed -n "${SGE_TASK_ID}p" jobs/render/render-jobs.txt)
 JOB_DIR=$(echo $JOB_PARAMS | cut -d' ' -f1)

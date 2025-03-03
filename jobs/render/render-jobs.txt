@@ -8,3 +8,5 @@
 /data/EECS-C4DM-Fazekas/benhayes/surge-preds/flowmlp_nsynth/eval/surge-full/flowmlp-2025-02-26_16-02-25 full
 /data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_full/eval/surge-full/ffn-2025-03-02_16-55-18 full
 /data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_simple/eval/surge-simple/ffn-2025-03-02_16-53-02 simple
+/data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_nsynth/eval/surge-full/ffn-2025-03-03_14-55-46 full
+/data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_fsd/eval/surge-full/ffn-2025-03-03_15-05-19 full
