@@ -71,7 +71,8 @@ class SurgeFeedForwardModule(LightningModule):
         pass
 
     def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        _, preds, _, _ = self.model_step(batch)
+        mel_spec = batch["mel_spec"]
+        preds = self.net(mel_spec)
         return (
             preds,
             batch,
