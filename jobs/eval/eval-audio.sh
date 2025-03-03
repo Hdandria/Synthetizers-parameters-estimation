@@ -2,7 +2,7 @@
 #$ -l h_rt=24:0:0
 #$ -l h_vmem=4G
 #$ -pe smp 16
-#$ -l centos
+#$ -l rocky
 #$ -l node_type=ddy
 #$ -cwd
 #$ -j y
