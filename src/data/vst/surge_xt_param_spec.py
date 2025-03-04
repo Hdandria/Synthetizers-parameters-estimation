@@ -1,4 +1,10 @@
-from src.data.vst.param_spec import ContinuousParameter, DiscreteParameter, ParamSpec
+from src.data.vst.param_spec import (
+    CategoricalParameter,
+    ContinuousParameter,
+    DiscreteLiteralParameter,
+    NoteDurationParameter,
+    ParamSpec,
+)
 
 SURGE_XT_PARAM_SPEC = ParamSpec(
     [
@@ -10,10 +16,11 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             name="a_amp_eg_release", min=0.0, max=0.77
         ),  # max around 4s
         # -- Shape params
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_amp_eg_envelope_mode",
             values=["Digital", "Analog"],
             raw_values=[0.25, 0.75],
+            encoding="onehot",
         ),
         # Filter Envelope
         ContinuousParameter(
@@ -27,17 +34,24 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             name="a_filter_eg_release", min=0.0, max=0.77
         ),  # max around 4s
         # -- Shape params
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_filter_eg_envelope_mode",
             values=["Digital", "Analog"],
             raw_values=[0.25, 0.75],
+            encoding="onehot",
         ),
         # Filters
         ContinuousParameter(
             name="a_feedback", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
-        ContinuousParameter(name="a_filter_balance", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5),
-        DiscreteParameter(
+        ContinuousParameter(
+            name="a_filter_balance",
+            min=0.0,
+            max=1.0,
+            constant_val_p=0.5,
+            constant_val=0.5,
+        ),
+        CategoricalParameter(
             name="a_filter_configuration",
             values=[
                 "Serial 1",
@@ -59,13 +73,14 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 # 0.8540000000000001,
                 0.9625,
             ],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_highpass", min=0.0, max=1.0, constant_val_p=0.5),
         # -- Filter 1
         ContinuousParameter(name="a_filter_1_cutoff", min=0.0, max=1.0),
         ContinuousParameter(name="a_filter_1_feg_mod_amount", min=0.0, max=1.0),
         ContinuousParameter(name="a_filter_1_resonance", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_filter_1_type",
             values=[
                 "LP 12 dB",
@@ -137,12 +152,13 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 # 0.9655,
                 # 0.99,
             ],
+            encoding="onehot",
         ),
         # -- Filter 2
         ContinuousParameter(name="a_filter_2_cutoff", min=0.0, max=1.0),
         ContinuousParameter(name="a_filter_2_feg_mod_amount", min=0.0, max=1.0),
         ContinuousParameter(name="a_filter_2_resonance", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_filter_2_type",
             values=[
                 "LP 12 dB",
@@ -214,6 +230,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 # 0.9655,
                 # 0.99,
             ],
+            encoding="onehot",
         ),
         # Waveshaper
         ContinuousParameter(
@@ -223,7 +240,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             constant_val_p=0.5,
             constant_val=0.5,
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_waveshaper_type",
             values=[
                 "Off",
@@ -360,16 +377,18 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 # 1.0,
                 # 1.0,
             ],
+            encoding="onehot",
         ),
         # Oscillators
         # -- Oscillator 1
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_1_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.9, 0.1],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_1_octave",
             values=[-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
             raw_values=[
@@ -390,14 +409,16 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 1.0,
                 1.0,
             ],
+            encoding="onehot",
         ),
         ContinuousParameter(
             name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_1_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_1_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_1_width", min=0.0, max=1.0),
@@ -407,7 +428,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             min=0.0,
             max=1.0,
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_1_unison_voices",
             values=[
                 "1 voice",
@@ -422,18 +443,20 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.203,
             ],
             weights=[3.0, 1, 1, 1],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_1_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_1_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_1_triangle", min=0.0, max=1.0),
         # -- Oscillator 2
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_2_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.9, 0.1],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_2_octave",
             values=[-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
             weights=[
@@ -445,14 +468,16 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 1.0,
                 1.0,
             ],
+            encoding="onehot",
         ),
         ContinuousParameter(
             name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_2_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_2_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_width", min=0.0, max=1.0),
@@ -462,7 +487,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             min=0.0,
             max=1.0,
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_2_unison_voices",
             values=[
                 "1 voice",
@@ -477,18 +502,20 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.203,
             ],
             weights=[3.0, 1, 1, 1],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_2_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
         # -- Oscillator 3
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_3_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.9, 0.1],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_3_octave",
             values=[-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
             weights=[
@@ -500,14 +527,16 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 1.0,
                 1.0,
             ],
+            encoding="onehot",
         ),
         ContinuousParameter(
             name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_3_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_3_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_3_width", min=0.0, max=1.0),
@@ -517,7 +546,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             min=0.0,
             max=1.0,
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_osc_3_unison_voices",
             values=[
                 "1 voice",
@@ -532,6 +561,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.203,
             ],
             weights=[3.0, 1, 1, 1],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_osc_3_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_3_pulse", min=0.0, max=1.0),
@@ -539,11 +569,12 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_osc_drift", min=0.0, max=1.0),
         # --FM
         ContinuousParameter(name="a_fm_depth", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_fm_routing",
             values=["Off", "2 > 1", "3 > 2 > 1", "2 > 1 < 3"],
             raw_values=[0.085, 0.33499999999999996, 0.6655, 0.9155],
             weights=[3.0, 1.0, 1.0, 1.0],
+            encoding="onehot",
         ),
         # LFOs
         # -- LFO 1
@@ -558,7 +589,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_1_rate", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_1_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_1_sustain", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_lfo_1_type",
             values=[
                 "Sine",
@@ -576,6 +607,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.4455,
                 0.5549999999999999,
             ],
+            encoding="onehot",
         ),
         # -- LFO 2
         ContinuousParameter(
@@ -589,7 +621,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_2_rate", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_2_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_2_sustain", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_lfo_2_type",
             values=[
                 "Sine",
@@ -607,6 +639,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.4455,
                 0.5549999999999999,
             ],
+            encoding="onehot",
         ),
         # -- LFO 3
         ContinuousParameter(
@@ -620,7 +653,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_3_rate", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_3_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_3_sustain", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_lfo_3_type",
             values=[
                 "Sine",
@@ -638,6 +671,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.4455,
                 0.5549999999999999,
             ],
+            encoding="onehot",
         ),
         # -- LFO 4
         ContinuousParameter(
@@ -651,7 +685,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_4_rate", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_4_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_4_sustain", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_lfo_4_type",
             values=[
                 "Sine",
@@ -669,6 +703,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.4455,
                 0.5549999999999999,
             ],
+            encoding="onehot",
         ),
         # -- LFO 5
         ContinuousParameter(
@@ -682,7 +717,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_5_rate", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_5_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_5_sustain", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_lfo_5_type",
             values=[
                 "Sine",
@@ -700,6 +735,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.4455,
                 0.5549999999999999,
             ],
+            encoding="onehot",
         ),
         # -- LFO 6
         ContinuousParameter(
@@ -713,42 +749,50 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_6_sustain", min=0.0, max=1.0),
         # Noise
         ContinuousParameter(name="a_noise_color", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_noise_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.33, 0.67],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_noise_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_noise_volume", min=0.0, max=1.0),
         # Mixer
-        ContinuousParameter(name="a_pan", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5),
-        DiscreteParameter(
+        ContinuousParameter(
+            name="a_pan", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
+        ),
+        CategoricalParameter(
             name="a_ring_modulation_1x2_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.1, 0.9],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_ring_modulation_1x2_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_ring_modulation_1x2_volume", min=0.0, max=1.0),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_ring_modulation_2x3_mute",
             values=[False, True],
             raw_values=[0.2505, 0.7505],
             weights=[0.1, 0.9],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="a_ring_modulation_2x3_route",
             values=["Filter 1", "Both", "Filter 2"],
             raw_values=[0.1265, 0.5005, 0.874],
+            encoding="onehot",
         ),
         ContinuousParameter(name="a_ring_modulation_2x3_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_vca_gain", min=0.437545, max=0.562455),  # to +6dB
@@ -759,7 +803,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="fx_a1_delay_time", min=0.0, max=1.0),
         ContinuousParameter(name="fx_a1_modulation_rate", min=0.0, max=1.0),
         ContinuousParameter(name="fx_a1_modulation_depth", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_delay_feedback", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a1_delay_feedback", min=0.0, max=0.9),
         ContinuousParameter(name="fx_a1_eq_low_cut", min=0.0, max=1.0),
         ContinuousParameter(name="fx_a1_eq_high_cut", min=0.0, max=1.0),
         ContinuousParameter(
@@ -767,21 +811,9 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ),
         ContinuousParameter(name="fx_a1_output_width", min=0.0, max=1.0),
         # -- FX 2 (Delay)
-        DiscreteParameter(
+        CategoricalParameter(
             name="fx_a2_delay_time_left",
             values=[
-                "1/512 note",
-                "1/256 triplet",
-                "1/512 dotted",
-                "1/256 note",
-                "1/128 triplet",
-                "1/256 dotted",
-                "1/128 note",
-                "1/64 triplet",
-                "1/128 dotted",
-                "1/64 note",
-                "1/32 triplet",
-                "1/64 dotted",
                 "1/32 note",
                 "1/16 triplet",
                 "1/32 dotted",
@@ -798,55 +830,8 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 "whole triplet",
                 "1/2 dotted",
                 "whole note",
-                "double whole triplet",
-                "whole dotted",
-                "double whole note",
-                "3 whole triplets",
-                "4 whole triplets",
-                "double whole dotted",
-                "4 whole triplets",
-                "5 whole triplets",
-                "4 whole notes",
-                "6 whole triplets",
-                "7 whole triplets",
-                "5 whole notes",
-                "7 whole triplets",
-                "8 whole triplets",
-                "6 whole notes",
-                "9 whole triplets",
-                "10 whole triplets",
-                "11 whole triplets",
-                "8 whole notes",
-                "12 whole triplets",
-                "13 whole triplets",
-                "14 whole triplets",
-                "15 whole triplets",
-                "16 whole triplets",
-                "17 whole triplets",
-                "12 whole notes",
-                "18 whole triplets",
-                "19 whole triplets",
-                "13 whole notes",
-                "19 whole triplets",
-                "20 whole triplets",
-                "21 whole triplets",
-                "22 whole triplets",
-                "23 whole triplets",
-                "16 whole notes",
             ],
             raw_values=[
-                0.015,
-                0.034,
-                0.057499999999999996,
-                0.092,
-                0.111,
-                0.1345,
-                0.16849999999999998,
-                0.1875,
-                0.21150000000000002,
-                0.2455,
-                0.2645,
-                0.2885,
                 0.3225,
                 0.3415,
                 0.3655,
@@ -863,58 +848,12 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.649,
                 0.673,
                 0.7075,
-                0.726,
-                0.75,
-                0.7845,
-                0.8,
-                0.804,
-                0.8109999999999999,
-                0.8205,
-                0.836,
-                0.8465,
-                0.855,
-                0.867,
-                0.8714999999999999,
-                0.875,
-                0.8845000000000001,
-                0.8915,
-                0.8975,
-                0.9085000000000001,
-                0.9185000000000001,
-                0.9235,
-                0.928,
-                0.9365,
-                0.9444999999999999,
-                0.9515,
-                0.9584999999999999,
-                0.965,
-                0.9684999999999999,
-                0.9715,
-                0.9755,
-                0.9775,
-                0.979,
-                0.983,
-                0.9884999999999999,
-                0.9935,
-                0.998,
-                1.0,
             ],
+            encoding="onehot",
         ),
-        DiscreteParameter(
+        CategoricalParameter(
             name="fx_a2_delay_time_right",
             values=[
-                "1/512 note",
-                "1/256 triplet",
-                "1/512 dotted",
-                "1/256 note",
-                "1/128 triplet",
-                "1/256 dotted",
-                "1/128 note",
-                "1/64 triplet",
-                "1/128 dotted",
-                "1/64 note",
-                "1/32 triplet",
-                "1/64 dotted",
                 "1/32 note",
                 "1/16 triplet",
                 "1/32 dotted",
@@ -931,55 +870,8 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 "whole triplet",
                 "1/2 dotted",
                 "whole note",
-                "double whole triplet",
-                "whole dotted",
-                "double whole note",
-                "3 whole triplets",
-                "4 whole triplets",
-                "double whole dotted",
-                "4 whole triplets",
-                "5 whole triplets",
-                "4 whole notes",
-                "6 whole triplets",
-                "7 whole triplets",
-                "5 whole notes",
-                "7 whole triplets",
-                "8 whole triplets",
-                "6 whole notes",
-                "9 whole triplets",
-                "10 whole triplets",
-                "11 whole triplets",
-                "8 whole notes",
-                "12 whole triplets",
-                "13 whole triplets",
-                "14 whole triplets",
-                "15 whole triplets",
-                "16 whole triplets",
-                "17 whole triplets",
-                "12 whole notes",
-                "18 whole triplets",
-                "19 whole triplets",
-                "13 whole notes",
-                "19 whole triplets",
-                "20 whole triplets",
-                "21 whole triplets",
-                "22 whole triplets",
-                "23 whole triplets",
-                "16 whole notes",
             ],
             raw_values=[
-                0.015,
-                0.034,
-                0.057499999999999996,
-                0.092,
-                0.111,
-                0.1345,
-                0.16849999999999998,
-                0.1875,
-                0.21150000000000002,
-                0.2455,
-                0.2645,
-                0.2885,
                 0.3225,
                 0.3415,
                 0.3655,
@@ -996,45 +888,11 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.649,
                 0.673,
                 0.7075,
-                0.726,
-                0.75,
-                0.7845,
-                0.8,
-                0.804,
-                0.8109999999999999,
-                0.8205,
-                0.836,
-                0.8465,
-                0.855,
-                0.867,
-                0.8714999999999999,
-                0.875,
-                0.8845000000000001,
-                0.8915,
-                0.8975,
-                0.9085000000000001,
-                0.9185000000000001,
-                0.9235,
-                0.928,
-                0.9365,
-                0.9444999999999999,
-                0.9515,
-                0.9584999999999999,
-                0.965,
-                0.9684999999999999,
-                0.9715,
-                0.9755,
-                0.9775,
-                0.979,
-                0.983,
-                0.9884999999999999,
-                0.9935,
-                0.998,
-                1.0,
             ],
+            encoding="onehot",
         ),
-        ContinuousParameter(name="fx_a2_feedback_eq_feedback", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a2_feedback_eq_crossfeed", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a2_feedback_eq_feedback", min=0.0, max=0.8),
+        ContinuousParameter(name="fx_a2_feedback_eq_crossfeed", min=0.0, max=0.8),
         ContinuousParameter(name="fx_a2_feedback_eq_low_cut", min=0.0, max=1.0),
         ContinuousParameter(name="fx_a2_feedback_eq_high_cut", min=0.0, max=1.0),
         ContinuousParameter(name="fx_a2_modulation_rate", min=0.0, max=1.0),
@@ -1057,330 +915,15 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(
             name="fx_a3_output_mix", min=0.0, max=1.0, constant_val_p=0.67
         ),
-    ]
-)
-
-SURGE_MINI_PARAM_SPEC = ParamSpec(
+    ],
     [
-        ContinuousParameter(name="a_amp_eg_attack", min=0.0, max=0.77),  # max around 4s
-        ContinuousParameter(name="a_amp_eg_decay", min=0.0, max=0.77),  # max around 4s
-        ContinuousParameter(
-            name="a_amp_eg_release", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(name="a_amp_eg_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_feedback", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.0
+        DiscreteLiteralParameter(
+            name="pitch",
+            min=48,
+            max=72,
         ),
-        ContinuousParameter(name="a_filter_1_cutoff", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_1_feg_mod_amount", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_1_resonance", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_cutoff", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_feg_mod_amount", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_resonance", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_balance", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_filter_eg_attack", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(
-            name="a_filter_eg_decay", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(
-            name="a_filter_eg_release", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(name="a_filter_eg_sustain", min=0.0, max=1.0),
-        ContinuousParameter(name="a_highpass", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(
-            name="a_lfo_1_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_1_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_1_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_2_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_2_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_2_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_3_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_3_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_3_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_4_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_4_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_4_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_5_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_5_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_5_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_6_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_6_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_delay", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(name="a_lfo_6_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_sustain", min=0.0, max=1.0),
-        ContinuousParameter(name="a_noise_color", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_noise_volume", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(
-            name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_1_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_sync", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_1_unison_detune",
-            min=0.0,
-            max=1.0,
-            constant_val_p=0.5,
-            constant_val=0.0,
-        ),
-        ContinuousParameter(name="a_osc_1_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_triangle", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_2_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_sync", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_2_unison_detune",
-            min=0.0,
-            max=1.0,
-            constant_val_p=0.5,
-            constant_val=0.0,
-        ),
-        ContinuousParameter(name="a_osc_2_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_3_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_sync", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_3_unison_detune",
-            min=0.0,
-            max=1.0,
-            constant_val_p=0.5,
-            constant_val=0.0,
-        ),
-        ContinuousParameter(name="a_osc_3_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_triangle", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_drift", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_delay_time", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_modulation_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_modulation_depth", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_delay_feedback", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="fx_a1_output_mix", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="fx_a1_output_width", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_reverb_room_size", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_reverb_decay_time", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_output_width", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="fx_a3_output_mix", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(
-            name="a_waveshaper_drive",
-            min=0.0,
-            max=1.0,
-            constant_val_p=0.5,
-            constant_val=0.5,
-        ),
-    ]
-)
-
-SURGE_TINY_PARAM_SPEC = ParamSpec(
-    [
-        ContinuousParameter(name="a_amp_eg_attack", min=0.0, max=0.77),  # max around 4s
-        ContinuousParameter(name="a_amp_eg_decay", min=0.0, max=0.77),  # max around 4s
-        ContinuousParameter(
-            name="a_amp_eg_release", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(name="a_amp_eg_sustain", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_1_cutoff", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_1_feg_mod_amount", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_1_resonance", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_cutoff", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_feg_mod_amount", min=0.0, max=1.0),
-        ContinuousParameter(name="a_filter_2_resonance", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_filter_eg_attack", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(
-            name="a_filter_eg_decay", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(
-            name="a_filter_eg_release", min=0.0, max=0.77
-        ),  # max around 4s
-        ContinuousParameter(name="a_filter_eg_sustain", min=0.0, max=1.0),
-        ContinuousParameter(name="a_highpass", min=0.0, max=1.0, constant_val_p=0.5),
-        ContinuousParameter(
-            name="a_lfo_1_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_1_attack", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_1_decay", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_1_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_hold", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_1_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_1_release", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_1_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_2_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_2_attack", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_2_decay", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_2_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_hold", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_2_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_2_release", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_2_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_3_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_3_attack", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_3_decay", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_3_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_hold", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_3_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_3_release", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_3_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_4_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_4_attack", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_decay", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_hold", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_release", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_4_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_5_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_5_attack", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_5_decay", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_5_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_hold", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_5_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_5_release", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_5_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_lfo_6_amplitude", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="a_lfo_6_attack", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_6_decay", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_6_deform", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_hold", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_6_phase", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="a_lfo_6_release", min=0.0, max=0.77),
-        ContinuousParameter(name="a_lfo_6_sustain", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_noise_volume", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(
-            name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_1_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_sync", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_1_triangle", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_2_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_sync", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
-        ),
-        ContinuousParameter(name="a_osc_3_sawtooth", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_width", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_sync", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_volume", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_pulse", min=0.0, max=1.0),
-        ContinuousParameter(name="a_osc_3_triangle", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_delay_time", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_modulation_rate", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_modulation_depth", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a1_delay_feedback", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="fx_a1_output_mix", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(name="fx_a1_output_width", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_reverb_room_size", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_reverb_decay_time", min=0.0, max=1.0),
-        ContinuousParameter(name="fx_a3_output_width", min=0.0, max=1.0),
-        ContinuousParameter(
-            name="fx_a3_output_mix", min=0.0, max=1.0, constant_val_p=0.67
-        ),
-        ContinuousParameter(
-            name="a_waveshaper_drive",
-            min=0.0,
-            max=1.0,
-            constant_val_p=0.5,
-            constant_val=0.5,
-        ),
-    ]
+        NoteDurationParameter(name="note_start_and_end", max_note_duration_seconds=4.0),
+    ],
 )
 
 SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
@@ -1502,5 +1045,13 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_lfo_6_hold", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_6_release", min=0.0, max=0.77),
         ContinuousParameter(name="a_lfo_6_sustain", min=0.0, max=1.0),
-    ]
+    ],
+    [
+        DiscreteLiteralParameter(
+            name="pitch",
+            min=48,
+            max=72,
+        ),
+        NoteDurationParameter(name="note_start_and_end", max_note_duration_seconds=4.0),
+    ],
 )

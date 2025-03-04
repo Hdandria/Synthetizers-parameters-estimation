@@ -9,6 +9,9 @@ defaults:
 run_name: flow
 experiment_name: surge-full
 
+model:
+  num_params: 300
+
 tags:
   - surge
 

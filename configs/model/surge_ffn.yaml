@@ -5,10 +5,10 @@ _target_: src.models.surge_ff_module.SurgeFeedForwardModule
 
 net:
   _target_: src.models.components.transformer.ASTWithProjectionHead
-  d_model: 1024
-  d_out: 90
+  d_model: 768
+  d_out: 92
   n_heads: 16
-  n_layers: 16
+  n_layers: 12
   patch_size: 16
   patch_stride: 10
   input_channels: 2

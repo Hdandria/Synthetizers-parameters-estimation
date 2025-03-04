@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 
-from src.models.components.sinkhorn import SinkhornAttention, sinkhorn_C
-
 
 class PositionalEncoding(nn.Module):
     def __init__(
@@ -32,16 +30,11 @@ class PositionalEncoding(nn.Module):
 
 
 class KSinParamToTokenProjection(nn.Module):
-    def __init__(self, d_model: int, filler_tokens: int = 0, params_per_token: int = 2):
+    def __init__(self, d_model: int, params_per_token: int = 2):
         super().__init__()
         self.forward_proj = nn.Linear(params_per_token, d_model)
         self.backward_proj = nn.Linear(d_model, params_per_token)
         self.params_per_token = params_per_token
-
-        if filler_tokens > 0:
-            self.filler_tokens = nn.Parameter(torch.randn(1, filler_tokens, d_model))
-        else:
-            self.filler_tokens = None
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
         k = x.shape[-1] // self.params_per_token
@@ -49,17 +42,9 @@ class KSinParamToTokenProjection(nn.Module):
 
         x = self.forward_proj(x)
 
-        if self.filler_tokens is not None:
-            filler_tokens = self.filler_tokens.expand(x.shape[0], -1, -1)
-            x = torch.cat([x, filler_tokens], dim=1)
-
         return x
 
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        if self.filler_tokens is not None:
-            num_filler = self.filler_tokens.shape[1]
-            x = x[:, :-num_filler, :]
-
         x = self.backward_proj(x)
         x = rearrange(x, "b k d -> b (d k)", d=self.params_per_token)
         return x
@@ -78,14 +63,11 @@ class LearntProjection(nn.Module):
     def __init__(
         self,
         d_model: int,
+        d_token: int,
         num_params: int,
         num_tokens: int,
-        sym_init: bool = True,
-        filler_tokens: int = 0,
-        var_penalty: bool = False,
-        initial_ffn: bool = False,
-        final_ffn: bool = False,
-        num_prototypes: int = 2,
+        initial_ffn: bool = True,
+        final_ffn: bool = True,
     ):
         super().__init__()
 
@@ -95,23 +77,17 @@ class LearntProjection(nn.Module):
         assignment = assignment + 1e-4 * torch.randn_like(assignment)
         self._assignment = nn.Parameter(assignment)
 
-        if sym_init:
-            proj = torch.randn(1, d_model) / math.sqrt(d_model)
-            proj = proj.repeat(num_params, 1)
-            proj = proj + 1e-4 * torch.randn_like(proj)
+        proj = torch.randn(1, d_token) / math.sqrt(d_token)
+        proj = proj.repeat(num_params, 1)
+        proj = proj + 1e-4 * torch.randn_like(proj)
 
-            self._in_projection = nn.Parameter(proj.clone())
-            self._out_projection = nn.Parameter(proj.T.clone())
-        else:
-            proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
-            self._in_projection = nn.Parameter(proj.clone())
-            self._out_projection = nn.Parameter(proj.T.clone())
+        self._in_projection = nn.Parameter(proj.clone())
+        self._out_projection = nn.Parameter(proj.T.clone())
 
-        self.var_penalty = var_penalty
 
         if initial_ffn:
             self.initial_ffn = nn.Sequential(
-                nn.Linear(d_model, d_model),
+                nn.Linear(d_token, d_model),
                 nn.GELU(),
                 nn.Linear(d_model, d_model),
             )
@@ -122,17 +98,10 @@ class LearntProjection(nn.Module):
             self.final_ffn = nn.Sequential(
                 nn.Linear(d_model, d_model),
                 nn.GELU(),
-                nn.Linear(d_model, d_model),
+                nn.Linear(d_model, d_token),
             )
         else:
             self.final_ffn = None
-
-        if filler_tokens > 0:
-            self.filler_tokens = nn.Parameter(
-                torch.randn(1, filler_tokens, d_model) / math.sqrt(d_model)
-            )
-        else:
-            self.filler_tokens = None
 
     @property
     def assignment(self):
@@ -154,18 +123,9 @@ class LearntProjection(nn.Module):
 
         tokens = torch.einsum("bnd,kn->bkd", values, self.assignment)
 
-        if self.filler_tokens is None:
-            return tokens
-
-        filler = self.filler_tokens.repeat(x.shape[0], 1, 1)
-        tokens = torch.cat([tokens, filler], dim=1)
         return tokens
 
     def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        if self.filler_tokens is not None:
-            num_filler = self.filler_tokens.shape[1]
-            x = x[:, :-num_filler]
-
         deassigned = torch.einsum("bkd,kn->bnd", x, self.assignment)
 
         if self.final_ffn is not None:
@@ -176,249 +136,11 @@ class LearntProjection(nn.Module):
     def penalty(self) -> torch.Tensor:
         # we apply L1 penalty to the assignment matrix
         penalty = self.assignment.abs().mean()
-        if self.var_penalty:
-            var_penalty = self.in_projection.std(dim=0).mean()
-            penalty = penalty + var_penalty
 
         return penalty
 
 
-class LearntProjectionXAttn(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        num_params: int,
-        num_tokens: int,
-        num_heads: int = 4,
-        init_scale: float = 1e-4,
-        attn_type: Literal["cross", "cat"] = "cross",
-    ):
-        super().__init__()
-        self.d_model = d_model
-        self.num_params = num_params
-        self.num_tokens = num_tokens
 
-        _param_embeds = torch.randn(1, d_model).repeat(num_params, 1)
-        _param_embeds = _param_embeds + init_scale * torch.randn_like(_param_embeds)
-        _param_outputs = _param_embeds
-
-        self._p2t_tokens = nn.Parameter(torch.randn(1, num_tokens, d_model))
-        self._t2p_tokens = nn.Parameter(torch.randn(1, num_params, d_model))
-        self._param_embeds = nn.Parameter(_param_embeds)
-        self._param_outputs = nn.Parameter(_param_outputs)
-
-        # self.p2t_attn = MultiheadAttention(d_model, num_heads)
-        self.p2t_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
-        # self.t2p_attn = MultiheadAttention(d_model, num_heads)
-        self.t2p_attn = nn.MultiheadAttention(d_model, num_heads, batch_first=True)
-
-        self.p2t_norm = nn.LayerNorm(d_model)
-        self.t2p_norm = nn.LayerNorm(d_model)
-
-        self.p2t_ffn = nn.Sequential(
-            nn.Linear(d_model, d_model),
-            nn.GELU(),
-            nn.Linear(d_model, d_model),
-        )
-        self.t2p_ffn = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model),
-            nn.GELU(),
-            nn.Linear(d_model, d_model),
-        )
-        self.attn_type = attn_type
-
-    def _do_attn(
-        self, attn: nn.MultiheadAttention, q: torch.Tensor, kv: torch.Tensor
-    ) -> torch.Tensor:
-        if self.attn_type == "cross":
-            return attn(q, kv, kv)[0]
-        elif self.attn_type == "cat":
-            seq = torch.cat([q, kv], dim=1)
-            toks = attn(seq, seq, seq)[0]
-            return toks[:, : q.shape[1], :]
-
-    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        # project scalars to vectors
-        params = torch.einsum("bn,nd->bnd", x, self._param_embeds)
-
-        # pass thru FFN with residual (no norm)
-        params = self.p2t_ffn(params) + params
-
-        # cross attention bit
-        params = self.p2t_norm(params)
-        query = self._p2t_tokens.repeat(x.shape[0], 1, 1)
-        tokens = self._do_attn(self.p2t_attn, query, params)
-        tokens = tokens + query
-
-        return tokens
-
-    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        # cross attn
-        x = self.t2p_norm(x)
-        query = self._t2p_tokens.repeat(x.shape[0], 1, 1)
-        params = self._do_attn(self.t2p_attn, query, x)
-        params = params + query
-
-        # pass thru FFN with residual
-        res = params
-        params = self.t2p_ffn(params)
-        params = params + res
-
-        params = torch.einsum("bnd,nd->bn", params, self._param_outputs)
-
-        return params
-
-    def penalty(self) -> torch.Tensor:
-        return 0.0
-
-
-def normalize(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
-    norm = x.norm(2.0, dim=-1, keepdim=True).clamp_min(eps)
-    return x / norm
-
-
-def slerp(
-    x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, eps: float = 1e-6
-) -> torch.Tensor:
-    x = normalize(x, eps)
-    y = normalize(y, eps)
-
-    cos_theta = torch.einsum("bnd,bnd->bn", x, y)[:, :, None]  # (1 n 1)
-    cos_theta = cos_theta.clamp(-1.0, 1.0)
-    theta = torch.acos(cos_theta)
-    sin_theta = torch.sin(theta)
-    sin_theta = sin_theta.clamp_min(eps)
-
-    # t has shape (b n 1)
-    s0 = torch.sin((1.0 - t) * theta) / sin_theta
-    s1 = torch.sin(t * theta) / sin_theta
-    return s0 * x + s1 * y
-
-
-class SinsPlusSinkhornAttn(nn.Module):
-    """
-    Each scalar parameter is given a sinusoidal embedding. Each parameter is given a
-    matrix initialised to zeros, which is able to learn a projection, enabling
-    the model to break symmetry if necessary.
-    Then, to map to tokens, we use sinnkhorn cross-attention between these embeddings
-    and a set of learnable query tokens.
-    Finally, the out projection (i.e. return from tokens to vector) is a set of
-    token-wise matrices.
-    """
-
-    def __init__(
-        self,
-        num_params: int,
-        num_tokens: int,
-        d_model: int,
-        d_embed: int,
-        sinkhorn_iters: int = 5,
-        sinkhorn_reg: float = 1.0,
-    ):
-        super().__init__()
-
-        # we encode in a lower dimensional space to save on parameters, as projections
-        # can learn different subspaces anyway.
-        self.sin_encoding = SinusoidalEncoding(d_embed)
-        self.projections = nn.Parameter(torch.zeros(num_params, d_model, d_embed))
-
-        self.query_tokens = nn.Parameter(torch.randn(num_tokens, d_model))
-        out_proj = torch.empty(num_tokens, d_model, num_params)
-        nn.init.kaiming_normal_(out_proj)
-        self.out_proj = nn.Parameter(out_proj)
-
-        self.attn = SinkhornAttention(
-            d_model,
-            d_model,
-            d_model,
-            sinkhorn_iters=sinkhorn_iters,
-            sinkhorn_reg=sinkhorn_reg,
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x
-
-    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b n)
-        # x is typically defined on [-1, 1] so our slerp embeddings (p0, p1) define the
-        # midpoint and one end. there is a risk of some slerp "aliasing" if the embeds
-        # end up too far apart and we get out of interval values (i.e. due to the
-        # flow source distribution).
-        # TODO: figure out if this is a real problem
-        encs = self.sin_encoding(x)
-        embeds = torch.einsum("bne,nde->bnd", encs, self.projections)
-        tokens = self.attn(self.query_tokens, embeds, embeds)
-
-        return tokens
-
-    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b k d)
-        return torch.einsum("bkd,kdn->bn", x, self.out_proj)
-
-    def penalty(self) -> torch.Tensor:
-        return self.out_proj.norm(2.0, dim=1).mean()
-
-
-class GeodesicPlusSinkhornAttn(nn.Module):
-    """
-    Each scalar parameter is associated to two vectors. To compute the embedding, we
-    take the hypersphere geodesic (i.e. spherical linear interpolation) between the
-    normalised vectors. This means that every parameter can be associated to some arc
-    on the sphere.
-    Then, to map to tokens, we use sinnkhorn cross-attention between these embeddings
-    and a set of learnable query tokens.
-    Finally, the out projection (i.e. return from tokens to vector) is a set of
-    token-wise matrices.
-    """
-
-    def __init__(
-        self,
-        num_params: int,
-        num_tokens: int,
-        d_model: int,
-        d_embed: int,
-        sinkhorn_iters: int = 5,
-        sinkhorn_reg: float = 1.0,
-    ):
-        super().__init__()
-
-        self.p0 = nn.Parameter(torch.randn(1, num_params, d_embed))
-        self.p1 = nn.Parameter(torch.randn(1, num_params, d_embed))
-        self.query_tokens = nn.Parameter(torch.randn(num_tokens, d_model))
-        out_proj = torch.empty(num_tokens, d_model, num_params)
-        nn.init.kaiming_normal_(out_proj)
-        self.out_proj = nn.Parameter(out_proj)
-
-        self.attn = SinkhornAttention(
-            d_model,
-            d_embed,
-            d_embed,
-            sinkhorn_iters=sinkhorn_iters,
-            sinkhorn_reg=sinkhorn_reg,
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x
-
-    def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b n)
-        # x is typically defined on [-1, 1] so our slerp embeddings (p0, p1) define the
-        # midpoint and one end. there is a risk of some slerp "aliasing" if the embeds
-        # end up too far apart and we get out of interval values (i.e. due to the
-        # flow source distribution).
-        # TODO: figure out if this is a real problem
-        embeds = slerp(self.p0, self.p1, x[:, :, None])
-        tokens = self.attn(self.query_tokens, embeds, embeds)
-
-        return tokens
-
-    def token_to_param(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (b k d)
-        return torch.einsum("bkd,kdn->bn", x, self.out_proj)
-
-    def penalty(self) -> torch.Tensor:
-        return self.out_proj.norm(2.0, dim=1).mean()
 
 
 class AdaptiveLayerNorm(nn.LayerNorm):
@@ -523,52 +245,6 @@ class DiTransformerBlock(nn.Module):
         return x
 
 
-class MultiheadAttention(nn.Module):
-    def __init__(self, d_model: int, num_heads: int):
-        super().__init__()
-
-        self.q_proj = nn.Parameter(torch.empty(d_model, d_model))
-        self.k_proj = nn.Parameter(torch.empty(d_model, d_model))
-        self.v_proj = nn.Parameter(torch.empty(d_model, d_model))
-
-        self.out_proj = nn.Linear(d_model, d_model)
-
-        self.q_norm = nn.LayerNorm(d_model)
-        self.k_norm = nn.LayerNorm(d_model)
-
-        nn.init.xavier_uniform_(self.q_proj)
-        nn.init.xavier_uniform_(self.k_proj)
-        nn.init.xavier_uniform_(self.v_proj)
-
-        nn.init.xavier_uniform_(self.out_proj.weight)
-        nn.init.zeros_(self.out_proj.bias)
-
-        self.scale = 1.0 / (d_model**0.5)
-        self.num_heads = num_heads
-
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor):
-        # assume batch first
-        q = q @ self.q_proj
-        k = k @ self.k_proj
-        v = v @ self.v_proj
-
-        q = self.q_norm(q)
-        k = self.k_norm(k)
-
-        # compute attn heads
-        q = q.view(q.shape[0], q.shape[1], self.num_heads, -1).permute(0, 2, 1, 3)
-        kT = k.view(k.shape[0], k.shape[1], self.num_heads, -1).permute(0, 2, 3, 1)
-        v = v.view(v.shape[0], v.shape[1], self.num_heads, -1).permute(0, 2, 1, 3)
-
-        attn = torch.matmul(q, kT) * self.scale
-        attn = torch.softmax(attn, dim=-1)
-
-        x = torch.matmul(attn, v)
-        x = x.permute(0, 2, 1, 3).contiguous()
-        x = x.view(x.shape[0], x.shape[1], -1)
-
-        return self.out_proj(x)
-
 
 class SinusoidalEncoding(nn.Module):
     """A sinusoidal encoding of scalar values centered around zero."""
@@ -614,18 +290,6 @@ class SinusoidalConditioning(nn.Module):
         t = self.sin(t)
         t = self.mlp(t)
         return z + t
-
-
-def sym_randn_init(shape, dim, eps=1e-4):
-    sym_shape = list(shape)
-    sym_shape[dim] = 1
-
-    repeat_shape = [1] * len(shape)
-    repeat_shape[dim] = shape[dim]
-
-    sym_init = torch.randn(*sym_shape).repeat(*repeat_shape)
-
-    return sym_init + eps * torch.randn(shape)
 
 
 class MutualAttentionProjection(nn.Module):

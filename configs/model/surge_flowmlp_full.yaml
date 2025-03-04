@@ -1,5 +1,0 @@
-defaults:
-  - surge_flowmlp
-  - _self_
-
-num_params: 163

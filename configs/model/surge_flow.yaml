@@ -21,18 +21,16 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
+    d_token: 128
     num_params: ${model.num_params}
     num_tokens: 128
-    filler_tokens: 0
-    sym_init: true
-    var_penalty: false
     initial_ffn: true
-    final_ffn: false
+    final_ffn: true
   num_layers: 8
-  d_model: 768
+  d_model: 512
   conditioning_dim: ${model.encoder.d_model}
-  num_heads: 12
-  d_ff: 768
+  num_heads: 8
+  d_ff: 512
   num_tokens: ${model.vector_field.projection.num_tokens}
   learn_pe: false
   learn_projection: true

@@ -1,7 +1,7 @@
 import _thread
 import threading
 import time
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import mido
 import numpy as np
@@ -68,7 +68,7 @@ def render_params(
     params: dict[str, float],
     midi_note: int,
     velocity: int,
-    note_duration_seconds: float,
+    note_start_and_end: Tuple[float, float],
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
@@ -89,7 +89,7 @@ def render_params(
     plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
-    midi_events = midi_pitch_to_event(midi_note, velocity, note_duration_seconds)
+    midi_events = make_midi_events(midi_note, velocity, *note_start_and_end)
 
     logger.debug("rendering audio")
     output = plugin.process(
@@ -103,11 +103,11 @@ def render_params(
     return output
 
 
-def midi_pitch_to_event(pitch: int, velocity: int, duration_seconds: float):
+def make_midi_events(pitch: int, velocity: int, note_start: float, note_end: float):
     events = []
     note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
-    events.append((note_on.bytes(), 0.05))
+    events.append((note_on.bytes(), note_start))
     note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
-    events.append((note_off.bytes(), duration_seconds))
+    events.append((note_off.bytes(), note_end))
 
     return tuple(events)

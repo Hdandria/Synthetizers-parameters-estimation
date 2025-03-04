@@ -22,7 +22,7 @@ vector_field:
   d_model: 768
   d_enc: 256
   conditioning_dim: ${model.encoder.d_model}
-  num_layers: 16
+  num_layers: 9
 
 
 # training

@@ -2,12 +2,16 @@
 
 defaults:
   - surge/base
-  - override /model: surge_ffn_full
+  - override /model: surge_ffn
   - override /data: surge
   - _self_
 
 run_name: ffn
 experiment_name: surge-full
+
+model:
+  net:
+    d_out: 300
 
 tags:
   - surge

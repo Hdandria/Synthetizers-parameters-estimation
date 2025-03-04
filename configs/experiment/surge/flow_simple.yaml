@@ -5,5 +5,8 @@ defaults:
   - override /model: surge_flow
   - _self_
 
+model:
+  num_params: 92
+
 experiment_name: surge-simple
 run_name: flow

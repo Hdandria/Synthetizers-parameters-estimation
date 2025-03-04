@@ -1,6 +1,0 @@
-defaults:
-  - surge_ffn
-  - _self_
-
-net:
-  d_out: 163

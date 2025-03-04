@@ -1,7 +1,7 @@
 import hashlib
 import random
 from dataclasses import dataclass
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
 
 import click
 import h5py
@@ -16,10 +16,7 @@ from tqdm import trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params  # noqa
-from src.data.vst.param_spec import ParamSpec  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
-from src.data.vst.surge_xt_param_spec import SURGE_SIMPLE_PARAM_SPEC
+from src.data.vst.param_spec import ParamSpec, param_specs  # noqa
 
 
 def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
@@ -31,23 +28,10 @@ def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
     return pitch
 
 
-def _hash_params(params: dict[str, float]) -> str:
-    param_str = []
-    for k, v in params.items():
-        param_str.append(f"{k}={v},")
-    param_str = "".join(param_str)
-    md5 = hashlib.md5()
-    md5.update(param_str.encode("utf-8"))
-    return md5.hexdigest()
-
-
 @dataclass
 class VSTDataSample:
-    parameters: dict[str, float]
-    midi_note: int
-
-    min_pitch: int
-    max_pitch: int
+    synth_params: dict[str, float]
+    note_params: dict[str, float]
 
     sample_rate: float
     channels: int
@@ -58,13 +42,8 @@ class VSTDataSample:
     mel_spec: np.ndarray
     param_array: np.ndarray = None
 
-    identifier: str = None
-
     def __post_init__(self):
-        self.identifier = _hash_params(self.parameters)
-        self.param_array = self.param_spec.to_numpy(
-            self.parameters, self.midi_note, self.min_pitch, self.max_pitch
-        )
+        self.param_array = self.param_spec.encode(self.synth_params, self.note_params)
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
@@ -90,33 +69,26 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
 
 def generate_sample(
     plugin: VST3Plugin,
-    min_pitch: int = 36,
-    max_pitch: int = 84,
-    velocity: int = 100,
-    note_duration_seconds: float = 1.5,
-    signal_duration_seconds: float = 4.0,
-    sample_rate: float = 44100.0,
-    channels: int = 2,
-    min_loudness: float = -55.0,
-    param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
-    preset_path: str = "presets/surge-mini.vstpreset",
+    velocity: int,
+    signal_duration_seconds: float,
+    sample_rate: float,
+    channels: int,
+    min_loudness: float,
+    param_spec: ParamSpec,
+    preset_path: str,
 ) -> VSTDataSample:
     while True:
         logger.debug("sampling params")
-        params = param_spec.sample()
+        synth_params, note_params = param_spec.sample()
 
         logger.debug("sampling note")
-        note = sample_midi_note(
-            min_pitch=min_pitch,
-            max_pitch=max_pitch,
-        )
 
         output = render_params(
             plugin,
-            params,
-            note,
+            synth_params,
+            note_params["pitch"],
             velocity,
-            note_duration_seconds,
+            note_params["note_start_and_end"],
             signal_duration_seconds,
             sample_rate,
             channels,
@@ -136,12 +108,10 @@ def generate_sample(
     spectrogram = make_spectrogram(output, sample_rate)
 
     return VSTDataSample(
-        parameters=params,
-        midi_note=note,
+        synth_params=synth_params,
+        note_params=note_params,
         audio=output.T,
         mel_spec=spectrogram,
-        min_pitch=min_pitch,
-        max_pitch=max_pitch,
         sample_rate=sample_rate,
         channels=channels,
         param_spec=param_spec,
@@ -205,7 +175,9 @@ def create_dataset_and_get_first_unwritten_idx(
         dataset = h5py_file[name]
         return dataset, get_first_unwritten_idx(dataset)
 
-    dataset = h5py_file.create_dataset(name, shape=shape, dtype=dtype, compression=compression)
+    dataset = h5py_file.create_dataset(
+        name, shape=shape, dtype=dtype, compression=compression
+    )
     return dataset, 0
 
 
@@ -250,18 +222,15 @@ def create_datasets_and_get_start_idx(
 def make_dataset(
     hdf5_file: h5py.File,
     num_samples: int,
-    plugin_path: str = "plugins/Surge XT.vst3",
-    preset_path: str = "presets/surge-base.vstpreset",
-    sample_rate: float = 44100.0,
-    channels: int = 2,
-    min_pitch: int = 36,
-    max_pitch: int = 84,
-    velocity: int = 100,
-    note_duration_seconds: float = 1.5,
-    signal_duration_seconds: float = 4.0,
-    min_loudness: float = -55.0,
-    param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
-    sample_batch_size: int = 32,
+    plugin_path: str,
+    preset_path: str,
+    sample_rate: float,
+    channels: int,
+    velocity: int,
+    signal_duration_seconds: float,
+    min_loudness: float,
+    param_spec: ParamSpec,
+    sample_batch_size: int,
 ) -> None:
 
     audio_dataset, mel_dataset, param_dataset, start_idx = (
@@ -271,14 +240,11 @@ def make_dataset(
             channels=channels,
             sample_rate=sample_rate,
             signal_duration_seconds=signal_duration_seconds,
-            num_params=len(param_spec) + 1,
+            num_params=len(param_spec),
         )
     )
 
-    audio_dataset.attrs["min_pitch"] = min_pitch
-    audio_dataset.attrs["max_pitch"] = max_pitch
     audio_dataset.attrs["velocity"] = velocity
-    audio_dataset.attrs["note_duration_seconds"] = note_duration_seconds
     audio_dataset.attrs["signal_duration_seconds"] = signal_duration_seconds
     audio_dataset.attrs["sample_rate"] = sample_rate
     audio_dataset.attrs["channels"] = channels
@@ -293,10 +259,7 @@ def make_dataset(
         logger.info(f"Making sample {i}")
         sample = generate_sample(
             plugin,
-            min_pitch=min_pitch,
-            max_pitch=max_pitch,
             velocity=velocity,
-            note_duration_seconds=note_duration_seconds,
             signal_duration_seconds=signal_duration_seconds,
             sample_rate=sample_rate,
             channels=channels,
@@ -349,24 +312,13 @@ def main(
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
     channels: int = 2,
-    min_pitch: int = 36,
-    max_pitch: int = 84,
     velocity: int = 100,
-    note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
-    min_loudness: float = -55.0,
+    min_loudness: float = -50.0,
     param_spec: str = "surge_xt",
     sample_batch_size: int = 32,
 ):
-    if param_spec in ("surge", "surge_xt"):
-        param_spec = SURGE_XT_PARAM_SPEC
-    elif param_spec in ("mini", "surge_mini", "surge_xt_mini"):
-        param_spec = SURGE_MINI_PARAM_SPEC
-    elif param_spec in ("simple", "surge_simple", "surge_xt_simple"):
-        param_spec = SURGE_SIMPLE_PARAM_SPEC
-    else:
-        raise ValueError(f"Invalid param_spec: {param_spec}")
-
+    param_spec = param_specs[param_spec]
     with h5py.File(data_file, "a") as f:
         make_dataset(
             f,
@@ -375,10 +327,7 @@ def main(
             preset_path,
             sample_rate,
             channels,
-            min_pitch,
-            max_pitch,
             velocity,
-            note_duration_seconds,
             signal_duration_seconds,
             min_loudness,
             param_spec,
