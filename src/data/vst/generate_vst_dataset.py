@@ -15,8 +15,8 @@ from pyloudnorm import Meter
 from tqdm import trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.data.vst import load_plugin, load_preset, render_params  # noqa
-from src.data.vst.param_spec import ParamSpec, param_specs  # noqa
+from src.data.vst import load_plugin, param_specs, render_params  # noqa
+from src.data.vst.param_spec import ParamSpec  # noqa
 
 
 def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):

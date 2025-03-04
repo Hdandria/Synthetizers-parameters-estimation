@@ -13,8 +13,8 @@ from pedalboard.io import AudioFile
 from tqdm import tqdm, trange
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.data.vst import load_plugin, load_preset, render_params
-from src.data.vst.param_spec import ParamSpec, param_specs
+from src.data.vst import load_plugin, load_preset, param_specs, render_params
+from src.data.vst.param_spec import ParamSpec
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
