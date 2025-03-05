@@ -1,6 +1,6 @@
 surge/flow_full
-surge/flowmlp_full
+surge/flow_mlp_full
 surge/ffn_full
 surge/flow_simple
-surge/flowmlp_simple
+surge/flow_mlp_simple
 surge/ffn_simple
