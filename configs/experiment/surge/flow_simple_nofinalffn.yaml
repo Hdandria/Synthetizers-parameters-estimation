@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+  - surge/base
+  - override /model: surge_flow
+  - _self_
+
+model:
+  num_params: 92
+  vector_field:
+    projection:
+      final_ffn: false
+
+
+experiment_name: surge-simple-onehot
+run_name: flow-nofinalffn

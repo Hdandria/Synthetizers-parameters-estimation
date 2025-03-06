@@ -54,12 +54,6 @@ class KSinParamToTokenProjection(nn.Module):
 
 
 class LearntProjection(nn.Module):
-    """Smarter learnt projection that factorises into:
-    (i) assignment matrix
-    (ii) value coding
-    (iii) place tokens
-    """
-
     def __init__(
         self,
         d_model: int,
@@ -100,8 +94,10 @@ class LearntProjection(nn.Module):
                 nn.GELU(),
                 nn.Linear(d_model, d_token),
             )
-        else:
+        elif d_token == d_model:
             self.final_ffn = None
+        else:
+            self.final_ffn = nn.Linear(d_model, d_token)
 
     @property
     def assignment(self):

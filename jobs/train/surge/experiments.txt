@@ -4,3 +4,5 @@ surge/ffn_full
 surge/flow_simple
 surge/flow_mlp_simple
 surge/ffn_simple
+surge/flow_full_nofinalffn
+surge/flow_simple_nofinalffn

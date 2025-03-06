@@ -17,7 +17,7 @@
 # -l h_vmem=20G
 # -pe smp 12
 
-#$ -t 1-6
+#$ -t 7-8
 
 EXPERIMENT=$(sed -n "${SGE_TASK_ID}p" jobs/train/surge/experiments.txt)
 
