@@ -22,11 +22,11 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
-    d_token: 256
+    d_token: ${model.vector_field.d_model}
     num_params: ${model.num_params}
     num_tokens: 128
     initial_ffn: true
-    final_ffn: true
+    final_ffn: false
   num_layers: 8
   d_model: 512
   conditioning_dim: ${model.encoder.d_model}
