@@ -27,7 +27,7 @@ then
 elif [ "$3" = "ffn_full" ]
 then
     echo "Using FULL dataset with ffn"
-    SPEC=surge
+    SPEC=surge_xt
     PRESET=surge-base
 elif [ "$3" = "ffn" ]
 then
@@ -36,7 +36,7 @@ then
 elif [ "$3" = "flowmlp_full" ]
 then
     echo "Using FULL dataset with flowmlp"
-    SPEC=surge
+    SPEC=surge_xt
     PRESET=surge-base
 elif [ "$3" = "flowmlp" ]
 then
@@ -45,7 +45,7 @@ then
     PRESET=surge-simple
 else
     echo "Using FULL dataset"
-    SPEC=surge
+    SPEC=surge_xt
     PRESET=surge-base
 fi
 
