@@ -6,8 +6,8 @@
 #$ -o qlogs/
 #$ -e qlogs/
 
-# -l rocky
-#$ -l centos
+#$ -l rocky
+# -l centos
 
 #$ -l cluster=andrena
 #$ -l h_vmem=7.5G
