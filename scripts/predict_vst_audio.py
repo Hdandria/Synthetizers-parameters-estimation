@@ -218,12 +218,12 @@ def main(
                     os.path.join(sample_dir, "spec.png"),
                 )
 
-            params_to_csv(
-                target_params[j].numpy() if target_params is not None else None,
-                row_params,
-                os.path.join(sample_dir, "params.csv"),
-                param_spec,
-            )
+            # params_to_csv(
+            #     target_params[j].numpy() if target_params is not None else None,
+            #     row_params,
+            #     os.path.join(sample_dir, "params.csv"),
+            #     param_spec,
+            # )
 
         current_offset += pred_params.shape[0]
 
