@@ -26,7 +26,7 @@ rm -rf ~/.triton/cache
 mamba activate perm
 module load gcc
 python src/eval.py \
-    experiment=surge/ffn \
+    experiment=surge/ffn_simple \
     paths.log_dir=/data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_simple/ \
     data=surge_simple \
     callbacks=eval_surge \
