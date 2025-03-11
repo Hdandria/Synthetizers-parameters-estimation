@@ -138,7 +138,9 @@ class Encoder(nn.Module):
         dummy_spec = self.mixing_cnn(torch.cat([dummy_spec, dummy_spec], dim=1))
         dummy_spec = dummy_spec.view(dummy_spec.shape[0], -1)
         num_features = dummy_spec.shape[1]
-        self.out = nn.Sequential(nn.Linear(num_features, latent_dim * 2), nn.BatchNorm1d(latent_dim * 2))
+        self.out = nn.Sequential(
+            nn.Linear(num_features, latent_dim * 2), nn.BatchNorm1d(latent_dim * 2)
+        )
 
     def forward(self, x):
         specs = x.chunk(2, dim=1)
@@ -311,7 +313,6 @@ def reconstruction_loss(y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return nn.functional.mse_loss(y_hat, y)
 
 
-
 def gaussian_log_prob(
     x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor
 ) -> torch.Tensor:
@@ -332,10 +333,10 @@ def latent_loss(
     z_k: torch.Tensor,
     log_det_jacobian: torch.Tensor,
 ) -> torch.Tensor:
-    log_p_z0 = gaussian_log_prob(z_0, mu, log_var)
+    log_q_z0 = gaussian_log_prob(z_0, mu, log_var)
     log_p_zk = standard_normal_log_prob(z_k)
     # 0.2 factor is empirical from le vaillant paper
-    return -torch.mean(log_p_z0 - log_p_zk + log_det_jacobian) * 0.2
+    return -torch.mean(log_p_zk - log_q_z0 + log_det_jacobian) * 0.2
 
 
 def compute_individual_parameter_loss(
@@ -373,7 +374,7 @@ def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.T
         loss += compute_individual_parameter_loss(x_hat, x, param)
         pointer += length
 
-    return loss / x_hat.shape[-1]
+    return loss / (len(synth_params) + len(note_params))
 
 
 def compute_flowvae_loss(
