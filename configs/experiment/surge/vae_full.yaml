@@ -2,6 +2,7 @@
 
 defaults:
   - surge/base
+  - override /data: surge
   - override /model: surge_flowvae
   - _self_
 
