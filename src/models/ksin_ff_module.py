@@ -89,6 +89,10 @@ class KSinFeedForwardModule(LightningModule):
         self.test_lsd(preds, inputs, synth_fn)
         self.test_chamfer(preds, targets)
         self.test_lad(preds, targets)
+
+        param_mse = (preds - targets).square().mean()
+        self.log("test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
+
         self.log("test/lsd", self.test_lsd, on_step=False, on_epoch=True, prog_bar=True)
         self.log(
             "test/chamfer",

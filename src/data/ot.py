@@ -33,7 +33,7 @@ def _hungarian_match(noise: torch.Tensor, params: torch.Tensor, *args):
 
 def concatenate(list_of_arrays: Union[torch.Tensor, np.ndarray]):
     if isinstance(list_of_arrays[0], torch.Tensor):
-        return concatenate(list_of_arrays)
+        return torch.cat(list_of_arrays, dim=0)
     else:
         x = np.concatenate(list_of_arrays, axis=0)
         return torch.from_numpy(x)
