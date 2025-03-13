@@ -17,11 +17,9 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
+    d_token: ${model.vector_field.d_model}
     num_params: ${mul:${data.k},2}
     num_tokens: ${data.k}
-    filler_tokens: 0
-    sym_init: true
-    var_penalty: false
     initial_ffn: true
     final_ffn: false
   num_layers: 5
