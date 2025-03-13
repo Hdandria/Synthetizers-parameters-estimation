@@ -287,6 +287,9 @@ class PlotLearntProjection(Callback):
         ):
             return
 
+        if not hasattr(pl_module.vector_field, "projection"):
+            return
+
         # if not isinstance(pl_module.vector_field, ApproxEquivTransformer):
         #     print("wrong vector field")
         #     return

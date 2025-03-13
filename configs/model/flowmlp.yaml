@@ -15,10 +15,10 @@ optimizer:
 vector_field:
   _target_: src.models.components.residual_mlp.ConditionalResidualMLP
   n_params: 1
-  d_model: 128
+  d_model: 192
   d_enc: 128
   conditioning_dim: 128
-  num_layers: 9
+  num_layers: 7
 
 # training
 cfg_dropout_rate: 0.2
