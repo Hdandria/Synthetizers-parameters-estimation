@@ -15,13 +15,13 @@ optimizer:
 vector_field:
   _target_: src.models.components.residual_mlp.ConditionalResidualMLP
   n_params: 1
-  d_model: 256
+  d_model: 128
   d_enc: 128
   conditioning_dim: 128
-  num_layers: 5
+  num_layers: 10
 
 # training
-cfg_dropout_rate: 0.2
+cfg_dropout_rate: 0.1
 
 p_time: uniform
 w_time: none
@@ -46,4 +46,4 @@ test_cfg_strength: 2.0
 freeze_for_first_n_steps: 0
 
 # compile model for faster training with pytorch 2.0
-compile: false
+compile: true
