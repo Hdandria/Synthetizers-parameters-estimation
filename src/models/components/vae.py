@@ -348,7 +348,8 @@ def compute_individual_parameter_loss(
         and parameter.encoding == "onehot"
     ):
         # hard coded temperature from le vaillant et al
-        loss = nn.functional.cross_entropy(x_hat / 0.2, x)
+        labels = x.argmax(dim=1)
+        loss = nn.functional.cross_entropy(x_hat / 0.2, labels)
     else:
         loss = nn.functional.mse_loss(x_hat, x)
 
@@ -367,11 +368,19 @@ def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.T
     loss = 0.0
     pointer = 0
     for param, length in synth_params:
-        loss += compute_individual_parameter_loss(x_hat, x, param)
+        x_param = x[:, pointer : pointer + length]
+        x_hat_param = x_hat[:, pointer : pointer + length]
+
+        loss += compute_individual_parameter_loss(x_hat_param, x_param, param)
+
         pointer += length
 
     for param, length in note_params:
-        loss += compute_individual_parameter_loss(x_hat, x, param)
+        x_param = x[:, pointer : pointer + length]
+        x_hat_param = x_hat[:, pointer : pointer + length]
+
+        loss += compute_individual_parameter_loss(x_hat_param, x_param, param)
+
         pointer += length
 
     return loss / (len(synth_params) + len(note_params))
