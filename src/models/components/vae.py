@@ -138,9 +138,7 @@ class Encoder(nn.Module):
         dummy_spec = self.mixing_cnn(torch.cat([dummy_spec, dummy_spec], dim=1))
         dummy_spec = dummy_spec.view(dummy_spec.shape[0], -1)
         num_features = dummy_spec.shape[1]
-        self.out = nn.Sequential(
-            nn.Linear(num_features, latent_dim * 2)
-        )
+        self.out = nn.Sequential(nn.Linear(num_features, latent_dim * 2))
 
     def forward(self, x):
         specs = x.chunk(2, dim=1)
@@ -255,14 +253,14 @@ class FlowVAE(nn.Module):
         encoder: nn.Module,
         decoder: nn.Module,
         latent_dim: int = 92,
-        latent_flow_hidden_dim: int = 512,
-        latent_flow_num_layers: int = 4,
+        latent_flow_hidden_dim: int = 300,
+        latent_flow_num_layers: int = 6,
         latent_flow_num_blocks: int = 2,
         latent_flow_batch_norm_within_layers: bool = True,
         latent_flow_batch_norm_between_layers: bool = False,
-        regression_flow_hidden_dim: int = 512,
+        regression_flow_hidden_dim: int = 300,
         regression_flow_num_layers: int = 6,
-        regression_flow_num_blocks: int = 3,
+        regression_flow_num_blocks: int = 2,
         regression_flow_batch_norm_within_layers: bool = True,
         regression_flow_batch_norm_between_layers: bool = False,
         regression_flow_dropout: float = 0.0,
@@ -305,6 +303,7 @@ class FlowVAE(nn.Module):
         y_hat = self.decoder(z_k)
 
         x_hat, _ = self.regression_flow(z_k)
+        x_hat = torch.clamp(x_hat, 0, 1)
 
         return VAEOutput(y_hat, x_hat, z_0, z_k, mu, log_var, log_det_jacobian)
 
@@ -343,13 +342,12 @@ def compute_individual_parameter_loss(
     x_hat: torch.Tensor, x: torch.Tensor, parameter: Parameter
 ) -> torch.Tensor:
     if (
-        (isinstance(parameter, DiscreteLiteralParameter)
-        or isinstance(parameter, CategoricalParameter))
-        and parameter.encoding == "onehot"
-    ):
-        # hard coded temperature from le vaillant et al
+        isinstance(parameter, DiscreteLiteralParameter)
+        or isinstance(parameter, CategoricalParameter)
+    ) and parameter.encoding == "onehot":
         labels = x.argmax(dim=1)
-        loss = nn.functional.cross_entropy(x_hat / 0.2, labels)
+        # empirical temperature and weight from le vaillant paper
+        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels)
     else:
         loss = nn.functional.mse_loss(x_hat, x)
 
@@ -357,8 +355,6 @@ def compute_individual_parameter_loss(
 
 
 def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.Tensor:
-    return nn.functional.mse_loss(x_hat, x)
-
     param_spec = param_specs[param_spec]
 
     synth_params = [(p, len(p)) for p in param_spec.synth_params]

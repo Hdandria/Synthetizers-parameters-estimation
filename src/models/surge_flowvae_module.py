@@ -35,10 +35,14 @@ class SurgeFlowVAEModule(LightningModule):
 
     def model_step(self, batch: Dict[str, torch.Tensor]):
         target_params = batch["params"]
+        target_params = (target_params + 1) / 2  # trained on [0, 1] not [-1, 1]
+
         mel_spec = batch["mel_spec"]
 
         vae_out = self.net(mel_spec)
-        losses = compute_flowvae_loss(vae_out, mel_spec, target_params, self.hparams.param_spec)
+        losses = compute_flowvae_loss(
+            vae_out, mel_spec, target_params, self.hparams.param_spec
+        )
 
         return losses, mel_spec, target_params
 
@@ -89,8 +93,10 @@ class SurgeFlowVAEModule(LightningModule):
     def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         mel_spec = batch["mel_spec"]
         out = self.net(mel_spec)
+        x_hat = out.x_hat * 2 - 1
+
         return (
-            out.x_hat,
+            x_hat,
             batch,
         )
 
