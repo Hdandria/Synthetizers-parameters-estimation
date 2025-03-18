@@ -398,7 +398,10 @@ def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.T
 
         pointer += length
 
-    loss = continuous_loss + discrete_loss / discrete_count
+    if discrete_count > 0:
+        discrete_loss = discrete_loss / discrete_count
+
+    loss = continuous_loss + discrete_loss 
 
     return loss / (len(synth_params) + len(note_params))
 
