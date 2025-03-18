@@ -139,7 +139,7 @@ class Encoder(nn.Module):
         dummy_spec = dummy_spec.view(dummy_spec.shape[0], -1)
         num_features = dummy_spec.shape[1]
         self.out = nn.Sequential(
-            nn.Linear(num_features, latent_dim * 2), nn.BatchNorm1d(latent_dim * 2)
+            nn.Linear(num_features, latent_dim * 2)
         )
 
     def forward(self, x):
@@ -265,7 +265,7 @@ class FlowVAE(nn.Module):
         regression_flow_num_blocks: int = 3,
         regression_flow_batch_norm_within_layers: bool = True,
         regression_flow_batch_norm_between_layers: bool = False,
-        regression_flow_dropout: float = 0.3,
+        regression_flow_dropout: float = 0.0,
     ):
         super().__init__()
 
@@ -343,8 +343,8 @@ def compute_individual_parameter_loss(
     x_hat: torch.Tensor, x: torch.Tensor, parameter: Parameter
 ) -> torch.Tensor:
     if (
-        isinstance(parameter, DiscreteLiteralParameter)
-        or isinstance(parameter, CategoricalParameter)
+        (isinstance(parameter, DiscreteLiteralParameter)
+        or isinstance(parameter, CategoricalParameter))
         and parameter.encoding == "onehot"
     ):
         # hard coded temperature from le vaillant et al
@@ -357,10 +357,9 @@ def compute_individual_parameter_loss(
 
 
 def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.Tensor:
-    param_spec = param_specs[param_spec]
+    return nn.functional.mse_loss(x_hat, x)
 
-    x = 0.5 * (x + 1.0)
-    x_hat = 0.5 * (x_hat + 1.0)
+    param_spec = param_specs[param_spec]
 
     synth_params = [(p, len(p)) for p in param_spec.synth_params]
     note_params = [(p, len(p)) for p in param_spec.note_params]

@@ -137,7 +137,7 @@ class ConditionalResidualMLP(nn.Module):
         self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]
     ) -> torch.Tensor:
         if c is None:
-            c = self.cfg_dropout_token.expand(x.shape[0], -1)
+            c = self.cfg_dropout_token[0].expand(x.shape[0], -1)
 
         t = self.time_encoding(t)
 
