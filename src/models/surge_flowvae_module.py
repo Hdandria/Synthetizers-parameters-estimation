@@ -38,7 +38,7 @@ class SurgeFlowVAEModule(LightningModule):
         mel_spec = batch["mel_spec"]
 
         vae_out = self.net(mel_spec)
-        losses = compute_flowvae_loss(vae_out, mel_spec, target_params, self.param_spec)
+        losses = compute_flowvae_loss(vae_out, mel_spec, target_params, self.hparams.param_spec)
 
         return losses, mel_spec, target_params
 
