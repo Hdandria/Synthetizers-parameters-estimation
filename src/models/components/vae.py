@@ -303,7 +303,6 @@ class FlowVAE(nn.Module):
         y_hat = self.decoder(z_k)
 
         x_hat, _ = self.regression_flow(z_k)
-        x_hat = torch.clamp(x_hat, 0, 1)
 
         return VAEOutput(y_hat, x_hat, z_0, z_k, mu, log_var, log_det_jacobian)
 
@@ -349,6 +348,7 @@ def compute_individual_parameter_loss(
         # empirical temperature and weight from le vaillant paper
         loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels)
     else:
+        x_hat = torch.clamp(x_hat, min=0.0, max=1.0)
         loss = nn.functional.mse_loss(x_hat, x)
 
     return loss
