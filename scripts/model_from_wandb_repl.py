@@ -97,7 +97,7 @@ def main(
             ckpts_and_hparams, key=lambda x: x[1].stat().st_mtime
         )
     elif len(ckpts_and_hparams) == 1:
-        ckpt_file, hparam_file = next(ckpts_and_hparams)
+        ckpt_file, hparam_file = ckpts_and_hparams[0]
     else:
         raise RuntimeError("Could not find wandb id in any of the log directories.")
 
