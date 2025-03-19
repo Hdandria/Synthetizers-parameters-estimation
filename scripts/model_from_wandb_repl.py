@@ -11,6 +11,8 @@ from omegaconf import DictConfig, OmegaConf
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
+from src.utils import register_resolvers
+
 
 def wandb_dir_to_ckpt_and_hparams(
     wandb_dir: Path, ckpt_type: Literal["best", "last"]
@@ -83,6 +85,8 @@ def main(
     ckpt_type: Literal["best", "last"] = "last",
     device: str = "cuda",
 ):
+
+    register_resolvers()
     log_dir = Path(log_dir)
     possible_wandb_dirs = list(log_dir.glob(f"**/*{wandb_id}/"))
     logger.info(f"Found {len(possible_wandb_dirs)} log dirs matching wandb id")
