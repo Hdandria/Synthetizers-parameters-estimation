@@ -92,8 +92,8 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
         self.inner_layers = nn.Sequential(
-            nn.Conv2d(out_channels, out_channels, (1, 1), (1, 1), 0),
             nn.BatchNorm2d(out_channels),
+            nn.Conv2d(out_channels, out_channels, (1, 1), (1, 1), 0),
             nn.LeakyReLU(0.1),
             nn.Conv2d(
                 out_channels,
@@ -103,7 +103,6 @@ class EncoderBlock(nn.Module):
                 padding,
                 groups=out_channels,
             ),
-            nn.BatchNorm2d(out_channels),
         )
         self.final_act = nn.LeakyReLU(0.1)
 
@@ -118,32 +117,29 @@ class Encoder(nn.Module):
     def __init__(self, latent_dim: int, spec_dim: Tuple[int] = (128, 401)):
         super().__init__()
 
-        self.channelwise_cnn = nn.Sequential(
-            EncoderBlock(1, 8, (3, 5), (2, 2), (1, 2)),
-            EncoderBlock(8, 16, (3, 5), (2, 2), (1, 2)),
+        self.cnn = nn.Sequential(
+            EncoderBlock(2, 16, (3, 5), (2, 2), (1, 2)),
             EncoderBlock(16, 32, (3, 5), (2, 2), (1, 2)),
             EncoderBlock(32, 64, (3, 5), (2, 2), (1, 2)),
             EncoderBlock(64, 128, (3, 5), (2, 2), (1, 2)),
-            EncoderBlock(128, 256, (3, 5), (1, 4), (1, 2)),
-        )
-
-        self.mixing_cnn = nn.Sequential(
-            EncoderBlock(512, 768, (5, 5), (2, 2), 2),
-            nn.Conv2d(768, 1024, (1, 1), (1, 1), 0),
+            EncoderBlock(128, 256, (3, 5), (2, 2), (1, 2)),
+            EncoderBlock(256, 512, (3, 5), (1, 4), (1, 2)),
+            EncoderBlock(512, 1024, (5, 5), (2, 2), 2),
+            nn.Conv2d(1024, 1024, (1, 1), (1, 1), 0),
             nn.LeakyReLU(0.1),
         )
 
-        dummy_spec = torch.randn(1, 1, spec_dim[0], spec_dim[1])
-        dummy_spec = self.channelwise_cnn(dummy_spec)
-        dummy_spec = self.mixing_cnn(torch.cat([dummy_spec, dummy_spec], dim=1))
+        dummy_spec = torch.randn(1, 2, *spec_dim)
+        dummy_spec = self.cnn(dummy_spec)
         dummy_spec = dummy_spec.view(dummy_spec.shape[0], -1)
         num_features = dummy_spec.shape[1]
-        self.out = nn.Sequential(nn.Linear(num_features, latent_dim * 2))
+
+        self.out = nn.Sequential(
+            nn.Linear(num_features, latent_dim * 2), nn.BatchNorm1d(latent_dim * 2)
+        )
 
     def forward(self, x):
-        specs = x.chunk(2, dim=1)
-        spec_features = [self.channelwise_cnn(s) for s in specs]
-        x = self.mixing_cnn(torch.cat(spec_features, dim=1))
+        x = self.cnn(x)
         x = x.view(x.shape[0], -1)
         x = self.out(x)
         return x.squeeze(1)
@@ -172,8 +168,8 @@ class DecoderBlock(nn.Module):
             output_padding=0 if output_padding is None else output_padding,
         )
         self.inner_layers = nn.Sequential(
-            nn.Conv2d(out_channels, out_channels, (1, 1), (1, 1), 0),
             nn.BatchNorm2d(out_channels),
+            nn.Conv2d(out_channels, out_channels, (1, 1), (1, 1), 0),
             nn.LeakyReLU(0.1),
             nn.Conv2d(
                 out_channels,
@@ -183,7 +179,6 @@ class DecoderBlock(nn.Module):
                 padding,
                 groups=out_channels,
             ),
-            nn.BatchNorm2d(out_channels),
         )
         self.final_act = nn.LeakyReLU(0.1)
 
@@ -201,25 +196,21 @@ class Decoder(nn.Module):
         super().__init__()
 
         self.in_proj = nn.Linear(latent_dim, 4096)
-        self.unmixing_cnn = DecoderBlock(1024, 512, (5, 5), (2, 2), 2, (1, 1))
-
-        self.channelwise_cnn = nn.Sequential(
-            DecoderBlock(256, 128, (3, 5), (1, 4), (1, 2), output_padding=(0, 0)),
-            DecoderBlock(128, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 1)),
+        self.cnn = nn.Sequential(
+            DecoderBlock(1024, 512, (5, 5), (2, 2), 2, (1, 1)),
+            DecoderBlock(512, 256, (3, 5), (1, 4), (1, 2), output_padding=(0, 0)),
+            DecoderBlock(256, 128, (3, 5), (2, 2), (1, 2), output_padding=(1, 1)),
+            DecoderBlock(128, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
             DecoderBlock(64, 32, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
             DecoderBlock(32, 16, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
-            DecoderBlock(16, 8, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
-            DecoderBlock(8, 1, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
+            DecoderBlock(16, 2, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
         )
-        self.num_channels = num_channels
 
     def forward(self, x):
         x = self.in_proj(x)
         x = x.reshape(-1, 1024, 2, 2)
-        x = self.unmixing_cnn(x)
-        specs = x.chunk(2, dim=1)
-        spec_features = [self.channelwise_cnn(s) for s in specs]
-        return torch.cat(spec_features, dim=1)
+        x = self.cnn(x)
+        return x
 
 
 @dataclass
@@ -345,8 +336,13 @@ def compute_individual_parameter_loss(
         or isinstance(parameter, CategoricalParameter)
     ) and parameter.encoding == "onehot":
         labels = x.argmax(dim=1)
+        one_hot = torch.zeros_like(x, dtype=torch.bool)
+        one_hot.scatter_(-1, labels[..., None], True)
+
         # empirical temperature, and weight from le vaillant paper
-        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels)
+        odds = torch.softmax(x_hat / 0.2, dim=-1)
+        odds = odds[one_hot]
+        loss = -torch.log(odds).mean() * 0.2
     else:
         x_hat = torch.clamp(x_hat, min=0.0, max=1.0)
         loss = nn.functional.mse_loss(x_hat, x)
