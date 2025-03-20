@@ -571,6 +571,7 @@ class AudioSpectrogramTransformer(nn.Module):
         d_model: int = 768,
         n_heads: int = 8,
         n_layers: int = 16,
+        n_conditioning_outputs: int = 12,
         patch_size: int = 16,
         patch_stride: int = 10,
         input_channels: int = 2,
@@ -588,11 +589,11 @@ class AudioSpectrogramTransformer(nn.Module):
 
         self.positional_encoding = PositionalEncoding(
             d_model,
-            self.patch_embed.num_tokens + 1,
+            self.patch_embed.num_tokens + n_conditioning_outputs,
             init="norm0.02",
         )
         self.embed_tokens = nn.Parameter(
-            torch.empty(1, 1, d_model).normal_(0.0, 1e-6)
+            torch.empty(1, n_conditioning_outputs, d_model).normal_(0.0, 1e-6)
         )
 
         self.blocks = nn.ModuleList(
