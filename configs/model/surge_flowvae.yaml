@@ -25,11 +25,11 @@ warmup_steps: 0
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 1e-4
+  lr: 2e-4
   weight_decay: 0.0
 
-beta_max: 0.01
-beta_start: 0.0
+beta_max: 0.2
+beta_start: 0.1
 
 # compile model for faster training with pytorch 2.0
 compile: true
