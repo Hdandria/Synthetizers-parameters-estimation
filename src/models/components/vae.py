@@ -125,7 +125,7 @@ class Encoder(nn.Module):
             EncoderBlock(64, 128, (3, 5), (2, 2), (1, 2)),
             EncoderBlock(128, 256, (3, 5), (1, 4), (1, 2)),
             EncoderBlock(256, 512, (5, 5), (2, 2), 2),
-            nn.Conv2d(512, 1024, (1, 1), (1, 1), 0),
+            nn.Conv2d(512, 512, (1, 1), (1, 1), 0),
             nn.LeakyReLU(0.1),
         )
 
@@ -195,12 +195,12 @@ class Decoder(nn.Module):
     ):
         super().__init__()
 
-        self.in_proj = nn.Linear(latent_dim, 4096)
+        self.in_proj = nn.Linear(latent_dim, 2048)
         self.cnn = nn.Sequential(
-            DecoderBlock(1024, 256, (5, 5), (2, 2), 2, (1, 1)),
-            DecoderBlock(256, 128, (3, 5), (1, 4), (1, 2), output_padding=(0, 0)),
-            DecoderBlock(128, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 1)),
-            DecoderBlock(64, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
+            DecoderBlock(512, 512, (5, 5), (2, 2), 2, (1, 1)),
+            DecoderBlock(512, 256, (3, 5), (1, 4), (1, 2), output_padding=(0, 0)),
+            DecoderBlock(256, 128, (3, 5), (2, 2), (1, 2), output_padding=(1, 1)),
+            DecoderBlock(128, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
             DecoderBlock(64, 32, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
             DecoderBlock(32, 16, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
             DecoderBlock(16, 2, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
@@ -208,7 +208,7 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = self.in_proj(x)
-        x = x.reshape(-1, 1024, 2, 2)
+        x = x.reshape(-1, 512, 2, 2)
         x = self.cnn(x)
         return x
 
