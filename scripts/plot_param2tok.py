@@ -113,7 +113,7 @@ def plot_assignment(proj: LearntProjection):
 def plot_param2tok(proj: LearntProjection, out_dir: str):
     assignment_fig = plot_assignment(proj)
     os.makedirs(out_dir, exist_ok=True)
-    plt.savefig(assignment_fig, f"{out_dir}/assignment.png")
+    assignment_fig.savefig(f"{out_dir}/assignment.png")
 
 
 @click.command()
