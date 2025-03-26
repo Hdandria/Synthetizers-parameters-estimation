@@ -177,9 +177,13 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
 
 def plot_param2tok(proj: LearntProjection, out_dir: str, spec: str):
+    logger.info("Plotting assignment")
     assignment_fig = plot_assignment(proj, spec)
+    logger.info("Plotting done")
+    logger.info(f"Saving to {out_dir}")
     os.makedirs(out_dir, exist_ok=True)
     assignment_fig.savefig(f"{out_dir}/assignment.pdf")
+    logger.info("Saved")
 
 
 @click.command()
