@@ -108,6 +108,8 @@ def get_labels(spec: str):
     intervals = [(n.replace("a_", ""), l) for n, l in intervals]
 
     i = 0
+    min_prefix_len = 2
+    cur_prefix_len = 0
     while True:
         if i >= len(intervals) - 1:
             break
@@ -116,10 +118,13 @@ def get_labels(spec: str):
         next_name, next_len = intervals[i + 1]
 
         prefix = longest_matching_initial_substring(cur_name, next_name)
-        if len(prefix) > 2:
+        if len(prefix) > max(min_prefix_len, cur_prefix_len):
             intervals[i] = (prefix, cur_len + next_len)
             intervals.pop(i + 1)
+            cur_prefix_len = len(prefix)
             continue
+
+        cur_prefix_len = 0
 
         i += 1
 
