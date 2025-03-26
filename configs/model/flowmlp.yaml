@@ -19,6 +19,7 @@ vector_field:
   d_enc: 128
   conditioning_dim: 128
   num_layers: 7
+  time_encoding: scalar
 
 # training
 cfg_dropout_rate: 0.1
