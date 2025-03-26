@@ -98,6 +98,13 @@ def longest_matching_initial_substring(a: str, b: str) -> str:
     return longest
 
 
+def strip_scene_id(param_name: str) -> str:
+    if param_name.startswith("a_"):
+        return param_name[2:]
+
+    return param_name
+
+
 def get_labels(spec: str):
     param_spec = param_specs[spec]
 
@@ -105,7 +112,7 @@ def get_labels(spec: str):
     note_intervals = [(p.name, len(p)) for p in param_spec.note_params]
     intervals = synth_intervals + note_intervals
 
-    intervals = [(n.replace("a_", ""), l) for n, l in intervals]
+    intervals = [(strip_scene_id(n), l) for n, l in intervals]
 
     i = 0
     min_prefix_len = 2
@@ -118,8 +125,13 @@ def get_labels(spec: str):
         next_name, next_len = intervals[i + 1]
 
         prefix = longest_matching_initial_substring(cur_name, next_name)
-        if len(prefix) > max(min_prefix_len, cur_prefix_len):
-            intervals[i] = (prefix, cur_len + next_len)
+        if len(prefix) >= max(min_prefix_len, cur_prefix_len):
+            if cur_prefix_len == 0:
+                new_name = prefix
+            else:
+                new_name = cur_name
+
+            intervals[i] = (new_name, cur_len + next_len)
             intervals.pop(i + 1)
             cur_prefix_len = len(prefix)
             continue
