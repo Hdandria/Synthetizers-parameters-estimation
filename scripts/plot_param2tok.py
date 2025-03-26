@@ -87,12 +87,47 @@ def sort_assignment(assignment: np.ndarray):
     return assignment
 
 
-def add_labels(ax: plt.Axes, spec: str):
+def longest_matching_initial_substring(a: str, b: str) -> str:
+    longest = ""
+    for i in range(min(len(a), len(b))):
+        if a[i] == b[i]:
+            longest = longest + a[i]
+        else:
+            break
+
+    return longest
+
+
+def get_labels(spec: str):
     param_spec = param_specs[spec]
 
     synth_intervals = [(p.name, len(p)) for p in param_spec.synth_params]
     note_intervals = [(p.name, len(p)) for p in param_spec.note_params]
     intervals = synth_intervals + note_intervals
+
+    intervals = [(n.replace("a_", ""), l) for n, l in intervals]
+
+    i = 0
+    while True:
+        if i >= len(intervals) - 1:
+            break
+
+        cur_name, cur_len = intervals[i]
+        next_name, next_len = intervals[i + 1]
+
+        prefix = longest_matching_initial_substring(cur_name, next_name)
+        if len(prefix) > 2:
+            intervals[i] = (prefix, cur_len + next_len)
+            intervals.pop(i + 1)
+            continue
+
+        i += 1
+
+    return intervals
+
+
+def add_labels(ax: plt.Axes, spec: str):
+    intervals = get_labels(spec)
     labels = [label for label, _ in intervals]
     lengths = [length for _, length in intervals]
 
