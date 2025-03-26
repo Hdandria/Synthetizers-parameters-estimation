@@ -8,7 +8,7 @@
 #$ -j y
 #$ -o dlogs/
 #$ -e dlogs/
-#$ -t 11-12
+#$ -t 13-16
 
 JOB_DIR=$(sed -n "${SGE_TASK_ID}p" jobs/eval/eval-jobs.txt)
 
