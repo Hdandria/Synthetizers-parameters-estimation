@@ -88,8 +88,8 @@ def sort_assignment(assignment: np.ndarray):
 def add_labels(ax: plt.Axes, spec: str):
     param_spec = param_specs[spec]
 
-    synth_intervals = [(p.name, len(p)) for p in param_spec.synth_param_names]
-    note_intervals = [(p.name, len(p)) for p in param_spec.note_param_names]
+    synth_intervals = [(p.name, len(p)) for p in param_spec.synth_params]
+    note_intervals = [(p.name, len(p)) for p in param_spec.note_params]
     intervals = synth_intervals + note_intervals
     labels = [label for label, _ in intervals]
     lengths = [length for _, length in intervals]
