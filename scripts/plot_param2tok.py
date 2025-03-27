@@ -210,6 +210,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     ratio = assignment.shape[1] / assignment.shape[0]
 
+    plt.rcParams.update({"font.size": 48})
     fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12))
 
     maxval = np.abs(assignment).max().item()
@@ -232,7 +233,6 @@ def plot_assignment(proj: LearntProjection, spec: str):
     fig.suptitle("Learnt Assignment")
     fig.tight_layout()
 
-    plt.rcParams.update({"font.size": 22})
     return fig
 
 
