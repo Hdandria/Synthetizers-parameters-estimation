@@ -227,7 +227,6 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     centers = []
     start = 0
     for label, length in intervals:
-        print(f"{label}: {length}")
         center = start + (length - 1) / 2
         centers.append(center)
         start += length
@@ -247,22 +246,31 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     last_xend = -1e9  # track right edge of the last label
 
     denom = math.cos(math.pi / 4)
-    min_perp_dist = 100
+    min_perp_dist = 50
+
 
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        perp_dist = (bbox.x1 - last_xend) / denom
+        perp_dist = (bbox.x1 - last_xend + current_shift) * denom
 
         if perp_dist < min_perp_dist:
-            shift = (min_perp_dist - perp_dist) * denom
-            current_shift -= shift
+            shift = (min_perp_dist - perp_dist) / denom
+            current_shift = shift
         else:
             # reset shift if no overlap
             current_shift = 0
         # move the text by modifying its 'y' position in data coordinates
         # You can also do this in axes or figure fraction coordinates if you prefer.
         x0, y0 = txt.get_position()
-        txt.set_position((x0, y0 + current_shift / 72.0))  # 72 points per inch
+        x0, y0 = ax.transData.transform((x0, y0))
+        y0 = y0 + current_shift
+        x0, y0 = ax.transData.inverted().transform((x0, y0))
+
+        txt.set_position((x0, y0))  # 72 points per inch
+
+        #fig.canvas.draw()
+        #bbox = txt.get_window_extent(renderer=renderer)
+
         last_xend = bbox.x1
 
 
@@ -273,7 +281,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
     ratio = assignment.shape[1] / assignment.shape[0]
 
     plt.rcParams.update({"font.size": 14})
-    fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12))
+    fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12), dpi=300)
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
