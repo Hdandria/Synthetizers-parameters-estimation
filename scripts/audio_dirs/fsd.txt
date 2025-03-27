@@ -1,0 +1,3 @@
+/data/EECS-C4DM-Fazekas/benhayes/surge-preds/flowmlp_fsd/eval/surge-full-onehot/flowmlp-2025-03-09_16-29-47
+/data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_fsd/eval/surge-full-onehot/ffn-2025-03-09_16-30-15
+/data/EECS-C4DM-Fazekas/benhayes/surge-preds/vae_fsd/eval/surge-full-onehot/vae-2025-03-26_00-26-24
