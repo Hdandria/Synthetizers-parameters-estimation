@@ -197,7 +197,7 @@ def add_labels(ax: plt.Axes, spec: str):
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
-    ax.tick_params(axis="x", labelrotation=90)
+    ax.tick_params(axis="x", labelrotation=45)
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
@@ -218,7 +218,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
     )
     # fig.colorbar(img, ax=ax)
 
-    ax.set_title("Assignment")
+    # ax.set_title("Assignment")
 
     add_labels(ax, spec)
 
@@ -226,7 +226,9 @@ def plot_assignment(proj: LearntProjection, spec: str):
     ax.set_ylabel("tokens")
     fig.tight_layout()
     fig.suptitle("Learnt Assignment")
+    fig.tight_layout()
 
+    plt.rcParams.update({'font.size': 22})
     return fig
 
 
