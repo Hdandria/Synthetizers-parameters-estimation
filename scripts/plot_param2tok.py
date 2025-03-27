@@ -126,11 +126,41 @@ PREFIXES = (
     "fx_a1",
     "fx_a2",
     "fx_a3",
+    "fm",
 )
 
 RENAMES = {
     "amp_eg": "Amp. EG",
     "filter_eg": "Filt. EG",
+    "feedback": "Feedback",
+    "filter_balance": "Filt. Balance",
+    "filter_configuration": "Filt. Routing",
+    "highpass": "HPF",
+    "filter_1": "Filter 1",
+    "filter_2": "Filter 2",
+    "waveshaper": "Waveshaper",
+    "osc_1": "Osc. 1",
+    "osc_2": "Osc. 2",
+    "osc_3": "Osc. 3",
+    "osc_drift": "Osc. Drift",
+    "fm": "Freq. Mod.",
+    "lfo_1": "LFO 1",
+    "lfo_2": "LFO 2",
+    "lfo_3": "LFO 3",
+    "lfo_4": "LFO 4",
+    "lfo_5": "LFO 5",
+    "lfo_6": "Pitch EG",
+    "noise": "Noise",
+    "pan": "Pan",
+    "ring_modulation_1x2": "Ring Mod. 1x2",
+    "ring_modulation_2x3": "Ring Mod. 2x3",
+    "vca_gain": "VCA Gain",
+    "width": "Width",
+    "fx_a1": "FX: Chorus",
+    "fx_a2": "FX: Delay",
+    "fx_a3": "FX: Reverb",
+    "pitch": "Note Pitch",
+    "note_start_and_end": "Note On/Off",
 }
 
 
@@ -181,6 +211,10 @@ def get_labels(spec: str):
         current_prefix_length = 0
 
         true_intervals.append((cur_name, cur_len))
+
+    true_intervals = [
+        (RENAMES.get(name, name), length) for name, length in true_intervals
+    ]
 
     return true_intervals
 
