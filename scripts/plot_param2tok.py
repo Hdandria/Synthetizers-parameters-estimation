@@ -361,7 +361,7 @@ def plot_embeds(proj: LearntProjection, spec: str):
 
     # cosine similarities
 
-    fig = plt.figure(figsize=(12, 6), dpi=120)
+    fig = plt.figure(figsize=(28, 14), dpi=120)
     # fig, ax = plt.subplots(1, 2, figsize=(12, 8), dpi=120)
     ax = [
         fig.add_axes([0.15, 0.1, 0.33, 0.8]),
