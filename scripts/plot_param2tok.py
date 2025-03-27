@@ -185,7 +185,6 @@ def add_labels(ax: plt.Axes, spec: str):
     lengths = [length for _, length in intervals]
 
     boundaries = np.cumsum(lengths)
-    boundaries = np.insert(boundaries, 0, 0)
 
     centers = []
     start = 0
@@ -193,6 +192,8 @@ def add_labels(ax: plt.Axes, spec: str):
         center = start + (length - 1) / 2
         centers.append(center)
         start += length
+
+        ax.axvline(start, color="k", alpha=0.5)
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
