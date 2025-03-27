@@ -407,8 +407,8 @@ def plot_param2tok(proj: LearntProjection, out_dir: str, spec: str):
     logger.info("Plotting done")
     logger.info(f"Saving to {out_dir}")
     os.makedirs(out_dir, exist_ok=True)
-    assignment_fig.savefig(f"{out_dir}/assignment.pdf")
-    embed_fig.savefig(f"{out_dir}/embeds.pdf")
+    assignment_fig.savefig(f"{out_dir}/assignment.svg")
+    embed_fig.savefig(f"{out_dir}/embeds.svg")
     logger.info("Saved")
 
 
