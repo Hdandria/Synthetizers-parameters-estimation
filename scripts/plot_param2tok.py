@@ -241,12 +241,13 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     renderer = fig.canvas.get_renderer()
     text_objs = ax.get_xticklabels()
     bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
-    y_shift_per_collision = 2  # points to shift for each collision
+    y_shift_per_collision = 1  # points to shift for each collision
     current_shift = 0
     last_xend = -1e9  # track right edge of the last label
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        if bbox.x0 <= last_xend:
+        print(bbox.x0, last_xend)
+        if bbox.x0 <= last_xend - 3:
             current_shift -= y_shift_per_collision
         else:
             # reset shift if no overlap
