@@ -278,7 +278,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str, axis: Literal["x", "y"]
         if axis == "x":
             perp_dist = (bbox.x1 - last_end - current_shift) * denom
         else:
-            perp_dist = (bbox.y1 - last_end - current_shift) * denom
+            perp_dist = ((last_end + current_shift) - bbox.y1) * denom
 
         if perp_dist < min_perp_dist:
             shift = (min_perp_dist - perp_dist) / denom
@@ -364,8 +364,8 @@ def plot_embeds(proj: LearntProjection, spec: str):
     fig = plt.figure(figsize=(12, 8), dpi=120)
     # fig, ax = plt.subplots(1, 2, figsize=(12, 8), dpi=120)
     ax = [
-        fig.add_axes([0.1, 0.1, 0.3, 0.8]),
-        fig.add_axes([0.5, 0.1, 0.3, 0.8]),
+        fig.add_axes([0.15, 0.0, 0.33, 1.0]),
+        fig.add_axes([0.63, 0.0, 0.33, 1.0]),
     ]
 
     in_img = ax[0].imshow(
