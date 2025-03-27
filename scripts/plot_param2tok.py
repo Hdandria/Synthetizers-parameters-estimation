@@ -247,7 +247,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     last_xend = -1e9  # track right edge of the last label
 
     denom = math.cos(math.pi / 4)
-    min_perp_dist = 10
+    min_perp_dist = 100
 
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
