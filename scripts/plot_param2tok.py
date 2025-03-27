@@ -247,7 +247,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
         if bbox.x0 <= last_xend:
-            current_shift += y_shift_per_collision
+            current_shift -= y_shift_per_collision
         else:
             # reset shift if no overlap
             current_shift = 0
