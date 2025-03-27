@@ -246,12 +246,12 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     last_xend = -1e9  # track right edge of the last label
 
     denom = math.cos(math.pi / 4)
-    min_perp_dist = 50
+    min_perp_dist = 15
 
 
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        perp_dist = (bbox.x1 - last_xend + current_shift) * denom
+        perp_dist = (bbox.x1 - last_xend - current_shift) * denom
 
         if perp_dist < min_perp_dist:
             shift = (min_perp_dist - perp_dist) / denom
@@ -263,7 +263,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
         # You can also do this in axes or figure fraction coordinates if you prefer.
         x0, y0 = txt.get_position()
         x0, y0 = ax.transData.transform((x0, y0))
-        y0 = y0 + current_shift
+        y0 = y0 + current_shift / 100
         x0, y0 = ax.transData.inverted().transform((x0, y0))
 
         txt.set_position((x0, y0))  # 72 points per inch
@@ -278,10 +278,20 @@ def plot_assignment(proj: LearntProjection, spec: str):
     assignment = proj.assignment.detach().cpu().numpy()
     assignment = sort_assignment(assignment)
 
-    ratio = assignment.shape[1] / assignment.shape[0]
 
     plt.rcParams.update({"font.size": 14})
-    fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12), dpi=300)
+
+    size = 14
+    ratio = assignment.shape[1] / assignment.shape[0]
+
+    print(assignment.shape)
+    if assignment.shape[1] > assignment.shape[0]:
+        figsize = size * (ratio - 0.2), size
+    else:
+        figsize = size, size / (ratio + 0.1)
+    print(figsize)
+
+    fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=120)
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
@@ -297,10 +307,9 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     add_labels(fig, ax, spec)
 
-    ax.set_xlabel("params")
-    ax.set_ylabel("tokens")
+    ax.set_ylabel("Tokens")
     fig.tight_layout()
-    fig.suptitle("Learnt Assignment")
+    # fig.suptitle("Learnt Assignment")
     fig.tight_layout()
 
     return fig
