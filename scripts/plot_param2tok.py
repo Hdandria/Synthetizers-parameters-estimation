@@ -345,22 +345,32 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     return fig
 
+def cosine_self_sim(x: np.ndarray) -> np.ndarray:
+    dot_prod = np.einsum("ik,jk->ij", x, x)
+    norm = np.einsum("ik,ik->i", x, x)
+    return dot_prod / norm
 
 def plot_embeds(proj: LearntProjection, spec: str):
     in_embed = proj.in_projection.detach().cpu().numpy()
     out_embed = proj.out_projection.detach().cpu().numpy()
 
+    in_sim = cosine_self_sim(in_embed)
+    out_sim = cosine_self_sim(out_embed)
+
+    # cosine similarities
+
+
     fig, ax = plt.subplots(1, 2, figsize=(12, 8), dpi=120)
 
     in_img = ax[0].imshow(
-        in_embed,
+        in_sim,
         aspect="equal",
         vmin=-1,
         vmax=1,
         cmap="RdBu",
     )
     out_img = ax[1].imshow(
-        out_embed,
+        out_sim,
         aspect="equal",
         vmin=-1,
         vmax=1,
