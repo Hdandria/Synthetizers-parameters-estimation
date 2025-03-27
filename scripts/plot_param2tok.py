@@ -324,7 +324,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     fig = plt.figure(figsize=figsize, dpi=120)
     ax = fig.add_axes([0.1, 0.1, 0.75, 0.8])
-    fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=120)
+    # fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=120)
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
