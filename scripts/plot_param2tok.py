@@ -129,10 +129,9 @@ PREFIXES = (
 )
 
 RENAMES = {
-        "amp_eg": "Amp. EG",
-        "filter_eg": "Filt. EG",
-
-        }
+    "amp_eg": "Amp. EG",
+    "filter_eg": "Filt. EG",
+}
 
 
 def get_labels(spec: str):
@@ -175,7 +174,8 @@ def get_labels(spec: str):
         if should_continue:
             continue
 
-        true_intervals.append((current_prefix, current_prefix_length))
+        if current_prefix is not None:
+            true_intervals.append((current_prefix, current_prefix_length))
 
         current_prefix = None
         current_prefix_length = 0
@@ -232,7 +232,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
     fig.suptitle("Learnt Assignment")
     fig.tight_layout()
 
-    plt.rcParams.update({'font.size': 22})
+    plt.rcParams.update({"font.size": 22})
     return fig
 
 
