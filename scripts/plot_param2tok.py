@@ -128,6 +128,12 @@ PREFIXES = (
     "fx_a3",
 )
 
+RENAMES = {
+        "amp_eg": "Amp. EG",
+        "filter_eg": "Filt. EG",
+
+        }
+
 
 def get_labels(spec: str):
     param_spec = param_specs[spec]
@@ -182,13 +188,11 @@ def get_labels(spec: str):
 def add_labels(ax: plt.Axes, spec: str):
     intervals = get_labels(spec)
     labels = [label for label, _ in intervals]
-    lengths = [length for _, length in intervals]
-
-    boundaries = np.cumsum(lengths)
 
     centers = []
     start = 0
-    for length in lengths:
+    for label, length in intervals:
+        print(f"{label}: {length}")
         center = start + (length - 1) / 2
         centers.append(center)
         start += length
@@ -197,7 +201,7 @@ def add_labels(ax: plt.Axes, spec: str):
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
-    ax.tick_params(axis="x", labelrotation=45)
+    ax.tick_params(axis="x", labelrotation=90)
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
