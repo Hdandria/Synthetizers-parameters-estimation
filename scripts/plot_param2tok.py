@@ -355,7 +355,7 @@ def plot_embeds(proj: LearntProjection, spec: str):
     out_embed = proj.out_projection.detach().cpu().numpy()
 
     in_sim = cosine_self_sim(in_embed)
-    out_sim = cosine_self_sim(out_embed)
+    out_sim = cosine_self_sim(out_embed.T)
 
     # cosine similarities
 
