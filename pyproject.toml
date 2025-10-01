@@ -1,7 +1,7 @@
 [project]
-name = "python-template"
+name = "audio-to-daw"
 version = "0.1.0"
-description = "A modern Python project template with structured logging and configuration management"
+description = "Tool to automatically reconstruct a DAW project from a single audio track."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
