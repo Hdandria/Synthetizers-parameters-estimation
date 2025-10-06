@@ -142,7 +142,7 @@ def save_dataset(samples: List[Tuple], config: Dict):
             midi_ds[i] = midi_note
             velocity_ds[i] = velocity
 
-    print(f"Dataset saved successfully!")
+    print("Dataset saved successfully!")
 
 
 def main():
