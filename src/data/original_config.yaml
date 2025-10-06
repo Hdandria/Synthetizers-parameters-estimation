@@ -23,5 +23,9 @@ min_loudness: -55.0                   # Min loudness in LUFS (samples below this
 # Parameter selection "surge_full" or "surge_simple"
 param_set: "surge_simple"
 
+# Generation settings
+# Set to true to force chunked generation even for small datasets
+force_chunked: false
+
 # Legacy (will be ignored if param_set is specified)
 num_random_params: 10
