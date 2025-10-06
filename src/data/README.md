@@ -1,5 +1,7 @@
 # Scalable VST Dataset Generator
 
+> To be added: the plugin under /plugins/ is Linux only
+
 This tool creates audio datasets from the surge_xt synth using a chunked approach for all dataset sizes.
 
 ## Quick Start
@@ -39,28 +41,7 @@ The tool will:
 
 ### Load in Python
 
-#### Chunked Dataset (All datasets now use this format)
-```python
-from chunked_dataset_reader import ChunkedDatasetReader
-
-# Load chunked dataset
-reader = ChunkedDatasetReader('datasets/vst_samples_large')
-
-# Get dataset info
-info = reader.get_dataset_info()
-print(f"Total samples: {info['total_samples']}")
-print(f"Number of chunks: {info['num_chunks']}")
-
-# Get random samples
-samples = reader.get_random_samples(10, seed=42)
-for sample in samples:
-    print(f"Sample {sample['global_id']}: MIDI {sample['midi_note']}")
-
-# Iterate through chunks
-for chunk in reader.iterate_chunks():
-    audio = chunk['audio'][:]
-    # Process chunk...
-```
+Look at `notebooks/analyze_dataset.ipynb` to view how to load the samples.
 
 ## Dataset Structure
 
@@ -89,19 +70,21 @@ Each dataset chunk contains:
 - **Resumable**: Can restart from specific chunks (future feature)
 
 ### Performance Estimates
-Based on current setup:
-- **Single core**: ~2.6s per sample
-- **4 cores**: ~900 samples/hour
-- **8 cores**: ~1800 samples/hour
-- **40 cores**: ~9000 samples/hour
+Empirically, on AMD EPYC 7542 (32 cores):
 
-For 100k samples with 8 cores: ~55 hours
-For 100k samples with 40 cores: ~11 hours
+On each core, we have the approximate law:
+t = 3.7 * nb_sample + 16
+
+Generally, based on current samples:
+- **Single core**: ~1000 samples/hours
+
+For 100k samples with 8 cores: ~12.5h
+For 100k samples with 40 cores: ~2.5h
 
 ### File Sizes
-- **1k samples**: ~2.5GB per chunk (includes audio, mel-spec, and parameters)
-- **100k samples**: ~250GB total (100 chunks of 2.5GB each)
-- **1M samples**: ~2.5TB total (1000 chunks of 2.5GB each)
+- **1k samples**: ~1.1GB (includes audio, mel-spec, and parameters)
+- **100k samples**: ~110GB total (100 chunks of 1.1GB each)
+- **1M samples**: ~1.1TB total (1000 chunks of 1.1GB each)
 
 ### Data Breakdown per Sample (4 seconds, 44.1kHz, stereo)
 - **Audio**: 2 channels × 176,400 samples × 2 bytes (float16) = ~705KB

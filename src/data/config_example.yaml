@@ -1,16 +1,16 @@
 # Example VST Dataset Configuration
 
 # Where is the plugin?
-plugin_path: "/usr/lib64/vst3/Surge XT.vst3"
+plugin_path: "../../plugins/Surge XT.vst3"
 
 # Where to save the dataset?
 output_dir: "datasets/vst_samples_example3"
 
 # Total number of samples to generate
-num_samples: 20
+num_samples: 400
 
 # Chunked generation settings
-samples_per_file: 5
+samples_per_file: 30
 file_naming: "dataset_{chunk:04d}.h5"
 
 # Number of CPU cores to use for parallel generation
