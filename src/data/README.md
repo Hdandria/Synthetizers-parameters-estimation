@@ -86,7 +86,7 @@ For 100k samples with 40 cores: ~2.5h
 - **100k samples**: ~110GB total (100 chunks of 1.1GB each)
 - **1M samples**: ~1.1TB total (1000 chunks of 1.1GB each)
 
-### Data Breakdown per Sample (4 seconds, 44.1kHz, stereo)
+### Data breakdown (4 seconds, 44.1kHz, stereo)
 - **Audio**: 2 channels × 176,400 samples × 2 bytes (float16) = ~705KB
 - **Mel-spec**: 2 channels × 128 mels × 401 frames × 4 bytes (float32) = ~410KB  
 - **Parameters**: ~50 parameters × 4 bytes (float32) = ~200 bytes
