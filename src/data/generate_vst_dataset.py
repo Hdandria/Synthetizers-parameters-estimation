@@ -12,13 +12,14 @@ Usage:
 import argparse
 from pathlib import Path
 import random
-import time
 from typing import Dict, List, Tuple
 
 import h5py
 import numpy as np
 from pedalboard import VST3Plugin
+from pyloudnorm import Meter
 from tqdm import tqdm
+from vst.surge_params import SURGE_SIMPLE_PARAM_SPEC, SURGE_XT_PARAM_SPEC
 import yaml
 
 
@@ -39,27 +40,14 @@ def load_plugin(plugin_path: str) -> VST3Plugin:
     return plugin
 
 
-def get_random_parameters(plugin: VST3Plugin, num_params: int) -> Dict[str, float]:
-    """Pick some random parameters and set them to random values"""
-    # Get all available parameters
-    all_params = list(plugin.parameters.keys())
-
-    # Skip empty or problematic parameters
-    safe_params = [p for p in all_params if p and p != "bypass"]
-
-    # Pick random parameters
-    if len(safe_params) < num_params:
-        print(f"Warning: Only {len(safe_params)} parameters available, wanted {num_params}")
-        selected_params = safe_params
+def get_param_spec(param_set: str):
+    """Get parameter specification based on config"""
+    if param_set == "surge_full":
+        return SURGE_XT_PARAM_SPEC
+    elif param_set == "surge_simple":
+        return SURGE_SIMPLE_PARAM_SPEC
     else:
-        selected_params = random.sample(safe_params, num_params)
-
-    # Set random values (0.0 to 1.0)
-    params = {}
-    for param_name in selected_params:
-        params[param_name] = random.uniform(0.0, 1.0)
-
-    return params
+        raise ValueError(f"Unknown parameter set: {param_set}")
 
 
 def make_midi_note(pitch: int, velocity: int, start_time: float, end_time: float):
@@ -73,41 +61,58 @@ def make_midi_note(pitch: int, velocity: int, start_time: float, end_time: float
 
 
 def generate_audio_sample(plugin: VST3Plugin, config: Dict) -> Tuple[np.ndarray, Dict, int, int]:
-    """Generate one audio sample with random settings"""
+    """Generate one audio sample with random settings, filtering by loudness"""
 
-    # Reset plugin to clean state
-    plugin.reset()
-    plugin.process([], 0.1, 44100, 2, 2048, True)
+    while True:
+        # Reset plugin to clean state
+        plugin.reset()
+        plugin.process([], 0.1, 44100, 2, 2048, True)
 
-    # Get random parameters
-    params = get_random_parameters(plugin, config["num_random_params"])
+        # Get parameters using structured specification
+        if "param_set" not in config:
+            raise ValueError("param_set is required in configuration. Please specify 'surge_simple' or 'surge_full'")
 
-    # Set the parameters
-    for param_name, value in params.items():
-        if param_name in plugin.parameters:
-            plugin.parameters[param_name].raw_value = value
+        param_spec = get_param_spec(config["param_set"])
+        synth_params, note_params = param_spec.sample()
+        all_params = {**synth_params, **note_params}
+        # print(f"Using parameter set: {config['param_set']} ({len(all_params)} parameters)")
 
-    # Let the plugin process the parameter changes
-    plugin.process([], 0.1, 44100, 2, 2048, True)
-    plugin.reset()
+        # Extract note parameters
+        midi_note = int(note_params["pitch"])
+        note_start, note_end = note_params["note_start_and_end"]
 
-    # Pick random MIDI note and velocity
-    midi_note = random.randint(config["note_range"][0], config["note_range"][1])
-    velocity = random.randint(config["velocity_range"][0], config["velocity_range"][1])
+        # Set the synth parameters (skip note parameters)
+        for param_name, value in all_params.items():
+            if param_name in plugin.parameters:
+                plugin.parameters[param_name].raw_value = value
 
-    # Create MIDI note (play for 80% of the duration)
-    duration = config["duration_seconds"]
-    note_end = duration * 0.8
-    midi_events = make_midi_note(midi_note, velocity, 0.0, note_end)
+        # Let the plugin process the parameter changes
+        plugin.process([], 0.1, 44100, 2, 2048, True)
+        plugin.reset()
 
-    # Generate the audio
-    audio = plugin.process(midi_events, duration, config["sample_rate"], 2, 2048, True)
+        # Read velocity from config
+        velocity = config["velocity"]
 
-    # Clean up
-    plugin.process([], 0.1, 44100, 2, 2048, True)
-    plugin.reset()
+        # Create MIDI note using the sampled timing
+        duration = config["duration_seconds"]
+        midi_events = make_midi_note(midi_note, velocity, note_start, note_end)
 
-    return audio, params, midi_note, velocity
+        # Generate the audio
+        audio = plugin.process(midi_events, duration, config["sample_rate"], 2, 2048, True)
+
+        # Check loudness if min_loudness is specified
+        if "min_loudness" in config:
+            meter = Meter(config["sample_rate"])
+            loudness = meter.integrated_loudness(audio.T)
+            if loudness < config["min_loudness"]:
+                # print(f"Sample too quiet (loudness: {loudness:.1f} LUFS), regenerating...")
+                continue
+
+        # Clean up
+        plugin.process([], 0.1, 44100, 2, 2048, True)
+        plugin.reset()
+
+        return audio, all_params, midi_note, velocity
 
 
 def save_dataset(samples: List[Tuple], config: Dict):
@@ -154,6 +159,12 @@ def main():
 
     # Load the plugin
     plugin = load_plugin(config["plugin_path"])
+
+    # Show parameter selection info
+    print(f"Parameter set: {config['param_set']}")
+    param_spec = get_param_spec(config["param_set"])
+    print(f"Synth parameters: {len(param_spec.synth_params)}")
+    print(f"Note parameters: {len(param_spec.note_params)}")
 
     # Generate samples
     print(f"Generating {config['num_samples']} samples...")

@@ -1,24 +1,24 @@
-# VST Dataset Configuration - Full Parameter Set
+# VST Dataset Configuration
 
 # Where is the plugin?
 plugin_path: "/usr/lib64/vst3/Surge XT.vst3"
 
 # Where to save the dataset?
-output_dir: "datasets/vst_samples_full"
+output_dir: "datasets/vst_samples_simple"
 
 # Num of samples to generate
-num_samples: 50
+num_samples: 20
 
 # Num of CPU cores to use
 num_workers: 4
 
 # Audio settings
-sample_rate: 44100                    # Standard quality
-duration_seconds: 4.0                 # 2 seconds per sample
+sample_rate: 44100                    # standard quality
+duration_seconds: 4.0                 # seconds per sample
 
 # MIDI notes are now handled by the parameter specification (range 48-72)
 velocity: 100                         # How hard to hit the notes
-min_loudness: -55.0                   # Minimum loudness in LUFS (samples below this will be regenerated)
+min_loudness: -55.0                   # Min loudness in LUFS (samples below this will be regenerated)
 
 # Parameter selection "surge_full" or "surge_simple"
 param_set: "surge_simple"

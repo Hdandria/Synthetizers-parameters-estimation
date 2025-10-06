@@ -27,7 +27,8 @@ The tool will:
 
 ## Configuration
 
-The `dataset_config.yaml` file controls everything:
+The `dataset_config.yaml` file is the config file example.
+The file `original_config.yaml` allows for a 1-1 reproduction of the original paper generation.
 
 ### Load in Python
 ```python
