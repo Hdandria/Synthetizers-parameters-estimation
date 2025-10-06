@@ -4,22 +4,17 @@
 plugin_path: "/usr/lib64/vst3/Surge XT.vst3"
 
 # Where to save the dataset?
-output_dir: "datasets/vst_samples_example2"
+output_dir: "datasets/vst_samples_example3"
 
 # Total number of samples to generate
-num_samples: 50
+num_samples: 20
 
 # Chunked generation settings
-# Set to true to force chunked generation even for small datasets
-# Set to false to use automatic selection (chunked for >1000 samples)
-force_chunked: true
-samples_per_file: 10
-file_naming: "dataset_{chunk:04d}.h5" # Only used in chunked mode
+samples_per_file: 5
+file_naming: "dataset_{chunk:04d}.h5"
 
 # Number of CPU cores to use for parallel generation
-num_workers: 4
-
-# File naming pattern for chunks (only used in chunked mode)
+num_workers: 1
 
 # Audio settings
 sample_rate: 44100                    # Standard quality
@@ -31,6 +26,3 @@ min_loudness: -55.0                   # Minimum loudness in LUFS (samples below 
 
 # Parameter selection "surge_full" or "surge_simple"
 param_set: "surge_simple"
-
-# Legacy (will be ignored if param_set is specified)
-num_random_params: 10

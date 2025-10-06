@@ -11,3 +11,6 @@ Project based on the work of [Ben Hayes](https://github.com/ben-hayes/synth-perm
 - Fixed parameters (midi/velocity/min_loudness) to match the original experiment.
 - Added config file for original experiment
 > When using min_loudness = -55, about 1/3rd of the samples will be regenerated -> important for time calculations.
+---
+- Chunked dataset for performance (RAM consumption)
+- Added spectrogram

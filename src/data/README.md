@@ -1,38 +1,25 @@
 # Scalable VST Dataset Generator
 
-This tool creates audio datasets from the surge_xt synth with support for both small and large-scale generation.
+This tool creates audio datasets from the surge_xt synth using a chunked approach for all dataset sizes.
 
 ## Quick Start
 
-### Small Datasets (< 1000 samples)
-
-1. **Edit the config file** - Open `dataset_config.yaml` and change the plugin path:
+1. **Edit the config file** - Choose your configuration:
+   - `original_config.yaml` - Small datasets (20 samples)
+   - `dataset_config_large.yaml` - Large datasets (100k+ samples)
+   
+   Update the plugin path:
    ```yaml
    plugin_path: "/path/to/your/plugin.vst3"
    ```
 
 2. **Generate your dataset**:
    ```bash
-   python generate_vst_dataset.py --config dataset_config.yaml
-   ```
-
-### Large Datasets (1000+ samples) - Recommended
-
-1. **Use the large-scale config** - Edit `dataset_config_large.yaml`:
-   ```yaml
-   plugin_path: "/path/to/your/plugin.vst3"
-   num_samples: 100000
-   samples_per_file: 1000
-   num_workers: 8
-   ```
-
-2. **Generate with chunked approach**:
-   ```bash
-   python generate_vst_dataset.py --config dataset_config_large.yaml
+   python generate_vst_dataset.py --config original_config.yaml
    ```
 
 3. **Check what you got**:
-   Use the notebook `analyse_dataset.ipynb` or the new `ChunkedDatasetReader` for multi-file datasets.
+   Use the notebook `analyse_dataset.ipynb` or the `ChunkedDatasetReader` for analysis.
 
 ## What it does
 
@@ -41,36 +28,18 @@ The tool will:
 - Generate random parameter settings
 - Play random MIDI notes through the plugin
 - Save the audio as HDF5 file(s) with all the parameter info
-- Use parallel processing for large datasets
-- Split large datasets into manageable chunks
+- Use parallel processing for all dataset sizes
+- Split datasets into manageable chunks (even for small datasets)
 
 ## Configuration
 
-### Small Datasets
-- `dataset_config.yaml` - Standard configuration
-- `original_config.yaml` - 1-1 reproduction of the original paper generation
-
-### Large Datasets
-- `dataset_config_large.yaml` - Optimized for 100k+ samples with chunked generation
+### Available Configurations
+- `original_config.yaml` - Small datasets (20 samples) - good for testing
+- `dataset_config_large.yaml` - Large datasets (100k+ samples) - for production use
 
 ### Load in Python
 
-#### Single File Dataset
-```python
-import h5py
-import numpy as np
-
-# Load the dataset
-with h5py.File('datasets/vst_samples/dataset.h5', 'r') as f:
-    audio = f['audio'][:]           # Shape: (num_samples, channels, samples)
-    parameters = f['parameters'][:] # Parameter strings
-    midi_notes = f['midi_notes'][:] # MIDI note numbers
-    velocities = f['velocities'][:] # MIDI velocities
-
-print(f"Loaded {len(audio)} samples")
-```
-
-#### Chunked Dataset (Recommended for Large Datasets)
+#### Chunked Dataset (All datasets now use this format)
 ```python
 from chunked_dataset_reader import ChunkedDatasetReader
 
@@ -95,11 +64,21 @@ for chunk in reader.iterate_chunks():
 
 ## Dataset Structure
 
-Each sample contains:
-- **Audio data**: The actual sound (stereo, 44.1kHz)
-- **Parameters**: Values of VST parameters
-- **MIDI info**: What note was played and how hard
-- **Metadata**: Sample rate, duration, etc.
+Each dataset chunk contains:
+
+### Datasets
+- **`audio`**: Raw audio waveform (float16) — shape `(num_samples, channels, sample_rate * signal_duration_seconds)`
+- **`mel_spec`**: Mel-spectrogram (float32) — shape `(num_samples, 2, 128, 401)` (128 mels, ~401 frames; second dimension = 2)
+- **`param_array`**: Encoded parameters (float32) — shape `(num_samples, num_params)`. This is the concatenated encoded synth + note parameters from the ParamSpec
+- **`parameters`**: Parameter strings (legacy compatibility)
+- **`midi_notes`**: MIDI note numbers (int16)
+- **`velocities`**: MIDI velocities (int16)
+
+### Audio Dataset Attributes
+- **`velocity`**: MIDI velocity used
+- **`signal_duration_seconds`**: Duration of each audio sample
+- **`sample_rate`**: Audio sample rate (44100 Hz)
+- **`min_loudness`**: Minimum loudness threshold used during generation
 
 ## Performance & Scalability
 
@@ -120,33 +99,19 @@ For 100k samples with 8 cores: ~55 hours
 For 100k samples with 40 cores: ~11 hours
 
 ### File Sizes
-- **1k samples**: ~1.4GB per chunk
-- **100k samples**: ~140GB total (100 chunks of 1.4GB each)
-- **1M samples**: ~1.4TB total (1000 chunks of 1.4GB each)
+- **1k samples**: ~2.5GB per chunk (includes audio, mel-spec, and parameters)
+- **100k samples**: ~250GB total (100 chunks of 2.5GB each)
+- **1M samples**: ~2.5TB total (1000 chunks of 2.5GB each)
+
+### Data Breakdown per Sample (4 seconds, 44.1kHz, stereo)
+- **Audio**: 2 channels × 176,400 samples × 2 bytes (float16) = ~705KB
+- **Mel-spec**: 2 channels × 128 mels × 401 frames × 4 bytes (float32) = ~410KB  
+- **Parameters**: ~50 parameters × 4 bytes (float32) = ~200 bytes
+- **Total per sample**: ~1.1MB
 
 ## Command Line Options
 
 ```bash
-# Basic usage (uses config to determine generation method)
-python generate_vst_dataset.py --config dataset_config.yaml
-
-# Large dataset with chunked generation
-python generate_vst_dataset.py --config dataset_config_large.yaml
-
-# Test chunked dataset reader
-python chunked_dataset_reader.py /path/to/dataset --validate --random-samples 10
+# Basic usage
+python generate_vst_dataset.py --config original_config.yaml
 ```
-
-## Configuration Options
-
-### Chunked Generation Settings
-- `force_chunked: true/false` - Force chunked generation even for small datasets
-- `samples_per_file: 1000` - Number of samples per HDF5 file
-- `file_naming: "dataset_{chunk:04d}.h5"` - File naming pattern
-- `num_workers: 8` - Number of parallel workers
-
-### Automatic Mode Selection
-- **Chunked mode** is used when:
-  - `force_chunked: true` is set, OR
-  - `num_samples > 1000`
-- **Legacy mode** is used for smaller datasets unless `force_chunked: true`

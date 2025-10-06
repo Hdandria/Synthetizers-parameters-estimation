@@ -18,6 +18,8 @@ import time
 from typing import Dict, List, Tuple
 
 import h5py
+import librosa
+import mido
 import numpy as np
 from pedalboard import VST3Plugin
 from pyloudnorm import Meter
@@ -53,9 +55,41 @@ def get_param_spec(param_set: str):
         raise ValueError(f"Unknown parameter set: {param_set}")
 
 
+def compute_mel_spectrogram(audio: np.ndarray, sample_rate: int = 44100, n_mels: int = 128) -> np.ndarray:
+    """
+    Compute mel-spectrogram from audio waveform
+
+    Args:
+        audio: Audio waveform shape (channels, samples)
+        sample_rate: Sample rate of the audio
+        n_mels: Number of mel filter banks
+
+    Returns:
+        Mel-spectrogram shape (2, n_mels, time_frames) for stereo
+    """
+
+    if audio.shape[0] != 2:
+        raise ValueError("Audio must be stereo")
+
+    n_fft = int(0.025 * sample_rate)
+    hop_length = int(sample_rate / 100.0)
+    window = "hamming"
+
+    # Convert to mono for mel-spectrogram computation
+    mel_spec = librosa.feature.melspectrogram(
+        y=audio,
+        sr=sample_rate,
+        n_mels=n_mels,
+        hop_length=hop_length,
+        n_fft=n_fft,
+        window=window,
+    )
+    mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
+    return mel_spec
+
+
 def make_midi_note(pitch: int, velocity: int, start_time: float, end_time: float):
     """Create a simple MIDI note"""
-    import mido
 
     note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
     note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
@@ -63,7 +97,9 @@ def make_midi_note(pitch: int, velocity: int, start_time: float, end_time: float
     return [(note_on.bytes(), start_time), (note_off.bytes(), end_time)]
 
 
-def generate_audio_sample(plugin: VST3Plugin, config: Dict) -> Tuple[np.ndarray, Dict, int, int]:
+def generate_audio_sample(
+    plugin: VST3Plugin, config: Dict
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Dict, int, int]:  # noqa: E501
     """Generate one audio sample with random settings, filtering by loudness"""
 
     while True:
@@ -79,6 +115,9 @@ def generate_audio_sample(plugin: VST3Plugin, config: Dict) -> Tuple[np.ndarray,
         synth_params, note_params = param_spec.sample()
         all_params = {**synth_params, **note_params}
         # print(f"Using parameter set: {config['param_set']} ({len(all_params)} parameters)")
+
+        # Encode parameters using ParamSpec
+        param_array = param_spec.encode(synth_params, note_params)
 
         # Extract note parameters
         midi_note = int(note_params["pitch"])
@@ -116,11 +155,14 @@ def generate_audio_sample(plugin: VST3Plugin, config: Dict) -> Tuple[np.ndarray,
                 # print(f"Sample too quiet (loudness: {loudness:.1f} LUFS), regenerating...")
                 continue
 
+        # Compute mel-spectrogram
+        mel_spec = compute_mel_spectrogram(audio, config["sample_rate"])
+
         # Clean up
         plugin.process([], 0.1, 44100, 2, 2048, True)
         plugin.reset()
 
-        return audio, all_params, midi_note, velocity
+        return audio, mel_spec, param_array, all_params, midi_note, velocity
 
 
 def save_chunk(samples: List[Tuple], chunk_id: int, config: Dict):
@@ -136,21 +178,42 @@ def save_chunk(samples: List[Tuple], chunk_id: int, config: Dict):
         # Prepare data arrays
         n_samples = len(samples)
         audio_shape = samples[0][0].shape  # (channels, samples)
+        mel_spec_shape = samples[0][1].shape  # (2, n_mels, time_frames)
+        param_array_shape = samples[0][2].shape  # (num_params,)
 
         # Create datasets
-        audio_ds = f.create_dataset("audio", (n_samples, audio_shape[0], audio_shape[1]), dtype=np.float32)
+        # Audio: raw audio waveform (float16) — shape (num_samples, channels, sample_rate * signal_duration_seconds)
+        audio_ds = f.create_dataset("audio", (n_samples, audio_shape[0], audio_shape[1]), dtype=np.float16)
+
+        # Mel-spectrogram: mel-spectrogram (float32) — shape (num_samples, 2, 128, 401)
+        mel_spec_ds = f.create_dataset(
+            "mel_spec", (n_samples, mel_spec_shape[0], mel_spec_shape[1], mel_spec_shape[2]), dtype=np.float32
+        )
+
+        # Parameters: encoded parameters (float32) — shape (num_samples, num_params)
+        param_array_ds = f.create_dataset("param_array", (n_samples, param_array_shape[0]), dtype=np.float32)
+
+        # Legacy datasets for compatibility
         param_ds = f.create_dataset("parameters", (n_samples,), dtype=h5py.special_dtype(vlen=str))
         midi_ds = f.create_dataset("midi_notes", (n_samples,), dtype=np.int16)
         velocity_ds = f.create_dataset("velocities", (n_samples,), dtype=np.int16)
 
         # Fill datasets
-        for i, (audio, params, midi_note, velocity) in enumerate(samples):
-            audio_ds[i] = audio.astype(np.float32)
-            param_ds[i] = str(params)  # Store as string for simplicity
+        for i, (audio, mel_spec, param_array, params, midi_note, velocity) in enumerate(samples):
+            audio_ds[i] = audio.astype(np.float16)
+            mel_spec_ds[i] = mel_spec.astype(np.float32)
+            param_array_ds[i] = param_array.astype(np.float32)
+            param_ds[i] = str(params)  # Store as string for compatibility
             midi_ds[i] = midi_note
             velocity_ds[i] = velocity
 
-        # Add metadata
+        # Add metadata to audio dataset as requested
+        audio_ds.attrs["velocity"] = config["velocity"]
+        audio_ds.attrs["signal_duration_seconds"] = config["duration_seconds"]
+        audio_ds.attrs["sample_rate"] = config["sample_rate"]
+        audio_ds.attrs["min_loudness"] = config.get("min_loudness", -60.0)
+
+        # Add general metadata
         f.attrs["chunk_id"] = chunk_id
         f.attrs["num_samples"] = n_samples
         f.attrs["sample_rate"] = config["sample_rate"]
@@ -179,8 +242,8 @@ def generate_single_chunk_worker(args):
     samples = []
     for i in range(chunk_size):
         try:
-            audio, params, midi_note, velocity = generate_audio_sample(plugin, config)
-            samples.append((audio, params, midi_note, velocity))
+            audio, mel_spec, param_array, params, midi_note, velocity = generate_audio_sample(plugin, config)
+            samples.append((audio, mel_spec, param_array, params, midi_note, velocity))
         except Exception as e:
             print(f"Worker {chunk_id}: Failed to generate sample {i}: {e}")
             continue
@@ -216,6 +279,7 @@ def generate_chunked_dataset(config: Dict):
     # Generate chunks in parallel
     completed_chunks = 0
     failed_chunks = 0
+    total_generated_samples = 0
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         # Submit all chunk generation tasks
@@ -232,43 +296,14 @@ def generate_chunked_dataset(config: Dict):
                 else:
                     print(f"Chunk {chunk_id}: {num_samples} samples saved to {filename}")
                     completed_chunks += 1
+                    total_generated_samples += num_samples
 
                 pbar.update(1)
 
     print("\nGeneration complete!")
     print(f"Successfully generated: {completed_chunks} chunks")
     print(f"Failed chunks: {failed_chunks}")
-    print(f"Total samples: {completed_chunks * samples_per_file}")
-
-
-def save_dataset(samples: List[Tuple], config: Dict):
-    """Legacy function - save all samples to a single HDF5 file"""
-    output_dir = Path(config["output_dir"])
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    filename = output_dir / "dataset.h5"
-
-    print(f"Saving {len(samples)} samples to {filename}")
-
-    with h5py.File(filename, "w") as f:
-        # Prepare data arrays
-        n_samples = len(samples)
-        audio_shape = samples[0][0].shape  # (channels, samples)
-
-        # Create datasets
-        audio_ds = f.create_dataset("audio", (n_samples, audio_shape[0], audio_shape[1]), dtype=np.float32)
-        param_ds = f.create_dataset("parameters", (n_samples,), dtype=h5py.special_dtype(vlen=str))
-        midi_ds = f.create_dataset("midi_notes", (n_samples,), dtype=np.int16)
-        velocity_ds = f.create_dataset("velocities", (n_samples,), dtype=np.int16)
-
-        # Fill datasets
-        for i, (audio, params, midi_note, velocity) in enumerate(samples):
-            audio_ds[i] = audio.astype(np.float32)
-            param_ds[i] = str(params)  # Store as string for simplicity
-            midi_ds[i] = midi_note
-            velocity_ds[i] = velocity
-
-    print("Dataset saved successfully!")
+    print(f"Total samples generated: {total_generated_samples}")
 
 
 def main():
@@ -286,43 +321,11 @@ def main():
     param_spec = get_param_spec(config["param_set"])
     print(f"Synth parameters: {len(param_spec.synth_params)}")
 
-    # Choose generation method based on config
-    use_chunked = config.get("force_chunked", False) or config.get("num_samples", 0) > 1000
-
-    if use_chunked:
-        print("Using chunked generation (recommended for large datasets)")
-        generate_chunked_dataset(config)
-    else:
-        print("Using legacy single-file generation")
-
-        start_time = time.time()
-
-        # Set random seed for reproducible results
-        random.seed(42)
-
-        # Load the plugin
-        plugin = load_plugin(config["plugin_path"])
-
-        # Generate samples
-        print(f"Generating {config['num_samples']} samples...")
-        samples = []
-
-        for i in tqdm(range(config["num_samples"]), desc="Creating samples"):
-            try:
-                audio, params, midi_note, velocity = generate_audio_sample(plugin, config)
-                samples.append((audio, params, midi_note, velocity))
-            except Exception as e:
-                print(f"Failed to generate sample {i}: {e}")
-                continue
-
-        # Save the dataset
-        if samples:
-            save_dataset(samples, config)
-            print(f"Successfully created dataset with {len(samples)} samples!")
-        else:
-            print("No samples were generated successfully.")
-
-        print(f"Time taken: {time.time() - start_time:.2f} seconds")
+    # Always use chunked generation
+    print("Using chunked generation")
+    start_time = time.time()
+    generate_chunked_dataset(config)
+    print(f"Time taken: {time.time() - start_time:.2f} seconds")
 
 
 if __name__ == "__main__":

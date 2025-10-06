@@ -4,6 +4,9 @@
 *.pyo
 *.pyd
 
+# Temp files
+temp/
+
 # Virtual environments
 .venv/
 venv/
