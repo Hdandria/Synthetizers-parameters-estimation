@@ -1,0 +1,24 @@
+# VST Dataset Configuration
+
+# Where is the plugin?
+plugin_path: "/usr/lib64/vst3/Surge XT.vst3"
+
+# Where to save the dataset?
+output_dir: "datasets/vst_samples"
+
+# Num of samples to generate
+num_samples: 100
+
+# Num of CPU cores to use
+num_workers: 4
+
+# Audio settings
+sample_rate: 44100                    # Standard qual
+duration_seconds: 2.0                 # x seconds per sample
+
+# MIDI notes to play (60 = C4, 84 = C6)
+note_range: [60, 84]
+velocity_range: [60, 120]             # How hard to hit the notes
+
+# Need improvements
+num_random_params: 10
