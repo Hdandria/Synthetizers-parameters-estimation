@@ -20,3 +20,7 @@ dist/
 # Logs
 logs/
 *.log
+
+# Datasets samples
+vst_samples/
+*.h5
