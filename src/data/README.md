@@ -70,12 +70,14 @@ Each dataset chunk contains:
 - **Resumable**: Can restart from specific chunks (future feature)
 
 ### Performance Estimates
+
 Empirically, on AMD EPYC 7542 (32 cores):
-
 On each core, we have the approximate law:
-t = 3.7 * nb_sample + 16
+`t = 3.7 * nb_samples + 16`
 
-Generally, based on current samples:
+> And on AMD EPYC 9374F: `t = 2.1 * nb_samples + 10.5`
+
+Based on 7542's law:
 - **Single core**: ~1000 samples/hours
 
 For 100k samples with 8 cores: ~12.5h
