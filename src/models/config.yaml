@@ -1,0 +1,54 @@
+# Simple configuration for Surge parameter estimation
+
+# Data settings
+data:
+  dataset_path: "../data/dataset"  # Path to directory containing .h5 files
+  batch_size: 16
+  num_workers: 4
+  split_ratios: [0.8, 0.1, 0.1]  # Train/val/test split ratios
+  
+# Model settings
+model:
+  type: "flow_matching"  # Options: "flow_matching", "feedforward"
+  
+  # Encoder settings (for mel spectrogram -> conditioning)
+  encoder:
+    d_model: 768
+    n_heads: 8
+    n_layers: 12
+    patch_size: 16
+    patch_stride: 10
+  
+  # Vector field settings (for flow matching)
+  vector_field:
+    d_model: 1024
+    hidden_dim: 2048
+    num_layers: 6
+    n_params: 92  # Number of Surge parameters to predict
+  
+# Training settings
+training:
+  num_epochs: 100
+  learning_rate: 0.0001  # 1e-4
+  warmup_steps: 5000
+  cfg_dropout_rate: 0.1  # Classifier-free guidance dropout
+  
+  # Flow matching specific
+  num_sample_steps: 50  # Number of ODE steps during validation
+  cfg_strength: 4.0  # Classifier-free guidance strength
+  
+  # Checkpointing
+  save_every: 10  # Save checkpoint every N epochs
+  checkpoint_dir: "checkpoints"
+  
+# Evaluation settings
+eval:
+  checkpoint: "checkpoints/best_model.pt"
+  num_sample_steps: 100
+  cfg_strength: 4.0
+  output_dir: "outputs"
+
+# System
+device: "gpu"  # or "cpu"
+seed: 42
+
