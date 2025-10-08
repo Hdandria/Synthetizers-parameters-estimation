@@ -66,6 +66,7 @@ python scripts/get_dataset_stats.py datasets/experiment_1/test.h5
 ```bash
 python src/train.py \
     data=surge \
+    model=surge_ffn \
     data.dataset_root=datasets/experiment_1 \
     data.batch_size=128 \
     data.num_workers=11 \
@@ -78,6 +79,7 @@ python src/train.py \
 ```bash
 python src/eval.py \
     data=surge \
+    model=surge_ffn \
     data.dataset_root=datasets/experiment_1 \
     data.batch_size=128 \
     data.num_workers=11 \
