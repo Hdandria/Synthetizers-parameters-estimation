@@ -1,5 +1,11 @@
 # Audio Synthesizer Inversion in Symmetric Parameter Spaces with Approximately Equivariant Flow Matching
 
+## Notes
+- No multi threading for dataset generation
+- hd5f and hdf5plugin not in requirements.txt
+- GUI necessary (no headless)
+---
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![Lightning](https://img.shields.io/badge/Lightning-2.0+-792ee5.svg)](https://lightning.ai/)
