@@ -3,7 +3,7 @@
 ## 1. Generate 20,000 Sample Dataset
 
 ```bash
-python src/data/vst/generate_vst_dataset.py \
+LOGURU_LEVEL=ERROR python src/data/vst/generate_vst_dataset.py \
     datasets/experiment_1/train.h5 \
     20000 \
     --plugin_path "vsts/Surge XT.vst3" \
