@@ -230,6 +230,7 @@ def worker_generate_samples(
     plugin = load_plugin(plugin_path)
     
     # Create worker's own HDF5 file
+    logger.info(f"Worker {worker_id} creating file: {worker_output_path}")
     with h5py.File(worker_output_path, 'w') as worker_file:
         # Create datasets in worker file
         num_samples = len(sample_indices)
@@ -295,16 +296,27 @@ def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
     all_params = []
     
     for worker_file_path in worker_files:
+        logger.info(f"Reading worker file: {worker_file_path}")
+        import os
+        if not os.path.exists(worker_file_path):
+            logger.error(f"Worker file does not exist: {worker_file_path}")
+            continue
+            
         with h5py.File(worker_file_path, 'r') as worker_file:
+            logger.info(f"Worker file contains {worker_file['audio'].shape[0]} samples")
             all_audio.append(worker_file['audio'][:])
             all_mel.append(worker_file['mel_spec'][:])
             all_params.append(worker_file['param_array'][:])
     
     # Concatenate and write to main file
     if all_audio:
+        total_samples = sum(audio.shape[0] for audio in all_audio)
+        logger.info(f"Writing {total_samples} total samples to main file")
         output_file['audio'][:] = np.concatenate(all_audio, axis=0)
         output_file['mel_spec'][:] = np.concatenate(all_mel, axis=0)
         output_file['param_array'][:] = np.concatenate(all_params, axis=0)
+    else:
+        logger.error("No worker files found to merge!")
     
     logger.info("Worker files merged successfully")
 
@@ -383,6 +395,7 @@ def make_dataset(
     else:
         # Multiprocessed generation with separate files per worker
         logger.info(f"Starting multiprocessed generation with {num_workers} workers")
+        logger.info(f"Main output file: {hdf5_file.filename}")
         
         # Create progress queue
         progress_queue = multiprocessing.Queue()
@@ -403,9 +416,13 @@ def make_dataset(
             worker_indices = sample_indices[start_idx_worker:end_idx_worker]
             if worker_indices:  # Only create worker if there are samples to process
                 worker_tasks.append(worker_indices)
-                # Create unique filename for each worker
-                worker_file_path = f"{hdf5_file.filename}.worker_{i}.h5"
+                # Create unique filename for each worker in the same directory
+                import os
+                main_file_dir = os.path.dirname(hdf5_file.filename)
+                main_file_name = os.path.basename(hdf5_file.filename)
+                worker_file_path = os.path.join(main_file_dir, f"worker_{i}_{main_file_name}")
                 worker_files.append(worker_file_path)
+                logger.info(f"Worker {i} will write to: {worker_file_path}")
         
         # Start worker processes
         processes = []
@@ -483,7 +500,7 @@ def make_dataset(
 @click.command()
 @click.argument("data_file", type=str, required=True)
 @click.argument("num_samples", type=int, required=True)
-@click.option("--plugin_path", "-p", type=str, default="plugins/Surge XT.vst3")
+@click.option("--plugin_path", "-p", type=str, default="vsts/Surge XT.vst3")
 @click.option("--preset_path", "-r", type=str, default="presets/surge-base.vstpreset")
 @click.option("--sample_rate", "-s", type=float, default=44100.0)
 @click.option("--channels", "-c", type=int, default=2)
@@ -496,7 +513,7 @@ def make_dataset(
 def main(
     data_file: str,
     num_samples: int,
-    plugin_path: str = "plugins/Surge XT.vst3",
+    plugin_path: str = "vsts/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
     channels: int = 2,
