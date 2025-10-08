@@ -223,6 +223,7 @@ def worker_generate_samples(
     min_loudness: float,
     param_spec: ParamSpec,
     result_queue: multiprocessing.Queue,
+    progress_queue: multiprocessing.Queue,
 ) -> None:
     """Worker function that generates samples in parallel."""
     logger.info(f"Worker {worker_id} starting with {len(sample_indices)} samples")
@@ -245,7 +246,12 @@ def worker_generate_samples(
         
         # Send the sample and its index to the main process
         result_queue.put((sample_idx, sample))
+        
+        # Send progress update
+        progress_queue.put(('generated', worker_id, sample_idx))
     
+    # Signal worker completion
+    progress_queue.put(('worker_done', worker_id, len(sample_indices)))
     logger.info(f"Worker {worker_id} finished")
 
 
@@ -324,8 +330,9 @@ def make_dataset(
         # Multiprocessed generation
         logger.info(f"Starting multiprocessed generation with {num_workers} workers")
         
-        # Create queue for results
+        # Create queues for results and progress
         result_queue = multiprocessing.Queue()
+        progress_queue = multiprocessing.Queue()
         
         # Distribute sample indices among workers
         sample_indices = list(range(start_idx, num_samples))
@@ -360,6 +367,7 @@ def make_dataset(
                     min_loudness,
                     param_spec,
                     result_queue,
+                    progress_queue,
                 )
             )
             p.start()
@@ -370,6 +378,8 @@ def make_dataset(
         sample_batch_start = start_idx
         samples_received = 0
         total_samples = len(sample_indices)
+        samples_generated = 0
+        workers_finished = 0
         
         # Dictionary to store samples by index for proper ordering
         sample_buffer = {}
@@ -377,9 +387,29 @@ def make_dataset(
         
         with trange(total_samples, desc="Generating samples") as pbar:
             while samples_received < total_samples:
+                # Check for progress updates first (non-blocking)
+                try:
+                    while True:
+                        progress_msg = progress_queue.get_nowait()
+                        if progress_msg[0] == 'generated':
+                            samples_generated += 1
+                        elif progress_msg[0] == 'worker_done':
+                            workers_finished += 1
+                except:
+                    pass  # No more progress messages
+                
+                # Get next sample (blocking)
                 sample_idx, sample = result_queue.get()
                 sample_buffer[sample_idx] = sample
                 samples_received += 1
+                
+                # Update progress bar with real-time info
+                pbar.set_postfix({
+                    'generated': samples_generated,
+                    'received': samples_received,
+                    'written': next_expected_idx - start_idx,
+                    'workers_done': f"{workers_finished}/{len(processes)}"
+                })
                 
                 # Write samples in order as they become available
                 while next_expected_idx in sample_buffer:
