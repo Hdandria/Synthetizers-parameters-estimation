@@ -55,7 +55,11 @@ def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
 
 def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
     for k, v in params.items():
-        plugin.parameters[k].raw_value = v
+        try:
+            plugin.parameters[k].raw_value = v
+        except KeyError:
+            logger.warning(f"Parameter '{k}' not found in plugin. Available parameters: {list(plugin.parameters.keys())}")
+            raise
 
 
 def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -> None:

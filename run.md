@@ -13,7 +13,7 @@ LOGURU_LEVEL=ERROR python src/data/vst/generate_vst_dataset.py \
     --velocity 100 \
     --signal_duration_seconds 4.0 \
     --min_loudness -55.0 \
-    --param_spec surge_xt \
+    --param_spec surge_simple \
     --sample_batch_size 64 \
     --num_workers 20
 ```
