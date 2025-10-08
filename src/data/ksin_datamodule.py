@@ -51,7 +51,29 @@ def _sample_freqs_shifted(
     return freqs
 
 
-def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False):
+def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False) -> torch.Tensor:
+    """Generate a sinusoidal signal from frequency and amplitude parameters.
+    
+    This function creates a mixture of sinusoids from parameter vectors containing
+    frequencies and amplitudes. It's designed to test permutation-invariant parameter
+    estimation models.
+    
+    Args:
+        params: Parameter tensor of shape (..., 2*k) where k is the number of sinusoids.
+                The first k parameters are frequencies, the last k are amplitudes.
+        length: Length of the output signal in samples
+        break_symmetry: If True, adds frequency shifts to break permutation symmetry
+        
+    Returns:
+        Generated sinusoidal signal of shape (..., length)
+        
+    Example:
+        ```python
+        # Generate 4-sinusoid mixture
+        params = torch.randn(1, 8)  # 4 freqs + 4 amps
+        signal = make_sin(params, length=1024)
+        ```
+    """
     freqs, amps = params.chunk(2, dim=-1)
     freqs = torch.pi * (freqs + 1.0) / 2.0
 
@@ -71,6 +93,39 @@ def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False):
 
 
 class KSinDataset(torch.utils.data.Dataset):
+    """Dataset for k-sin parameter estimation task.
+    
+    This dataset generates synthetic signals consisting of k sinusoidal components
+    with random frequencies and amplitudes. It's designed to test permutation-invariant
+    parameter estimation models by providing ground truth parameters that can be
+    permuted without changing the resulting audio signal.
+    
+    Args:
+        k: Number of sinusoidal components in each signal
+        signal_length: Length of generated signals in samples
+        num_samples: Number of samples in the dataset
+        sort_frequencies: If True, sort frequencies to break some permutation symmetry
+        break_symmetry: If True, add frequency shifts to break permutation symmetry
+        shift_test_distribution: If True, use different frequency distribution for test set
+        is_test: Whether this is a test dataset (affects frequency distribution)
+        seed: Random seed for reproducible generation
+        
+    Example:
+        ```python
+        # Create dataset with 4 sinusoids
+        dataset = KSinDataset(
+            k=4,
+            signal_length=1024,
+            num_samples=10000,
+            sort_frequencies=True,
+            break_symmetry=False,
+            shift_test_distribution=False,
+            is_test=False,
+            seed=123
+        )
+        ```
+    """
+    
     def __init__(
         self,
         k: int,
@@ -150,11 +205,45 @@ class KSinDataset(torch.utils.data.Dataset):
 
 
 class KSinDataModule(LightningDataModule):
-    """k-Sin is a simple synthetic synthesiser parameter estimation task designed to
-    elicit problematic behaviour in response to permutation invariant labels.
-
-    Each item consists of a signal containing a mixture of sinusoids, and the amplitude
-    and frequency parameters used to generate the sinusoids.
+    """PyTorch Lightning data module for the k-sin parameter estimation task.
+    
+    The k-sin task is a synthetic synthesizer parameter estimation problem designed
+    to test models' ability to handle permutation-invariant parameter spaces. Each
+    sample consists of a mixture of k sinusoids and the corresponding frequency and
+    amplitude parameters used to generate them.
+    
+    The key challenge is that the parameters can be permuted without changing the
+    resulting audio signal, making this a permutation-invariant learning problem.
+    This data module provides various options to control the symmetry properties
+    of the generated data.
+    
+    Args:
+        k: Number of sinusoidal components in each signal
+        signal_length: Length of generated signals in samples
+        sort_frequencies: If True, sort frequencies to partially break permutation symmetry
+        break_symmetry: If True, add frequency shifts to break permutation symmetry
+        shift_test_distribution: If True, use different frequency distribution for test set
+        train_val_test_sizes: Tuple of (train, val, test) dataset sizes
+        train_val_test_seeds: Tuple of (train, val, test) random seeds
+        batch_size: Batch size for data loaders
+        ot: If True, use optimal transport for minibatch coupling
+        num_workers: Number of worker processes for data loading
+        
+    Example:
+        ```python
+        # Create data module
+        dm = KSinDataModule(
+            k=4,
+            signal_length=1024,
+            sort_frequencies=True,
+            batch_size=64,
+            ot=True
+        )
+        
+        # Setup and use
+        dm.setup()
+        train_loader = dm.train_dataloader()
+        ```
     """
 
     def __init__(
