@@ -42,7 +42,7 @@ def load_plugin(plugin_path: str) -> VST3Plugin:
     p = VST3Plugin(plugin_path)
     logger.info(f"Plugin {plugin_path} loaded")
     logger.info("Preparing plugin for preset load...")
-    _prepare_plugin(p)
+    # _prepare_plugin(p) # NOTE: commented out to avoid GUI
     logger.info("Plugin ready")
     return p
 
