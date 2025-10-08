@@ -1,4 +1,5 @@
 import hashlib
+import multiprocessing
 import random
 from dataclasses import dataclass
 from typing import Any, List, Tuple
@@ -210,6 +211,44 @@ def create_datasets_and_get_start_idx(
     )
 
 
+def worker_generate_samples(
+    worker_id: int,
+    sample_indices: List[int],
+    plugin_path: str,
+    preset_path: str,
+    sample_rate: float,
+    channels: int,
+    velocity: int,
+    signal_duration_seconds: float,
+    min_loudness: float,
+    param_spec: ParamSpec,
+    result_queue: multiprocessing.Queue,
+) -> None:
+    """Worker function that generates samples in parallel."""
+    logger.info(f"Worker {worker_id} starting with {len(sample_indices)} samples")
+    
+    # Each worker loads its own plugin instance
+    plugin = load_plugin(plugin_path)
+    
+    for i, sample_idx in enumerate(sample_indices):
+        logger.info(f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})")
+        sample = generate_sample(
+            plugin,
+            velocity=velocity,
+            signal_duration_seconds=signal_duration_seconds,
+            sample_rate=sample_rate,
+            channels=channels,
+            min_loudness=min_loudness,
+            param_spec=param_spec,
+            preset_path=preset_path,
+        )
+        
+        # Send the sample and its index to the main process
+        result_queue.put((sample_idx, sample))
+    
+    logger.info(f"Worker {worker_id} finished")
+
+
 def make_dataset(
     hdf5_file: h5py.File,
     num_samples: int,
@@ -222,6 +261,7 @@ def make_dataset(
     min_loudness: float,
     param_spec: ParamSpec,
     sample_batch_size: int,
+    num_workers: int = 1,
 ) -> None:
 
     audio_dataset, mel_dataset, param_dataset, start_idx = (
@@ -241,26 +281,38 @@ def make_dataset(
     audio_dataset.attrs["channels"] = channels
     audio_dataset.attrs["min_loudness"] = min_loudness
 
-    plugin = load_plugin(plugin_path)
+    if num_workers == 1:
+        # Single-threaded fallback (original behavior)
+        plugin = load_plugin(plugin_path)
+        sample_batch = []
+        sample_batch_start = start_idx
 
-    sample_batch = []
-    sample_batch_start = start_idx
+        for i in trange(start_idx, num_samples):
+            logger.info(f"Making sample {i}")
+            sample = generate_sample(
+                plugin,
+                velocity=velocity,
+                signal_duration_seconds=signal_duration_seconds,
+                sample_rate=sample_rate,
+                channels=channels,
+                min_loudness=min_loudness,
+                param_spec=param_spec,
+                preset_path=preset_path,
+            )
 
-    for i in trange(start_idx, num_samples):
-        logger.info(f"Making sample {i}")
-        sample = generate_sample(
-            plugin,
-            velocity=velocity,
-            signal_duration_seconds=signal_duration_seconds,
-            sample_rate=sample_rate,
-            channels=channels,
-            min_loudness=min_loudness,
-            param_spec=param_spec,
-            preset_path=preset_path,
-        )
+            sample_batch.append(sample)
+            if len(sample_batch) == sample_batch_size:
+                save_samples(
+                    sample_batch,
+                    audio_dataset,
+                    mel_dataset,
+                    param_dataset,
+                    sample_batch_start,
+                )
+                sample_batch = []
+                sample_batch_start += sample_batch_size
 
-        sample_batch.append(sample)
-        if len(sample_batch) == sample_batch_size:
+        if len(sample_batch) > 0:
             save_samples(
                 sample_batch,
                 audio_dataset,
@@ -268,17 +320,100 @@ def make_dataset(
                 param_dataset,
                 sample_batch_start,
             )
-            sample_batch = []
-            sample_batch_start += sample_batch_size
-
-    if len(sample_batch) > 0:
-        save_samples(
-            sample_batch,
-            audio_dataset,
-            mel_dataset,
-            param_dataset,
-            sample_batch_start,
-        )
+    else:
+        # Multiprocessed generation
+        logger.info(f"Starting multiprocessed generation with {num_workers} workers")
+        
+        # Create queue for results
+        result_queue = multiprocessing.Queue()
+        
+        # Distribute sample indices among workers
+        sample_indices = list(range(start_idx, num_samples))
+        indices_per_worker = len(sample_indices) // num_workers
+        worker_tasks = []
+        
+        for i in range(num_workers):
+            start_idx_worker = i * indices_per_worker
+            if i == num_workers - 1:  # Last worker gets remaining samples
+                end_idx_worker = len(sample_indices)
+            else:
+                end_idx_worker = (i + 1) * indices_per_worker
+            
+            worker_indices = sample_indices[start_idx_worker:end_idx_worker]
+            if worker_indices:  # Only create worker if there are samples to process
+                worker_tasks.append(worker_indices)
+        
+        # Start worker processes
+        processes = []
+        for i, worker_indices in enumerate(worker_tasks):
+            p = multiprocessing.Process(
+                target=worker_generate_samples,
+                args=(
+                    i,
+                    worker_indices,
+                    plugin_path,
+                    preset_path,
+                    sample_rate,
+                    channels,
+                    velocity,
+                    signal_duration_seconds,
+                    min_loudness,
+                    param_spec,
+                    result_queue,
+                )
+            )
+            p.start()
+            processes.append(p)
+        
+        # Collect results and write to HDF5
+        sample_batch = []
+        sample_batch_start = start_idx
+        samples_received = 0
+        total_samples = len(sample_indices)
+        
+        # Dictionary to store samples by index for proper ordering
+        sample_buffer = {}
+        next_expected_idx = start_idx
+        
+        with trange(total_samples, desc="Generating samples") as pbar:
+            while samples_received < total_samples:
+                sample_idx, sample = result_queue.get()
+                sample_buffer[sample_idx] = sample
+                samples_received += 1
+                
+                # Write samples in order as they become available
+                while next_expected_idx in sample_buffer:
+                    sample_batch.append(sample_buffer.pop(next_expected_idx))
+                    next_expected_idx += 1
+                    
+                    if len(sample_batch) == sample_batch_size:
+                        save_samples(
+                            sample_batch,
+                            audio_dataset,
+                            mel_dataset,
+                            param_dataset,
+                            sample_batch_start,
+                        )
+                        sample_batch = []
+                        sample_batch_start += sample_batch_size
+                    
+                    pbar.update(1)
+        
+        # Write any remaining samples
+        if len(sample_batch) > 0:
+            save_samples(
+                sample_batch,
+                audio_dataset,
+                mel_dataset,
+                param_dataset,
+                sample_batch_start,
+            )
+        
+        # Wait for all processes to finish
+        for p in processes:
+            p.join()
+        
+        logger.info("Multiprocessed generation completed")
 
 
 @click.command()
@@ -293,6 +428,7 @@ def make_dataset(
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
 @click.option("--param_spec", "-t", type=str, default="surge_xt")
 @click.option("--sample_batch_size", "-b", type=int, default=32)
+@click.option("--num_workers", "-w", type=int, default=1, help="Number of worker processes for parallel generation")
 def main(
     data_file: str,
     num_samples: int,
@@ -305,6 +441,7 @@ def main(
     min_loudness: float = -50.0,
     param_spec: str = "surge_xt",
     sample_batch_size: int = 32,
+    num_workers: int = 1,
 ):
     param_spec = param_specs[param_spec]
     with h5py.File(data_file, "a") as f:
@@ -320,8 +457,11 @@ def main(
             min_loudness,
             param_spec,
             sample_batch_size,
+            num_workers,
         )
 
 
 if __name__ == "__main__":
+    # Set multiprocessing start method for compatibility
+    multiprocessing.set_start_method("spawn", force=True)
     main()
