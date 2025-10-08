@@ -1,6 +1,4 @@
-import hashlib
 import multiprocessing
-import random
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
@@ -222,37 +220,93 @@ def worker_generate_samples(
     signal_duration_seconds: float,
     min_loudness: float,
     param_spec: ParamSpec,
-    result_queue: multiprocessing.Queue,
+    worker_output_path: str,
     progress_queue: multiprocessing.Queue,
 ) -> None:
-    """Worker function that generates samples in parallel."""
+    """Worker function that generates samples in parallel and writes to its own file."""
     logger.info(f"Worker {worker_id} starting with {len(sample_indices)} samples")
     
     # Each worker loads its own plugin instance
     plugin = load_plugin(plugin_path)
     
-    for i, sample_idx in enumerate(sample_indices):
-        logger.info(f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})")
-        sample = generate_sample(
-            plugin,
-            velocity=velocity,
-            signal_duration_seconds=signal_duration_seconds,
-            sample_rate=sample_rate,
-            channels=channels,
-            min_loudness=min_loudness,
-            param_spec=param_spec,
-            preset_path=preset_path,
+    # Create worker's own HDF5 file
+    with h5py.File(worker_output_path, 'w') as worker_file:
+        # Create datasets in worker file
+        num_samples = len(sample_indices)
+        audio_dataset = worker_file.create_dataset(
+            "audio",
+            shape=(num_samples, channels, int(sample_rate * signal_duration_seconds)),
+            dtype=np.float16,
+            compression=hdf5plugin.Blosc2(),
+        )
+        mel_dataset = worker_file.create_dataset(
+            "mel_spec",
+            shape=(num_samples, 2, 128, 401),
+            dtype=np.float32,
+            compression=hdf5plugin.Blosc2(),
+        )
+        param_dataset = worker_file.create_dataset(
+            "param_array",
+            shape=(num_samples, len(param_spec)),
+            dtype=np.float32,
+            compression=hdf5plugin.Blosc2(),
         )
         
-        # Send the sample and its index to the main process
-        result_queue.put((sample_idx, sample))
+        # Set attributes
+        audio_dataset.attrs["velocity"] = velocity
+        audio_dataset.attrs["signal_duration_seconds"] = signal_duration_seconds
+        audio_dataset.attrs["sample_rate"] = sample_rate
+        audio_dataset.attrs["channels"] = channels
+        audio_dataset.attrs["min_loudness"] = min_loudness
         
-        # Send progress update
-        progress_queue.put(('generated', worker_id, sample_idx))
+        # Generate and write samples directly
+        for i, sample_idx in enumerate(sample_indices):
+            logger.info(f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})")
+            sample = generate_sample(
+                plugin,
+                velocity=velocity,
+                signal_duration_seconds=signal_duration_seconds,
+                sample_rate=sample_rate,
+                channels=channels,
+                min_loudness=min_loudness,
+                param_spec=param_spec,
+                preset_path=preset_path,
+            )
+            
+            # Write directly to worker's file
+            audio_dataset[i, :, :] = sample.audio.T
+            mel_dataset[i, :, :] = sample.mel_spec
+            param_dataset[i, :] = sample.param_array
+            
+            # Send progress update
+            progress_queue.put(('generated', worker_id, sample_idx))
     
     # Signal worker completion
     progress_queue.put(('worker_done', worker_id, len(sample_indices)))
-    logger.info(f"Worker {worker_id} finished")
+    logger.info(f"Worker {worker_id} finished and wrote to {worker_output_path}")
+
+
+def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
+    """Merge multiple worker HDF5 files into the main output file."""
+    logger.info(f"Merging {len(worker_files)} worker files into main dataset")
+    
+    all_audio = []
+    all_mel = []
+    all_params = []
+    
+    for worker_file_path in worker_files:
+        with h5py.File(worker_file_path, 'r') as worker_file:
+            all_audio.append(worker_file['audio'][:])
+            all_mel.append(worker_file['mel_spec'][:])
+            all_params.append(worker_file['param_array'][:])
+    
+    # Concatenate and write to main file
+    if all_audio:
+        output_file['audio'][:] = np.concatenate(all_audio, axis=0)
+        output_file['mel_spec'][:] = np.concatenate(all_mel, axis=0)
+        output_file['param_array'][:] = np.concatenate(all_params, axis=0)
+    
+    logger.info("Worker files merged successfully")
 
 
 def make_dataset(
@@ -327,17 +381,17 @@ def make_dataset(
                 sample_batch_start,
             )
     else:
-        # Multiprocessed generation
+        # Multiprocessed generation with separate files per worker
         logger.info(f"Starting multiprocessed generation with {num_workers} workers")
         
-        # Create queues for results and progress
-        result_queue = multiprocessing.Queue()
+        # Create progress queue
         progress_queue = multiprocessing.Queue()
         
         # Distribute sample indices among workers
         sample_indices = list(range(start_idx, num_samples))
         indices_per_worker = len(sample_indices) // num_workers
         worker_tasks = []
+        worker_files = []
         
         for i in range(num_workers):
             start_idx_worker = i * indices_per_worker
@@ -349,6 +403,9 @@ def make_dataset(
             worker_indices = sample_indices[start_idx_worker:end_idx_worker]
             if worker_indices:  # Only create worker if there are samples to process
                 worker_tasks.append(worker_indices)
+                # Create unique filename for each worker
+                worker_file_path = f"{hdf5_file.filename}.worker_{i}.h5"
+                worker_files.append(worker_file_path)
         
         # Start worker processes
         processes = []
@@ -366,82 +423,59 @@ def make_dataset(
                     signal_duration_seconds,
                     min_loudness,
                     param_spec,
-                    result_queue,
+                    worker_files[i],
                     progress_queue,
                 )
             )
             p.start()
             processes.append(p)
         
-        # Collect results and write to HDF5
-        sample_batch = []
-        sample_batch_start = start_idx
-        samples_received = 0
+        # Monitor progress
         total_samples = len(sample_indices)
         samples_generated = 0
         workers_finished = 0
         
-        # Dictionary to store samples by index for proper ordering
-        sample_buffer = {}
-        next_expected_idx = start_idx
-        
         with trange(total_samples, desc="Generating samples") as pbar:
-            while samples_received < total_samples:
-                # Check for progress updates first (non-blocking)
+            while workers_finished < len(processes):
+                # Check for progress updates
                 try:
                     while True:
                         progress_msg = progress_queue.get_nowait()
                         if progress_msg[0] == 'generated':
                             samples_generated += 1
+                            pbar.update(1)
                         elif progress_msg[0] == 'worker_done':
                             workers_finished += 1
-                except:
+                except Exception:
                     pass  # No more progress messages
                 
-                # Get next sample (blocking)
-                sample_idx, sample = result_queue.get()
-                sample_buffer[sample_idx] = sample
-                samples_received += 1
-                
-                # Update progress bar with real-time info
+                # Update progress bar
                 pbar.set_postfix({
                     'generated': samples_generated,
-                    'received': samples_received,
-                    'written': next_expected_idx - start_idx,
                     'workers_done': f"{workers_finished}/{len(processes)}"
                 })
                 
-                # Write samples in order as they become available
-                while next_expected_idx in sample_buffer:
-                    sample_batch.append(sample_buffer.pop(next_expected_idx))
-                    next_expected_idx += 1
-                    
-                    if len(sample_batch) == sample_batch_size:
-                        save_samples(
-                            sample_batch,
-                            audio_dataset,
-                            mel_dataset,
-                            param_dataset,
-                            sample_batch_start,
-                        )
-                        sample_batch = []
-                        sample_batch_start += sample_batch_size
-                    
-                    pbar.update(1)
-        
-        # Write any remaining samples
-        if len(sample_batch) > 0:
-            save_samples(
-                sample_batch,
-                audio_dataset,
-                mel_dataset,
-                param_dataset,
-                sample_batch_start,
-            )
+                # Small sleep to avoid busy waiting
+                import time
+                time.sleep(0.1)
         
         # Wait for all processes to finish
         for p in processes:
             p.join()
+        
+        logger.info("All workers finished, merging files...")
+        
+        # Merge worker files into main file
+        merge_worker_files(worker_files, hdf5_file)
+        
+        # Clean up worker files
+        for worker_file in worker_files:
+            try:
+                import os
+                os.remove(worker_file)
+                logger.info(f"Cleaned up worker file: {worker_file}")
+            except Exception as e:
+                logger.warning(f"Could not clean up worker file {worker_file}: {e}")
         
         logger.info("Multiprocessed generation completed")
 

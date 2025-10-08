@@ -32,8 +32,10 @@ python src/train.py \
 
 ## Notes
 
+- **High-Performance Generation**: Each worker writes to its own file, then files are merged
 - Dataset generation uses 20 worker processes (half of your 40 cores)
 - Training uses GPU with ID 2
 - Only loguru errors and tqdm progress bars will be shown in console
 - Generated dataset will be saved to `datasets/experiment_1/train.h5`
 - Training configuration uses the surge datamodule with default parameters
+- **Expected Performance**: Should be ~20x faster than single-threaded generation
