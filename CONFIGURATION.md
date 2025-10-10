@@ -156,6 +156,8 @@ python src/train.py \
     seed=42
 ```
 
+CUDA_VISIBLE_DEVICES=2 python src/train.py     data=surge     model=surge_flow     data.dataset_root=datasets/experiment_1     data.batch_size=128     data.num_workers=11     trainer.devices=[0]     trainer.accelerator=gpu
+
 ### Evaluation Configuration
 
 ```bash

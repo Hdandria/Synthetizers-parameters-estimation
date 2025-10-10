@@ -6,7 +6,7 @@ defaults:
   - _self_
   - data: ksin
   - model: ksin_ff
-  - callbacks: default
+  - callbacks: default_surge
   - logger: many_loggers # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   - trainer: gpu
   - paths: default
@@ -29,6 +29,9 @@ defaults:
 
 # task name, determines output directory path
 task_name: "train"
+
+# run name for output directory
+run_name: "untrained"
 
 # tags to help you identify your experiments
 # you can overwrite this in experiment configs

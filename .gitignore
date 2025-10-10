@@ -160,4 +160,6 @@ audio/
 checkpoints/
 
 # Audio samples
-audio_samples/
+audio_samples*/
+metrics_output*/
+*.npz

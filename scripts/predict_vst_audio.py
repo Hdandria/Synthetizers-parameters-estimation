@@ -180,6 +180,9 @@ def main(
                 channels,
             )
 
+            target_synth_params = None
+            target_note_params = None
+
             out_target = os.path.join(sample_dir, "target.wav")
             if rerender_target and target_params is not None:
                 target_params_ = target_params[j].numpy()
