@@ -1,19 +1,39 @@
+# @package _global_
+
+# Experiment config combining train_40k.yaml structure with flow_simple.yaml hyperparameters
+# Updated dataset paths to use datasets/experiment_1
+
+defaults:
+  - override /data: surge
+  - override /model: surge_flow
+  - override /callbacks: default_surge
+  - override /trainer: gpu
+  - override /logger: many_loggers
+  - override /paths: default
+  - override /extras: default
+  - override /hydra: default
+
+# Core training configuration
 task_name: train
 run_name: flow
 tags:
-- surge
+  - surge
 train: true
 test: true
 ckpt_path: null
 seed: 3123123
+
+# Data configuration
 data:
   _target_: src.data.surge_datamodule.SurgeDataModule
-  dataset_root: /data/scratch/acw585/surge-simple/
+  dataset_root: datasets/experiment_1
   use_saved_mean_and_variance: true
   batch_size: 128
   ot: true
   num_workers: 11
-  predict_file: /data/scratch/acw585/surge-simple/shard-205.h5
+  predict_file: datasets/experiment_1/test.h5
+
+# Model configuration
 model:
   encoder:
     _target_: src.models.components.transformer.AudioSpectrogramTransformer
@@ -25,8 +45,8 @@ model:
     patch_stride: 10
     input_channels: 2
     spec_shape:
-    - 128
-    - 401
+      - 128
+      - 401
   _target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
   warmup_steps: 0
   scheduler:
@@ -74,6 +94,8 @@ model:
   test_sample_steps: 200
   test_cfg_strength: 2.0
   compile: true
+
+# Callbacks configuration
 callbacks:
   model_checkpoint:
     _target_: lightning.pytorch.callbacks.ModelCheckpoint
@@ -103,6 +125,8 @@ callbacks:
     after_val: false
     every_n_steps: 5000
   early_stopping: null
+
+# Logger configuration
 logger:
   csv:
     _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
@@ -126,6 +150,8 @@ logger:
       _target_: wandb.Settings
       code_dir: .
     name: ${experiment_name}_${run_name}
+
+# Trainer configuration
 trainer:
   _target_: lightning.pytorch.trainer.Trainer
   default_root_dir: ${paths.output_dir}
@@ -140,15 +166,33 @@ trainer:
   deterministic: false
   limit_val_batches: 0
   precision: bf16-mixed
+
+# Paths configuration
 paths:
   root_dir: ${oc.env:PROJECT_ROOT}
   data_dir: ${paths.root_dir}/data/
   log_dir: ${paths.root_dir}/logs/
   output_dir: ${hydra:runtime.output_dir}
   work_dir: ${hydra:runtime.cwd}
+
+# Extras configuration
 extras:
   ignore_warnings: false
   enforce_tags: true
   print_config: true
   float32_matmul_precision: high
+
+# Hydra configuration (minimal)
+hydra:
+  run:
+    dir: ${paths.log_dir}/${task_name}/${experiment_name}/${run_name}-${now:%Y-%m-%d}_${now:%H-%M-%S}
+  sweep:
+    dir: ${paths.log_dir}/${task_name}/multiruns/${now:%Y-%m-%d}_${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  job_logging:
+    handlers:
+      file:
+        filename: ${hydra.runtime.output_dir}/${task_name}.log
+
+# Experiment metadata
 experiment_name: surge-simple-onehot
