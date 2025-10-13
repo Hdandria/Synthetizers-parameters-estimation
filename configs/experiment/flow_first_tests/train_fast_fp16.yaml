@@ -11,8 +11,8 @@ defaults:
   - override /hydra: default
 
 # Experiment metadata
-experiment_name: flow_first_tests2
-run_name: full2
+experiment_name: flow_first_tests
+run_name: fp16_2
 
 # Core training configuration
 task_name: train
@@ -30,7 +30,7 @@ data:
   use_saved_mean_and_variance: true
   batch_size: 128
   ot: true
-  num_workers: 20
+  num_workers: 11
   predict_file: null
 
 # Model configuration
@@ -155,15 +155,17 @@ logger:
 trainer:
   _target_: lightning.pytorch.trainer.Trainer
   default_root_dir: ${paths.output_dir}
-  min_steps: 500
-  max_steps: 500
+  min_steps: 4000
+  max_steps: 4000
   log_every_n_steps: 100
   val_check_interval: 1000
   gradient_clip_val: 1.0
-  accelerator: cpu
-  devices: 1
+  accelerator: gpu
+  devices:
+    - 0
   check_val_every_n_epoch: null
   deterministic: false
+  precision: 16-mixed
 
 # Paths configuration
 paths:
