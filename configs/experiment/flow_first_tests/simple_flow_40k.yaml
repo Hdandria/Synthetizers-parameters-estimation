@@ -155,10 +155,10 @@ logger:
 trainer:
   _target_: lightning.pytorch.trainer.Trainer
   default_root_dir: ${paths.output_dir}
-  min_steps: 1000000
-  max_steps: 1000000
+  min_steps: 100000
+  max_steps: 100000
   log_every_n_steps: 1
-  val_check_interval: 2
+  val_check_interval: 2 # limit_val_batches: 0 so this is ignored (no val)
   gradient_clip_val: 0.5
   accelerator: gpu
   devices: 1
@@ -195,4 +195,4 @@ hydra:
         filename: ${hydra.runtime.output_dir}/${task_name}.log
 
 # Experiment metadata
-experiment_name: surge-simple-onehot
+experiment_name: simple-flow-40k
