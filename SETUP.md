@@ -8,26 +8,6 @@
 
 ## Installation
 
-### Basic Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd audio-to-daw
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### Using Conda/Mamba
-
-```bash
-conda env create -f environment.yaml
-conda activate audio-to-daw
-```
-
 ### Using uv (faster alternative)
 
 ```bash
@@ -44,14 +24,14 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 Replace `cu118` with your CUDA version (e.g., `cu121` for CUDA 12.1).
 
-## VST Plugin Setup (Optional)
+## VST Setup
 
-Required only for generating Surge XT datasets.
+Required for generating Surge XT datasets.
 
 1. Download Surge XT from https://surge-synthesizer.github.io/
 2. Install the VST3 plugin
 3. Place preset files in the `presets/` directory
-4. Update VST path in generation commands
+4. Update VST path in config file
 
 ## Verify Installation
 

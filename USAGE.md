@@ -10,21 +10,7 @@ Train with default configuration:
 python src/train.py
 ```
 
-### Training with Specific Dataset and Model
-
-Train a feed-forward network on Surge dataset:
-
-```bash
-python src/train.py data=surge model=surge_ffn
-```
-
-Train a flow matching model on KSIN dataset:
-
-```bash
-python src/train.py data=ksin model=ksin_flow_matching
-```
-
-### Using Experiment Configurations
+### Using Experiment Configurations (IMPORTANT)
 
 Run a pre-configured experiment:
 
@@ -63,7 +49,7 @@ python src/train.py trainer.devices=[0,1,2,3] trainer.accelerator=gpu trainer.st
 
 ### Resuming Training
 
-Resume from checkpoint:
+Resume from checkpoint (can be combined with experiment config)
 
 ```bash
 python src/train.py ckpt_path=path/to/checkpoint.ckpt
@@ -154,30 +140,6 @@ tensorboard --logdir logs/
 
 ```bash
 python src/train.py logger=many_loggers
-```
-
-## Debugging
-
-### Fast Development Run
-
-Test training loop with limited batches:
-
-```bash
-python src/train.py debug=limit
-```
-
-### Overfit on Small Data
-
-Test model capacity:
-
-```bash
-python src/train.py debug=overfit
-```
-
-### Profile Performance
-
-```bash
-python src/train.py debug=profiler
 ```
 
 ## Hyperparameter Optimization
