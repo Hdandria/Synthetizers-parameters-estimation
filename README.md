@@ -10,7 +10,8 @@ This project trains models to predict synthesizer parameters from audio recordin
 
 ## Documentation
 
-- [SETUP.md](SETUP.md) - Environment setup and installation
+- [DOCKER.md](DOCKER.md) - Docker setup for local development
+- [SETUP.md](SETUP.md) - Local environment setup and installation
 - [USAGE.md](USAGE.md) - Training, evaluation, and dataset generation
 - [CONFIGURATION.md](CONFIGURATION.md) - Configuration system overview
 
@@ -49,6 +50,25 @@ audio-to-daw/
 - **FlowVAE** - Variational autoencoder with flow-based decoder
 
 ## Quick Start
+
+### Option 1: Docker (Recommended)
+For GPU-optimized local training:
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd Synthetizers-parameters-estimation
+
+# Configure environment
+cp env.example .env
+# Edit .env with your Wandb credentials (optional)
+
+# Build and run
+./docker/build.bat
+./docker/run_local.bat surge/base
+```
+
+See [DOCKER.md](DOCKER.md) for Docker setup instructions.
 
 ### Option 2: Local Installation
 For development and customization:

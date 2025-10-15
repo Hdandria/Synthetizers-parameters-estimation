@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  train-service:
+    build: .
+    image: synth-param-estimation:latest
+    container_name: synth-train
+    user: trainer
+    working_dir: /workspace
+    environment:
+      - PROJECT_ROOT=/workspace
+      - PYTHONUNBUFFERED=1
+      - HYDRA_FULL_ERROR=1
+    env_file:
+      - .env
+    volumes:
+      # Mount datasets (local development)
+      - ./data:/workspace/data:ro
+      - ./datasets:/workspace/datasets:ro
+      # Mount logs and outputs
+      - ./logs:/workspace/logs
+      - ./outputs:/workspace/outputs
+      # Mount VST plugins
+      - ./plugins:/workspace/plugins:ro
+      # Mount presets
+      - ./presets:/workspace/presets:ro
+    ports:
+      - "6006:6006"  # TensorBoard
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: >
+      bash -c "
+        echo 'Starting training service...' &&
+        python src/train.py experiment=surge/base paths=docker
+      "
+    restart: unless-stopped
+
+  shell-service:
+    build: .
+    image: synth-param-estimation:latest
+    container_name: synth-shell
+    user: trainer
+    working_dir: /workspace
+    environment:
+      - PROJECT_ROOT=/workspace
+      - PYTHONUNBUFFERED=1
+      - HYDRA_FULL_ERROR=1
+    env_file:
+      - .env
+    volumes:
+      # Mount datasets (local development)
+      - ./data:/workspace/data:ro
+      - ./datasets:/workspace/datasets:ro
+      # Mount logs and outputs
+      - ./logs:/workspace/logs
+      - ./outputs:/workspace/outputs
+      # Mount VST plugins
+      - ./plugins:/workspace/plugins:ro
+      # Mount presets
+      - ./presets:/workspace/presets:ro
+    ports:
+      - "6006:6006"  # TensorBoard
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    profiles:
+      - dev
+
+  tensorboard-service:
+    build: .
+    image: synth-param-estimation:latest
+    container_name: synth-tensorboard
+    user: trainer
+    working_dir: /workspace
+    environment:
+      - PROJECT_ROOT=/workspace
+    volumes:
+      - ./logs:/workspace/logs:ro
+      - ./outputs:/workspace/outputs:ro
+    ports:
+      - "6006:6006"
+    command: tensorboard --logdir=/workspace/logs --host=0.0.0.0 --port=6006
+    profiles:
+      - monitoring

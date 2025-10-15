@@ -1,0 +1,196 @@
+# @package _global_
+
+# Docker-optimized configuration for remote S3 training
+# Based on train_fast_fp16.yaml but configured for 100k steps and S3 paths
+
+defaults:
+  - override /data: surge
+  - override /model: surge_flow
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: many_loggers
+  - override /paths: docker  # Use Docker paths for S3 integration
+  - override /extras: default
+  - override /hydra: default
+
+# Experiment metadata
+experiment_name: flow_first_tests
+run_name: docker_100k_fp16
+
+# Core training configuration
+task_name: train
+tags:
+  - dev
+  - docker
+  - s3
+  - 100k
+train: true
+test: false
+ckpt_path: null
+seed: 42
+
+# Data configuration
+data:
+  _target_: src.data.surge_datamodule.SurgeDataModule
+  dataset_root: datasets/experiment_1
+  use_saved_mean_and_variance: true
+  batch_size: 128
+  ot: true
+  num_workers: 8  # Reduced for Docker stability
+  predict_file: null
+
+# Model configuration
+model:
+  encoder:
+    _target_: src.models.components.transformer.AudioSpectrogramTransformer
+    d_model: 512
+    n_heads: 8
+    n_layers: 8
+    n_conditioning_outputs: 8
+    patch_size: 16
+    patch_stride: 10
+    input_channels: 2
+    spec_shape:
+      - 128
+      - 401
+  _target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
+  warmup_steps: 1000  # Added warmup for longer training
+  scheduler:
+    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+    _partial_: true
+    T_max: ${trainer.max_steps}
+    eta_min: ${mul:${model.optimizer.lr},1e-2}
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+    lr: 0.0001
+    weight_decay: 0.0
+  vector_field:
+    _target_: src.models.components.transformer.ApproxEquivTransformer
+    projection:
+      _target_: src.models.components.transformer.LearntProjection
+      d_model: ${model.vector_field.d_model}
+      d_token: ${model.vector_field.d_model}
+      num_params: ${model.num_params}
+      num_tokens: 128
+      initial_ffn: true
+      final_ffn: false
+    num_layers: 8
+    d_model: 512
+    conditioning_dim: ${model.encoder.d_model}
+    num_heads: 8
+    d_ff: 512
+    num_tokens: ${model.vector_field.projection.num_tokens}
+    learn_pe: false
+    learn_projection: true
+    pe_type: none
+    pe_penalty: 0.0
+    time_encoding: sinusoidal
+    projection_penalty: 0.01
+    norm: layer
+    skip_first_norm: false
+    adaln_mode: basic
+    zero_init: false
+    outer_residual: false
+  num_params: 92
+  cfg_dropout_rate: 0.1
+  rectified_sigma_min: 0.0
+  test_sample_steps: 200
+  test_cfg_strength: 2.0
+  compile: true
+
+# Callbacks configuration - optimized for longer training
+callbacks:
+  model_checkpoint:
+    _target_: lightning.pytorch.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: step_{step:06d}_epoch_{epoch:03d}
+    monitor: null  # No validation monitoring
+    verbose: false
+    save_last: true
+    save_top_k: 3  # Keep more checkpoints for longer training
+    mode: min
+    auto_insert_metric_name: false
+    save_weights_only: false
+    every_n_train_steps: 10000  # Save checkpoint every 10k steps
+    train_time_interval: null
+    every_n_epochs: null
+    save_on_train_epoch_end: null
+  lr_monitor:
+    _target_: lightning.pytorch.callbacks.LearningRateMonitor
+    logging_interval: step
+  model_summary:
+    _target_: lightning.pytorch.callbacks.RichModelSummary
+    max_depth: 2
+  rich_progress_bar:
+    _target_: lightning.pytorch.callbacks.RichProgressBar
+  plot_pos_enc:
+    _target_: src.utils.callbacks.PlotPositionalEncodingSimilarity
+  plot_proj:
+    _target_: src.utils.callbacks.PlotLearntProjection
+  plot_proj_ii:
+    _target_: src.utils.callbacks.PlotLearntProjection
+
+# Logger configuration - enhanced for remote training
+logger:
+  csv:
+    _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
+    save_dir: ${paths.output_dir}
+    name: csv/
+    prefix: ''
+  wandb:
+    _target_: lightning.pytorch.loggers.wandb.WandbLogger
+    save_dir: ${paths.output_dir}
+    offline: false
+    id: null
+    anonymous: null
+    project: synth-param-estimation
+    log_model: true
+    prefix: ''
+    entity: null
+    group: docker-100k-experiments
+    tags: 
+      - docker
+      - flow-matching
+      - 100k-steps
+    job_type: training
+    settings:
+      _target_: wandb.Settings
+      code_dir: .
+
+# Trainer configuration - extended for 100k steps
+trainer:
+  _target_: lightning.pytorch.trainer.Trainer
+  default_root_dir: ${paths.output_dir}
+  min_steps: 100000  # 100k steps
+  max_steps: 100000  # 100k steps
+  log_every_n_steps: 100
+  gradient_clip_val: 1.0
+  accelerator: gpu
+  devices:
+    - 0
+  check_val_every_n_epoch: null
+  deterministic: false
+  precision: 16-mixed  # FP16 for memory efficiency
+  accumulate_grad_batches: 1
+  max_epochs: -1  # Use steps instead of epochs
+  enable_checkpointing: true
+  enable_progress_bar: true
+  enable_model_summary: true
+
+# Paths configuration - will be overridden by docker.yaml
+paths:
+  root_dir: ${oc.env:PROJECT_ROOT}
+  data_dir: ${paths.root_dir}/data/
+  log_dir: ${paths.root_dir}/logs/
+  output_dir: ${hydra:runtime.output_dir}
+  work_dir: ${hydra:runtime.cwd}
+  vst_dir: ${paths.root_dir}/plugins/
+  presets_dir: ${paths.root_dir}/presets/
+
+# Extras configuration
+extras:
+  ignore_warnings: false
+  enforce_tags: true
+  print_config: true
+  float32_matmul_precision: high

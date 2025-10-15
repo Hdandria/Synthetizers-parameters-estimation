@@ -1,0 +1,79 @@
+# Data and output directories
+data/
+logs/
+checkpoints/
+outputs/
+datasets/
+*.h5
+*.hdf5
+*.wav
+*.mp3
+*.flac
+
+# Git and version control
+.git/
+.gitignore
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation and development files
+*.md
+docs/
+notebooks/
+tests/
+
+# Temporary files
+*.tmp
+*.temp
+temp.md
+
+# Environment files (will be mounted at runtime)
+.env
+.env.local
+.env.production
+
+# Large files that shouldn't be in image
+presets/
+*.vst3
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Hydra outputs (will be mounted)
+outputs/
+.hydra/

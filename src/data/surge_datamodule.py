@@ -44,6 +44,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
 
         self.repeat_first_batch = repeat_first_batch
 
+        # Local file
         self.dataset_file = h5py.File(dataset_file, "r")
 
         if use_saved_mean_and_variance:
@@ -53,7 +54,9 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
         # if not, we throw an error
         stats_file = SurgeXTDataset.get_stats_file_path(dataset_file)
-        if not stats_file.exists():
+        
+        # Local file check
+        if not Path(stats_file).exists():
             raise FileNotFoundError(
                 f"Could not find statistics file {stats_file}. \n"
                 "Make sure to first run `scripts/get_dataset_stats.py`."
