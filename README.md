@@ -13,6 +13,7 @@ This project trains models to predict synthesizer parameters from audio recordin
 - [SETUP.md](SETUP.md) - Environment setup and installation
 - [USAGE.md](USAGE.md) - Training, evaluation, and dataset generation
 - [CONFIGURATION.md](CONFIGURATION.md) - Configuration system overview
+- [docker/README.md](docker/README.md) - Docker setup for GPU training
 
 ## Project Structure
 
@@ -29,7 +30,10 @@ audio-to-daw/
 │   ├── train.py     # Training script
 │   └── eval.py      # Evaluation script
 ├── scripts/         # Utility scripts
-└── tests/           # Unit tests
+├── docker/          # Docker configuration and helper scripts
+├── tests/           # Unit tests
+├── Dockerfile       # Docker image definition
+└── docker-compose.yml # Docker service orchestration
 ```
 
 ## Supported Datasets
@@ -48,8 +52,35 @@ audio-to-daw/
 - **Flow Matching** - Generative model using continuous normalizing flows
 - **FlowVAE** - Variational autoencoder with flow-based decoder
 
+## Quick Start
+
+### Option 1: Docker (Recommended)
+For GPU training with minimal setup:
+
+```bash
+# Build and run with Docker
+docker-compose build
+./docker/run_training.sh surge/baseline
+```
+
+See [docker/README.md](docker/README.md) for detailed Docker setup instructions.
+
+### Option 2: Local Installation
+For development and customization:
+
+```bash
+# Install dependencies
+uv pip install -r requirements.txt
+
+# Run training
+python src/train.py experiment=surge/baseline
+```
+
+See [SETUP.md](SETUP.md) for detailed installation instructions.
+
 ## Requirements
 
 - Python 3.10+
 - PyTorch with GPU support recommended
 - VST3 plugins (for dataset generation with Surge XT)
+- Docker + NVIDIA Container Toolkit (for Docker setup)

@@ -1,0 +1,22 @@
+# Docker-specific path configuration
+# This config overrides default paths for Docker environment
+
+defaults:
+  - default
+
+# Override paths for Docker environment
+paths:
+  data_dir: /workspace/data
+  log_dir: /workspace/logs
+  checkpoint_dir: /workspace/checkpoints
+  vst_dir: /workspace/vsts
+  preset_dir: /workspace/presets
+  output_dir: /workspace/outputs
+
+# Docker-specific settings
+docker:
+  workspace_root: /workspace
+  user: trainer
+  gpu_available: true
+  cuda_version: "12.1"
+
