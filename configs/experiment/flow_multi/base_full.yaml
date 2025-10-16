@@ -2,7 +2,14 @@
 # Default config: fp16
 
 defaults:
-  - override flow_multi/base_full
+  - override /data: surge
+  - override /model: surge_flow
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: many_loggers
+  - override /paths: docker
+  - override /extras: default
+  - override /hydra: default
 
 # Experiment metadata
 experiment_name: flow_multi
