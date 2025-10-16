@@ -44,6 +44,9 @@ dependencies = [
     "pytest>=6.0",
     "pre-commit",
     "dask[distributed]>=2025.10.0",
+    "s3fs>=0.4.2",
+    "boto3>=1.40.53",
+    "aws>=0.2.5",
 ]
 
 # Dépendances optionnelles

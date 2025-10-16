@@ -1,5 +1,32 @@
 #!/bin/bash
 
+# Set up AWS CLI configuration
+export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+export AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+
+# Create local data directory
+mkdir -p ./data
+
+# Download all required datasets
+echo "Downloading datasets from S3..."
+
+# Download surge-20k dataset
+echo "Downloading surge-20k..."
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-20k/ ./data/surge-20k/ --endpoint-url=${AWS_ENDPOINT_URL}
+
+# Download surge-50k dataset  
+echo "Downloading surge-50k..."
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-50k/ ./data/surge-50k/ --endpoint-url=${AWS_ENDPOINT_URL}
+
+# Download surge-100k dataset
+echo "Downloading surge-100k..."
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-100k/ ./data/surge-100k/ --endpoint-url=${AWS_ENDPOINT_URL}
+
+echo "Dataset download complete!"
+
+
 # List of all flow_multi experiments
 EXPERIMENTS=(
   "flow_multi/base_full"
@@ -38,7 +65,7 @@ for exp in "${EXPERIMENTS[@]}"; do
     -e AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL \
     -v $(pwd)/outputs:/workspace/outputs \
     -v $(pwd)/logs:/workspace/logs \
-    synth-param-estimation:latest \
+    benjamindupuis/synth-param-estimation:latest \
     python src/train.py experiment=$exp paths=docker
 done
 
