@@ -84,3 +84,4 @@ Optional environment variables:
 - Check plugin compatibility (VST3 format required)
 - Ensure plugin is properly installed on your system
 
+

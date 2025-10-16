@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: weight_decay
+
+# Model configuration
+model:
+  optimizer:
+    weight_decay: 0.01

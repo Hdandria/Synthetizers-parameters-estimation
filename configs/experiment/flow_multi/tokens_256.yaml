@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: tokens_256
+
+# Model configuration
+model:
+  vector_field:
+    projection:
+      num_tokens: 256

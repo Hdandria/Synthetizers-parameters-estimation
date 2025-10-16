@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: dataset_100k_1m
+
+# Data configuration
+data:
+  dataset_root: s3://${oc.env:S3_BUCKET}/datasets/surge-100k
+
+# Trainer configuration
+trainer:
+  min_steps: 1000000
+  max_steps: 1000000

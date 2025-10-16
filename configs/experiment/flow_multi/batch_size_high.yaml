@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: batch_size_high
+
+# Data configuration
+data:
+  batch_size: 256

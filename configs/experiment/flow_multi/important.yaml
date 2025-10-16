@@ -1,0 +1,42 @@
+# @package _global_
+# Default config: fp16
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: important
+run_name: important
+
+# Data configuration
+data:
+  _target_: .data.surge_datamodule.SurgeDataModule
+  dataset_root: datasets/experiment_1
+  use_saved_mean_and_variance: true
+  batch_size: 128
+  ot: true
+  num_workers: 11
+  predict_filsrce: null
+
+# Trainer configuration
+trainer:
+  _target_: lightning.pytorch.trainer.Trainer
+  default_root_dir: ${paths.output_dir}
+  min_steps: 4000
+  max_steps: 4000
+  log_every_n_steps: 100
+  val_check_interval: 1000
+  gradient_clip_val: 0.5
+  accelerator: gpu
+  devices:
+    - 0
+  check_val_every_n_epoch: null
+  deterministic: false
+  precision: 16-mixed
+
+# Extras configuration
+extras:
+  ignore_warnings: false
+  enforce_tags: true
+  print_config: true
+  float32_matmul_precision: high

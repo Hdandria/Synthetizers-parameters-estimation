@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override flow_multi/base_full
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: projection_penalty_low
+
+# Model configuration
+model:
+  vector_field:
+    projection_penalty: 0.001
