@@ -27,7 +27,7 @@ seed: null
 # Data configuration
 data:
   _target_: src.data.surge_datamodule.SurgeDataModule
-  dataset_root: s3://${oc.env:S3_BUCKET}/datasets/surge-20k
+  dataset_root: ./datasets/surge-20k
   use_saved_mean_and_variance: true
   batch_size: 128
   ot: true

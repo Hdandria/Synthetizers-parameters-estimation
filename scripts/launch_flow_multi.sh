@@ -14,15 +14,15 @@ echo "Downloading datasets from S3..."
 
 # Download surge-20k dataset
 echo "Downloading surge-20k..."
-aws s3 sync s3://${S3_BUCKET}/datasets/surge-20k/ ./data/surge-20k/ --endpoint-url=${AWS_ENDPOINT_URL}
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-20k/ ./datasets/surge-20k/ --endpoint-url=${AWS_ENDPOINT_URL}
 
 # Download surge-50k dataset  
 echo "Downloading surge-50k..."
-aws s3 sync s3://${S3_BUCKET}/datasets/surge-50k/ ./data/surge-50k/ --endpoint-url=${AWS_ENDPOINT_URL}
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-50k/ ./datasets/surge-50k/ --endpoint-url=${AWS_ENDPOINT_URL}
 
 # Download surge-100k dataset
 echo "Downloading surge-100k..."
-aws s3 sync s3://${S3_BUCKET}/datasets/surge-100k/ ./data/surge-100k/ --endpoint-url=${AWS_ENDPOINT_URL}
+aws s3 sync s3://${S3_BUCKET}/datasets/surge-100k/ ./datasets/surge-100k/ --endpoint-url=${AWS_ENDPOINT_URL}
 
 echo "Dataset download complete!"
 
