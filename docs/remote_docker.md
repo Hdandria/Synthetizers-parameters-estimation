@@ -33,13 +33,24 @@ configuration:
 
 ```bash
 cat > .env << EOF
+# .env
 WANDB_API_KEY=wandb_api_key_here
-S3_BUCKET=actual-s3-bucket-name
+PROJECT_ROOT=/workspace
+S3_BUCKET=uniform-100k
+S3_DATASET_PATH=/datasets
 S3_PLUGIN_PATH=/plugins
-EOF
+AWS_ACCESS_KEY_ID=ovh_access_key_here
+AWS_SECRET_ACCESS_KEY=ovh_secret_key_here
+AWS_DEFAULT_REGION=gra
+AWS_ENDPOINT_URL=https://s3.gra.io.cloud.ovh.netEOF
 ```
 
 checker comment configuer s3 (awscli ?)
+```bash
+pip install ovh
+ovh config
+# Enter OVH credentials
+```	
 
 ```bash
 docker pull benjamindupuis/synth-param-estimation:latest

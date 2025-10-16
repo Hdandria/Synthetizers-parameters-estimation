@@ -32,6 +32,10 @@ for exp in "${EXPERIMENTS[@]}"; do
     -e WANDB_API_KEY=$WANDB_API_KEY \
     -e S3_BUCKET=$S3_BUCKET \
     -e S3_PLUGIN_PATH=$S3_PLUGIN_PATH \
+    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+    -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+    -e AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL \
     -v $(pwd)/outputs:/workspace/outputs \
     -v $(pwd)/logs:/workspace/logs \
     synth-param-estimation:latest \
