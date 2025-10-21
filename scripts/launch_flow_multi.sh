@@ -77,7 +77,7 @@ for exp in "${EXPERIMENTS[@]}"; do
   echo "Container: $container_name"
   echo "========================================="
   
-  # Run container (not detached, so it waits for completion)
+  # Run container (not detached, waits for completion)
   docker run --rm \
     --gpus all \
     --shm-size=32G \
@@ -95,7 +95,7 @@ for exp in "${EXPERIMENTS[@]}"; do
     -v $(pwd)/outputs:/workspace/outputs \
     -v $(pwd)/logs:/workspace/logs \
     benjamindupuis/synth-param-estimation:latest \
-    python src/train.py experiment=$exp paths=docker
+    python src/train.py experiment=$exp
   
   exit_code=$?
   if [ $exit_code -eq 0 ]; then

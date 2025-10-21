@@ -1,4 +1,5 @@
 # @package _global_
+_self_: true
 
 defaults:
   - override /experiment: flow_multi/base_full

@@ -1,5 +1,6 @@
 # @package _global_
 # Default config: fp16
+_self_: true
 
 defaults:
   - override /data: surge
@@ -26,6 +27,7 @@ seed: null
 
 # Data configuration
 data:
+  _merge_: override
   _target_: src.data.surge_datamodule.SurgeDataModule
   dataset_root: ./datasets/surge-20k
   use_saved_mean_and_variance: true

@@ -1,5 +1,6 @@
 # @package _global_
 # Default config: fp16
+_self_: true
 
 defaults:
   - override /experiment: flow_multi/base_full

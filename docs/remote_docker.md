@@ -55,12 +55,12 @@ AWS_ENDPOINT_URL=https://s3.gra.io.cloud.ovh.net
 # 1. SSH to server
 ssh <user>@<server-ip>
 
-# 2. Update Docker image (if code/configs changed)
-docker pull benjamindupuis/synth-param-estimation:latest
-
-# 3. Update launcher script if needed
+# 2. Update launcher script if needed (IMPORTANT!)
 cd ~/synth-launch
-nano scripts/launch_flow_multi.sh  # Optional: modify EXPERIMENTS list
+nano scripts/launch_flow_multi.sh  # Update script if changed
+
+# 3. Update Docker image (if code/configs changed)
+docker pull benjamindupuis/synth-param-estimation:latest
 
 # 4. Run experiments
 set -a; source .env; set +a
