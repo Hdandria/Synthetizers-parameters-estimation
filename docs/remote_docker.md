@@ -1,76 +1,92 @@
-```bash
-# Locally
-docker build -t synth-param-estimation:latest .
-```
+# Remote training on OVH GPU server
+
+## First time setup
 
 ```bash
-# Tag for Docker Hub
-docker tag synth-param-estimation:latest benjamindupuis/synth-param-estimation:latest
+# 1. SSH and install prerequisites
+ssh <user>@<server-ip>
 
-# Push to Docker Hub
-docker push benjamindupuis/synth-param-estimation:latest
-```
-   
-server setup:
-
-- connect to server vis ssh
-
-```bash
-# Install docker if not installed
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
-# NVIDIA Container Toolkit
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
 sudo apt-get update && sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
-```
 
-configuration:
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt-get install -y unzip
+unzip awscliv2.zip
+sudo ./aws/install
 
-```bash
-cat > .env << EOF
-# .env
-WANDB_API_KEY=wandb_api_key_here
-PROJECT_ROOT=/workspace
-S3_BUCKET=uniform-100k
-S3_DATASET_PATH=/datasets
-S3_PLUGIN_PATH=/plugins
-AWS_ACCESS_KEY_ID=ovh_access_key_here
-AWS_SECRET_ACCESS_KEY=ovh_secret_key_here
-AWS_DEFAULT_REGION=gra
-AWS_ENDPOINT_URL=https://s3.gra.io.cloud.ovh.netEOF
-```
+sudo apt update
+sudo apt install -y nvidia-driver-580-server
+sudo reboot
 
-checker comment configuer s3 (awscli ?)
-```bash
-pip install ovh
-ovh config
-# Enter OVH credentials
-```	
+# 2. After reboot, copy launcher script and .env
+mkdir -p ~/synth-launch/scripts
+nano ~/synth-launch/scripts/launch_flow_multi.sh  # Paste script content
+nano ~/synth-launch/.env  # Paste credentials below
+chmod +x ~/synth-launch/scripts/launch_flow_multi.sh
 
-```bash
+# 3. Pull Docker image
 docker pull benjamindupuis/synth-param-estimation:latest
-docker tag benjamindupuis/synth-param-estimation:latest synth-param-estimation:latest
 ```
 
-- Launch experiments (-d detached)
+**.env file template:**
 ```bash
-docker run -d \
-  --name synth-param-estimation-run \
-  --gpus all \
-  --env-file .env \
-  benjamindupuis/synth-param-estimation:latest \
-  bash -c "./scripts/launch_flow_multi.sh"
+WANDB_API_KEY=your_wandb_key
+PROJECT_ROOT=/workspace
+S3_BUCKET=uniform-datasets
+S3_PLUGIN_PATH=/plugins
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=gra
+AWS_ENDPOINT_URL=https://s3.gra.io.cloud.ovh.net
+```
+
+---
+
+## Every time you launch experiments
+
+```bash
+# 1. SSH to server
+ssh <user>@<server-ip>
+
+# 2. Update Docker image (if code/configs changed)
+docker pull benjamindupuis/synth-param-estimation:latest
+
+# 3. Update launcher script if needed
+cd ~/synth-launch
+nano scripts/launch_flow_multi.sh  # Optional: modify EXPERIMENTS list
+
+# 4. Run experiments
+set -a; source .env; set +a
+bash ./scripts/launch_flow_multi.sh
+```
+
+Experiments run sequentially. Monitor GPU: `nvidia-smi -l 5`  
+Check W&B: https://wandb.ai/paindespistes-t-l-com-paris/synth-prediction
+
+```bash
+# Bonus: Clean up old containers
+docker stop $(docker ps -q)
+docker rm $(docker ps -a -q)
 ```
 
 ```bash
-# Check containers
+# Bonus: Check on running containers
 docker ps
+docker logs <container_id>
+```
+---
 
-# Check W&B dashboard
-# https://wandb.ai/your-entity/synth-prediction
+## To rebuild and push new Docker image (local machine)
+
+```bash
+docker build -t synth-param-estimation:latest .
+docker tag synth-param-estimation:latest benjamindupuis/synth-param-estimation:latest
+docker push benjamindupuis/synth-param-estimation:latest
 ```

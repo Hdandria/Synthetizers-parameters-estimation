@@ -2,7 +2,7 @@
 # Default config: fp16
 
 defaults:
-  - override flow_multi/base_full
+  - override /experiment: flow_multi/base_full
 
 # Experiment metadata
 experiment_name: important
