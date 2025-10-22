@@ -1,6 +1,5 @@
 # @package _global_
 # Default config: fp16
-_self_: true
 
 defaults:
   - override /data: surge
@@ -11,6 +10,7 @@ defaults:
   - override /paths: docker
   - override /extras: default
   - override /hydra: default
+  - _self_
 
 # Experiment metadata
 experiment_name: flow_multi
