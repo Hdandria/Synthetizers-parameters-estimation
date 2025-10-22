@@ -171,6 +171,41 @@ default:
   project: ${OVH_PROJECT_ID}
 EOF
 
+# Add S3-compatible datastore if not already added
+# This is required to mount S3 buckets in AI Training jobs
+DATASTORE_ALIAS="s3-${OVH_REGION:-gra}"
+echo -e "${BLUE}🗄️  Configuring S3 datastore: ${DATASTORE_ALIAS}${NC}"
+
+# Check if datastore already exists
+if ! ovhai datastore list 2>/dev/null | grep -q "^${DATASTORE_ALIAS}"; then
+  echo -e "${YELLOW}   Adding S3 datastore for region ${OVH_REGION}...${NC}"
+  
+  # Extract region in lowercase
+  REGION_LOWER=$(echo "${OVH_REGION:-GRA}" | tr '[:upper:]' '[:lower:]')
+  
+  # Add S3 datastore (endpoint format: https://s3.<region>.io.cloud.ovh.net)
+  ovhai datastore add s3 \
+    "${DATASTORE_ALIAS}" \
+    "${AWS_ENDPOINT_URL}" \
+    "${REGION_LOWER}" \
+    "${AWS_ACCESS_KEY_ID}" \
+    "${AWS_SECRET_ACCESS_KEY}" \
+    --store-credentials-locally
+  
+  echo -e "${GREEN}   ✅ S3 datastore added successfully${NC}"
+else
+  echo -e "${GREEN}   ✅ S3 datastore already configured${NC}"
+fi
+
+# Verify bucket is accessible through datastore
+echo -e "${BLUE}📦 Verifying bucket access...${NC}"
+if ovhai bucket list "${DATASTORE_ALIAS}" 2>/dev/null | grep -q "${S3_BUCKET:-uniform-datasets}"; then
+  echo -e "${GREEN}   ✅ Bucket '${S3_BUCKET:-uniform-datasets}' is accessible${NC}"
+else
+  echo -e "${YELLOW}   ⚠️  Bucket '${S3_BUCKET:-uniform-datasets}' not found in datastore list${NC}"
+  echo -e "${YELLOW}      This may be normal if the bucket was just created${NC}"
+fi
+
 # Check if Terraform is set up
 if [[ ! -d "terraform/.terraform" ]]; then
   echo -e "${YELLOW}⚠️  Terraform not initialized. Run: cd terraform && terraform init${NC}"
@@ -211,26 +246,25 @@ else
   echo -e "${YELLOW}⏭️  Skipping build (--skip-build)${NC}"
 fi
 
-# Extract dataset name from experiment config
-DATASET_NAME=$(echo "$EXPERIMENT_CONFIG" | sed 's/.*dataset_\([0-9]*k\).*/\1/' | sed 's/.*surge-\([0-9]*k\).*/\1/')
-if [[ -z "$DATASET_NAME" ]]; then
-  # Default to surge-100k if no dataset specified
-  DATASET_NAME="100k"
-fi
-
-echo -e "${BLUE}📥 Will download surge-${DATASET_NAME} dataset on remote server${NC}"
+echo -e "${BLUE}📦 Dataset will be accessed directly from mounted S3 bucket (same datacenter)${NC}"
 
 # Submit job
 echo -e "${GREEN}🎯 Submitting job...${NC}"
 JOB_NAME="$(echo "$EXPERIMENT_CONFIG" | tr '/' '-')-$(date +%s)"
 FLAVOR="${FLAVOR:-ai1-1-gpu}"
 
-# Construct ovhai command with S3 mount and download script
+# Construct ovhai command with OVH Object Storage mount
+# Volume format: container_name@REGION:mount_point:permissions
+# Mount directly to /workspace/datasets/datasets (bucket root contains datasets/ and plugins/)
+# Then symlink to avoid the double datasets/ path
+# Construct ovhai command with OVH Object Storage mount
+# Mount S3 bucket to /workspace/datasets-mount and flatten with a symlink so
+# code can use /workspace/datasets/... regardless of bucket layout
 OVHAI_CMD="ovhai job run \
   --name \"${JOB_NAME}\" \
   --flavor ${FLAVOR} \
-  --volume \"${S3_BUCKET_DATASETS}@GRA:/workspace/s3-data:RO:cache\" \
-  --volume \"${S3_BUCKET_OUTPUTS}@GRA:/workspace/outputs:RW\" \
+  --volume \"${S3_BUCKET_DATASETS}@${DATASTORE_ALIAS}:/workspace/datasets-mount:ro\" \
+  --volume \"${S3_BUCKET_OUTPUTS}@${DATASTORE_ALIAS}:/workspace/outputs:rw\" \
   --env WANDB_API_KEY=\"${WANDB_API_KEY}\" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
@@ -241,7 +275,7 @@ OVHAI_CMD="ovhai job run \
   --unsecure-http \
   --output json \
   \"${FULL_IMAGE}\" \
-  -- bash -c 'mkdir -p /workspace/datasets && aws s3 sync s3://${S3_BUCKET_DATASETS}/datasets/surge-${DATASET_NAME}/ /workspace/datasets/surge-${DATASET_NAME}/ --endpoint-url=${AWS_ENDPOINT_URL} && python src/train.py experiment=\"${EXPERIMENT_CONFIG}\"'"
+  -- bash -c \"set -e; echo \\\"📂 Checking mount...\\\"; ls -la /workspace/datasets-mount/; echo \\\"📂 Contents of datasets-mount:\\\"; ls -la /workspace/datasets-mount/ || true; echo \\\"📂 Contents of datasets-mount/datasets (if exists):\\\"; ls -la /workspace/datasets-mount/datasets || true; echo \\\"🔗 Creating flattening symlink /workspace/datasets -> /workspace/datasets-mount/datasets\\\"; ln -sfn /workspace/datasets-mount/datasets /workspace/datasets; echo \\\"📂 Verifying expected path...\\\"; ls -la /workspace/datasets/ || true; ls -la /workspace/datasets/surge-100k || true; echo \\\"📂 Fallback: listing direct mount path\\\"; ls -la /workspace/datasets-mount/datasets/surge-100k || true; if [ -f /workspace/datasets-mount/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 at direct mount path\\\"; elif [ -f /workspace/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 via symlink\\\"; else echo \\\"❌ Missing train.h5 in both expected paths\\\"; fi; python src/train.py experiment=\\\"${EXPERIMENT_CONFIG}\\\" data.dataset_root=/workspace/datasets-mount/datasets/surge-100k\""
 
 # Submit job
 set +e

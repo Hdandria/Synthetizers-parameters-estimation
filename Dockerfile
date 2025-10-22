@@ -8,9 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PROJECT_ROOT=/workspace
 ENV HYDRA_FULL_ERROR=1
 
-# Create non-root user
-RUN groupadd -g 1000 trainer && \
-    useradd -u 1000 -g trainer -m -s /bin/bash trainer
+# Create OVHcloud user with UID 42420 as required by OVH AI Training
+RUN groupadd -g 42420 ovhcloud && \
+    useradd -u 42420 -g ovhcloud -m -s /bin/bash ovhcloud
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -22,14 +22,13 @@ RUN apt-get update && apt-get install -y \
     libsndfile1-dev \
     libasound2-dev \
     portaudio19-dev \
-    awscli \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir uv
+RUN pip install --no-cache-dir uv awscli
 
-# Set working directory and give ownership to trainer
+# Set working directory and give ownership to ovhcloud user
 WORKDIR /workspace
-RUN chown -R trainer:trainer /workspace
+RUN chown -R ovhcloud:ovhcloud /workspace
 
 # Copy dependency files first for better caching
 COPY pyproject.toml uv.lock ./
@@ -40,14 +39,15 @@ RUN uv pip install --system -r pyproject.toml && \
     rm -rf /tmp/* /var/tmp/*
 
 # Copy project code
-COPY --chown=trainer:trainer . .
+COPY --chown=ovhcloud:ovhcloud . .
 
-# Create directories with proper permissions
+# Create directories with proper permissions for ovhcloud user (UID 42420)
 RUN mkdir -p /workspace/outputs /workspace/.config /workspace/.cache /workspace/datasets && \
-    chmod -R 777 /workspace
+    chown -R ovhcloud:ovhcloud /workspace && \
+    chmod -R 755 /workspace
 
-# Run as root for simplicity in AI Training environment
-USER root
+# Switch to ovhcloud user as required by OVH AI Training
+USER ovhcloud
 
 # Set matplotlib config directory to a writable location
 ENV MPLCONFIGDIR=/tmp/matplotlib
