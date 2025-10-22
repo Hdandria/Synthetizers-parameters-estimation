@@ -27,7 +27,6 @@ seed: null
 
 # Data configuration
 data:
-  _merge_: override
   _target_: src.data.surge_datamodule.SurgeDataModule
   dataset_root: ./datasets/surge-20k
   use_saved_mean_and_variance: true
@@ -169,14 +168,6 @@ trainer:
   check_val_every_n_epoch: null
   deterministic: false
   precision: 16-mixed
-
-# Paths configuration
-paths:
-  root_dir: ${oc.env:PROJECT_ROOT}
-  data_dir: ${paths.root_dir}/data/
-  log_dir: ${paths.root_dir}/logs/
-  output_dir: ${hydra:runtime.output_dir}
-  work_dir: ${hydra:runtime.cwd}
 
 # Extras configuration
 extras:

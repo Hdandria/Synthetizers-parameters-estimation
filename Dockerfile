@@ -22,12 +22,14 @@ RUN apt-get update && apt-get install -y \
     libsndfile1-dev \
     libasound2-dev \
     portaudio19-dev \
+    awscli \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
 
-# Set working directory
+# Set working directory and give ownership to trainer
 WORKDIR /workspace
+RUN chown -R trainer:trainer /workspace
 
 # Copy dependency files first for better caching
 COPY pyproject.toml uv.lock ./
@@ -40,8 +42,15 @@ RUN uv pip install --system -r pyproject.toml && \
 # Copy project code
 COPY --chown=trainer:trainer . .
 
-# Switch to non-root user
-USER trainer
+# Create directories with proper permissions
+RUN mkdir -p /workspace/outputs /workspace/.config /workspace/.cache /workspace/datasets && \
+    chmod -R 777 /workspace
+
+# Run as root for simplicity in AI Training environment
+USER root
+
+# Set matplotlib config directory to a writable location
+ENV MPLCONFIGDIR=/tmp/matplotlib
 
 # Expose TensorBoard port
 EXPOSE 6006

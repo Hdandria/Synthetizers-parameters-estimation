@@ -1,27 +1,25 @@
-# @package _global_
+# @package paths
 
 # Docker-specific path configuration
-# This overrides the default paths for containerized environments
+# Simple, direct paths for containerized environments
 
 # path to root directory (set by Docker environment)
-root_dir: ${oc.env:PROJECT_ROOT}
+root_dir: /workspace
 
 # path to data directory
-data_dir: ${paths.root_dir}/data/
+data_dir: /workspace/data/
 
 # path to logging directory
-log_dir: ${paths.root_dir}/logs/
+log_dir: /workspace/outputs/
 
 # path to output directory, created dynamically by hydra
-# path generation pattern is specified in `configs/hydra/default.yaml`
-# use it to store all files generated during the run, like ckpts and metrics
 output_dir: ${hydra:runtime.output_dir}
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}
 
 # path to VST plugins directory
-vst_dir: ${paths.root_dir}/plugins/
+vst_dir: /workspace/plugins/
 
 # path to presets directory
-presets_dir: ${paths.root_dir}/presets/
+presets_dir: /workspace/presets/

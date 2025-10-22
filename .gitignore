@@ -163,3 +163,17 @@ checkpoints/
 audio_samples*/
 metrics_output*/
 *.npz
+
+# Additional environment files
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Terraform (see terraform/.gitignore for more)
+terraform.tfvars
+*.auto.tfvars
+!terraform.tfvars.example
+
+# OVH CLI config
+.ovhconfig
