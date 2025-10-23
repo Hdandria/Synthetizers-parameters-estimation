@@ -216,10 +216,24 @@ fi
 # Read config from Terraform (optional - falls back to .env)
 if [[ -d terraform/.terraform ]]; then
   cd terraform
-  REGISTRY_URL=$(terraform output -raw registry_url 2>/dev/null || echo "${DOCKER_REGISTRY}")
-  S3_BUCKET_DATASETS=$(terraform output -raw s3_bucket_datasets 2>/dev/null || echo "${S3_BUCKET}")
-  S3_BUCKET_OUTPUTS=$(terraform output -raw s3_bucket_outputs 2>/dev/null || echo "${S3_BUCKET_OUTPUTS}")
+  # Helper to validate terraform output
+  get_tf_output() {
+    local output
+    output=$(TF_CLI_ARGS="-no-color" terraform output -raw "$1" 2>/dev/null)
+    if [[ -z "$output" ]] || [[ "$output" == *"Warning: No outputs found"* ]] || [[ "$output" == *"The state file either has no outputs defined"* ]]; then
+      echo ""
+    else
+      echo "$output"
+    fi
+  }
+  REGISTRY_URL=$(get_tf_output registry_url)
+  S3_BUCKET_DATASETS=$(get_tf_output s3_bucket_datasets)
+  S3_BUCKET_OUTPUTS=$(get_tf_output s3_bucket_outputs)
   cd ..
+  # Fallbacks if outputs are empty
+  [[ -z "$REGISTRY_URL" ]] && REGISTRY_URL="${DOCKER_REGISTRY}"
+  [[ -z "$S3_BUCKET_DATASETS" ]] && S3_BUCKET_DATASETS="${S3_BUCKET}"
+  [[ -z "$S3_BUCKET_OUTPUTS" ]] && S3_BUCKET_OUTPUTS="${S3_BUCKET}"
 else
   REGISTRY_URL="${DOCKER_REGISTRY}"
   S3_BUCKET_DATASETS="${S3_BUCKET}"
