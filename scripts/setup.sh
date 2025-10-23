@@ -135,29 +135,6 @@ echo -e "${BLUE}🏗️  Initializing Terraform...${NC}"
 
 cd terraform
 
-if [[ ! -f terraform.tfvars ]]; then
-  if [[ -f terraform.tfvars.example ]]; then
-    cp terraform.tfvars.example terraform.tfvars
-    echo -e "${YELLOW}⚠️  Created terraform.tfvars from template${NC}"
-    echo -e "${YELLOW}   Please edit terraform.tfvars with your OVH credentials:${NC}"
-    echo -e "   ${BLUE}cd terraform && nano terraform.tfvars${NC}"
-    echo ""
-    echo -e "   Get OVH API credentials here:"
-    echo -e "   ${BLUE}https://www.ovh.com/auth/api/createToken${NC}"
-    echo ""
-    echo -e "   Required scopes: GET/POST/PUT/DELETE on /cloud/*"
-    echo ""
-    echo -e "${YELLOW}   After editing, run:${NC}"
-    echo -e "   ${GREEN}cd terraform && terraform init && terraform apply${NC}"
-    cd ..
-    exit 0
-  else
-    echo -e "${RED}❌ terraform.tfvars.example not found${NC}"
-    cd ..
-    exit 1
-  fi
-fi
-
 terraform init
 
 echo -e "${GREEN}✓${NC} Terraform initialized"
@@ -187,7 +164,7 @@ echo ""
 echo -e "${YELLOW}Next steps:${NC}"
 echo ""
 echo "1. Configure OVH credentials:"
-echo -e "   ${BLUE}cd terraform && nano terraform.tfvars${NC}"
+echo -e "   ${BLUE}nano .env${NC}"
 echo ""
 echo "2. Deploy infrastructure:"
 echo -e "   ${BLUE}cd terraform && terraform apply${NC}"
