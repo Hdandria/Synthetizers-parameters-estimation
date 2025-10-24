@@ -1,6 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
 # Parse arguments
 EXPERIMENT_CONFIG=""
 ENV_FILE=".env"
@@ -26,17 +36,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate inputs
-[[ -z "$EXPERIMENT_CONFIG" ]] && { echo "Error: No experiment specified"; exit 1; }
-[[ ! -f "configs/experiment/${EXPERIMENT_CONFIG}.yaml" ]] && { echo "Error: Config not found: $EXPERIMENT_CONFIG"; exit 1; }
-[[ ! -f "$ENV_FILE" ]] && { echo "Error: $ENV_FILE not found"; exit 1; }
+[[ -z "$EXPERIMENT_CONFIG" ]] && { echo -e "${RED}Error: No experiment specified${RESET}"; exit 1; }
+[[ ! -f "configs/experiment/${EXPERIMENT_CONFIG}.yaml" ]] && { echo -e "${RED}Error: Config not found: $EXPERIMENT_CONFIG${RESET}"; exit 1; }
+[[ ! -f "$ENV_FILE" ]] && { echo -e "${RED}Error: $ENV_FILE not found${RESET}"; exit 1; }
+
+echo -e "${CYAN}${BOLD}>>> Launching experiment: ${EXPERIMENT_CONFIG}${RESET}"
 
 # Load environment
 set -a; source "$ENV_FILE"; set +a
+echo -e "${GREEN}[+] Environment loaded from ${ENV_FILE}${RESET}"
 
 # Required variables check
 for var in WANDB_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_URL OVH_APPLICATION_KEY OVH_APPLICATION_SECRET OVH_CONSUMER_KEY OVH_PROJECT_ID; do
-  [[ -z "${!var:-}" ]] && { echo "Error: $var not set"; exit 1; }
+  [[ -z "${!var:-}" ]] && { echo -e "${RED}Error: $var not set${RESET}"; exit 1; }
 done
+echo -e "${GREEN}[+] All required environment variables set${RESET}"
 
 # Hardware config
 NUM_GPUS="${NUM_GPUS:-1}"
@@ -51,7 +65,17 @@ HYDRA_OVERRIDES_CLOUD=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gp
 # LOCAL MODE
 ################################################################################
 if [[ "$LOCAL_MODE" == true ]]; then
-  [[ "$SKIP_BUILD" == false ]] && docker build -t synth-param-estimation:latest .
+  echo -e "${MAGENTA}${BOLD}============================================================${RESET}"
+  echo -e "${MAGENTA}${BOLD}                    LOCAL MODE                            ${RESET}"
+  echo -e "${MAGENTA}${BOLD}============================================================${RESET}"
+  
+  if [[ "$SKIP_BUILD" == false ]]; then
+    echo -e "${BLUE}[*] Building Docker image...${RESET}"
+    docker build -t synth-param-estimation:latest .
+    echo -e "${GREEN}[+] Docker image built${RESET}"
+  else
+    echo -e "${YELLOW}[-] Skipping Docker build${RESET}"
+  fi
   
   DOCKER_GPUS_OPT="--gpus all"
   [[ -n "${GPU_IDS_TRIMMED}" ]] && DOCKER_GPUS_OPT="--gpus device=${GPU_IDS_TRIMMED}"
@@ -60,6 +84,10 @@ if [[ "$LOCAL_MODE" == true ]]; then
   # Build Hydra overrides for local
   HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
   [[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
+  
+  echo -e "${BLUE}[*] Running training locally with Docker...${RESET}"
+  echo -e "${CYAN}    GPUs: ${NUM_GPUS}${RESET}"
+  [[ -n "${DATA_NUM_WORKERS}" ]] && echo -e "${CYAN}    Workers: ${DATA_NUM_WORKERS}${RESET}"
   
   PY_ARGS=(python src/train.py "${HYDRA_OVERRIDES[@]}")
   
@@ -77,6 +105,7 @@ if [[ "$LOCAL_MODE" == true ]]; then
     synth-param-estimation:latest \
     "${PY_ARGS[@]}"
   
+  echo -e "${GREEN}${BOLD}[+] Local training completed${RESET}"
   exit 0
 fi
 
@@ -84,9 +113,15 @@ fi
 # CLOUD MODE
 ################################################################################
 
-# Configure ovhai CLI
-command -v ovhai &> /dev/null || { echo "Error: ovhai CLI not found"; exit 1; }
+echo -e "${CYAN}${BOLD}============================================================${RESET}"
+echo -e "${CYAN}${BOLD}                    CLOUD MODE (OVH)                      ${RESET}"
+echo -e "${CYAN}${BOLD}============================================================${RESET}"
 
+# Configure ovhai CLI
+command -v ovhai &> /dev/null || { echo -e "${RED}Error: ovhai CLI not found${RESET}"; exit 1; }
+echo -e "${GREEN}[+] ovhai CLI found${RESET}"
+
+echo -e "${BLUE}[*] Configuring OVH credentials...${RESET}"
 mkdir -p ~/.ovhcloud
 cat > ~/.ovhcloud/config.yaml <<EOF
 default:
@@ -96,27 +131,39 @@ default:
   consumer_key: ${OVH_CONSUMER_KEY}
   project: ${OVH_PROJECT_ID}
 EOF
+echo -e "${GREEN}[+] OVH credentials configured${RESET}"
 
 # Configure S3 datastore
+echo -e "${BLUE}[*] Configuring S3 datastore...${RESET}"
 DATASTORE_ALIAS="s3-${OVH_REGION:-gra}"
 if ! ovhai datastore list 2>/dev/null | grep -q "^${DATASTORE_ALIAS}"; then
   REGION_LOWER=$(echo "${OVH_REGION:-GRA}" | tr '[:upper:]' '[:lower:]')
   ovhai datastore add s3 "${DATASTORE_ALIAS}" "${AWS_ENDPOINT_URL}" "${REGION_LOWER}" \
     "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}" --store-credentials-locally
+  echo -e "${GREEN}[+] S3 datastore added: ${DATASTORE_ALIAS}${RESET}"
+else
+  echo -e "${GREEN}[+] S3 datastore found: ${DATASTORE_ALIAS}${RESET}"
 fi
 
 # Get registry and bucket info from Terraform or fallback to env
 if [[ -d terraform/.terraform ]]; then
+  echo -e "${BLUE}[*] Reading configuration from Terraform...${RESET}"
   cd terraform
   REGISTRY_URL=$(terraform output -raw registry_url 2>/dev/null || echo "${DOCKER_REGISTRY}")
   S3_BUCKET_DATASETS=$(terraform output -raw s3_bucket_datasets 2>/dev/null || echo "${S3_BUCKET}")
   S3_BUCKET_OUTPUTS=$(terraform output -raw s3_bucket_outputs 2>/dev/null || echo "${S3_BUCKET_OUTPUTS}")
   cd ..
+  echo -e "${GREEN}[+] Terraform configuration loaded${RESET}"
 else
+  echo -e "${YELLOW}[!] Terraform not initialized, using environment variables${RESET}"
   REGISTRY_URL="${DOCKER_REGISTRY}"
   S3_BUCKET_DATASETS="${S3_BUCKET}"
   S3_BUCKET_OUTPUTS="${S3_BUCKET_OUTPUTS}"
 fi
+
+echo -e "${CYAN}    Registry: ${REGISTRY_URL}${RESET}"
+echo -e "${CYAN}    Datasets: ${S3_BUCKET_DATASETS}${RESET}"
+echo -e "${CYAN}    Outputs: ${S3_BUCKET_OUTPUTS}${RESET}"
 
 # Build and push image
 IMAGE_TAG="$(echo "$EXPERIMENT_CONFIG" | tr '/' '-')-$(date +%Y%m%d-%H%M%S)"
@@ -126,13 +173,23 @@ FULL_IMAGE="${REGISTRY_URL}/synth-param-estimation:${IMAGE_TAG}"
   echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin 2>/dev/null || true
 
 if [[ "$SKIP_BUILD" == false ]]; then
+  echo -e "${BLUE}[*] Building and pushing Docker image...${RESET}"
+  echo -e "${CYAN}    Image: ${FULL_IMAGE}${RESET}"
   docker build -t "$FULL_IMAGE" .
   docker push "$FULL_IMAGE"
+  echo -e "${GREEN}[+] Docker image pushed${RESET}"
+else
+  echo -e "${YELLOW}[-] Skipping Docker build and push${RESET}"
 fi
 
 
 # Submit job
+echo -e "${BLUE}[*] Submitting job to OVH AI Training...${RESET}"
 JOB_NAME="$(echo "$EXPERIMENT_CONFIG" | tr '/' '-')-$(date +%s)"
+echo -e "${CYAN}    Job name: ${JOB_NAME}${RESET}"
+echo -e "${CYAN}    Flavor: ${FLAVOR:-ai1-1-gpu}${RESET}"
+echo -e "${CYAN}    GPUs: ${NUM_GPUS}${RESET}"
+[[ -n "${DATA_NUM_WORKERS}" ]] && echo -e "${CYAN}    Workers: ${DATA_NUM_WORKERS}${RESET}"
 
 ovhai job run \
   --name "${JOB_NAME}" \
@@ -173,10 +230,14 @@ ovhai job run \
   | tee /tmp/job_output.json
 
 JOB_ID=$(jq -r '.id // .uuid // empty' /tmp/job_output.json)
-[[ -z "$JOB_ID" ]] && { echo "Failed to get job ID"; exit 1; }
+[[ -z "$JOB_ID" ]] && { echo -e "${RED}Error: Failed to get job ID${RESET}"; exit 1; }
 
-echo "Job ID: ${JOB_ID}"
-echo "Monitor: ./scripts/status.sh ${JOB_ID}"
-echo "Logs: ./scripts/logs.sh ${JOB_ID}"
+echo ""
+echo -e "${GREEN}${BOLD}[+] Job submitted successfully!${RESET}"
+echo -e "${CYAN}------------------------------------------------------------${RESET}"
+echo -e "${BOLD}Job ID:${RESET}    ${GREEN}${JOB_ID}${RESET}"
+echo -e "${BOLD}Monitor:${RESET}   ${BLUE}./scripts/status.sh ${JOB_ID}${RESET}"
+echo -e "${BOLD}Logs:${RESET}      ${BLUE}./scripts/logs.sh ${JOB_ID}${RESET}"
+echo -e "${CYAN}------------------------------------------------------------${RESET}"
 
-[[ "$STREAM_LOGS" == true ]] && { sleep 10; ovhai job logs "$JOB_ID" --follow; }
+[[ "$STREAM_LOGS" == true ]] && { echo -e "${BLUE}[*] Streaming logs...${RESET}"; sleep 10; ovhai job logs "$JOB_ID" --follow; }
