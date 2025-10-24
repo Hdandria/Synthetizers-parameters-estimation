@@ -177,3 +177,5 @@ terraform.tfvars
 
 # OVH CLI config
 .ovhconfig
+
+*.private
