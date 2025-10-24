@@ -113,6 +113,25 @@ for var in "${REQUIRED_VARS[@]}"; do
   fi
 done
 
+# Hardware overrides from .env (optional)
+# NUM_GPUS: number of GPUs to use/request
+# GPU_IDS: comma-separated GPU IDs to make visible (e.g., "0,1"). If set, we export CUDA_VISIBLE_DEVICES accordingly
+# DATA_NUM_WORKERS: dataloader workers override
+NUM_GPUS="${NUM_GPUS:-}"
+GPU_IDS="${GPU_IDS:-}"
+DATA_NUM_WORKERS="${DATA_NUM_WORKERS:-}"
+# Trim whitespace from GPU_IDS to avoid passing empty/blank values
+GPU_IDS_TRIMMED="${GPU_IDS//[[:space:]]/}"
+
+# Build Hydra CLI overrides from env (only add when provided)
+HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu")
+if [[ -n "${NUM_GPUS}" ]]; then
+  HYDRA_OVERRIDES+=("trainer.devices=${NUM_GPUS}")
+fi
+if [[ -n "${DATA_NUM_WORKERS}" ]]; then
+  HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
+fi
+
 ################################################################################
 # LOCAL MODE
 ################################################################################
@@ -127,8 +146,20 @@ if [[ "$LOCAL_MODE" == true ]]; then
   
   # Run locally
   echo -e "${GREEN}▶️  Starting training locally...${NC}"
+  # Configure GPU visibility and count for Docker
+  DOCKER_GPUS_OPT="--gpus all"
+  if [[ -n "${GPU_IDS_TRIMMED}" ]]; then
+    DOCKER_GPUS_OPT="--gpus device=${GPU_IDS_TRIMMED}"
+  elif [[ -n "${NUM_GPUS}" ]]; then
+    DOCKER_GPUS_OPT="--gpus ${NUM_GPUS}"
+  fi
+
+  # Build python args from hydra overrides
+  PY_ARGS=(python src/train.py)
+  for arg in "${HYDRA_OVERRIDES[@]}"; do PY_ARGS+=("$arg"); done
+
   docker run --rm \
-    --gpus all \
+    ${DOCKER_GPUS_OPT} \
     --shm-size=32G \
     -e PROJECT_ROOT=/workspace \
     -e WANDB_API_KEY="$WANDB_API_KEY" \
@@ -136,11 +167,12 @@ if [[ "$LOCAL_MODE" == true ]]; then
     -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
     -e AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
     -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-gra}" \
+  $( [[ -n "${GPU_IDS_TRIMMED}" ]] && echo -n "-e CUDA_VISIBLE_DEVICES=${GPU_IDS_TRIMMED}" ) \
     -v "$(pwd)/datasets:/workspace/datasets:ro" \
     -v "$(pwd)/outputs:/workspace/outputs" \
     -v "$(pwd)/logs:/workspace/logs" \
     synth-param-estimation:latest \
-    python src/train.py experiment="$EXPERIMENT_CONFIG"
+    "${PY_ARGS[@]}"
   
   echo -e "${GREEN}✅ Local training complete!${NC}"
   exit 0
@@ -277,6 +309,7 @@ FLAVOR="${FLAVOR:-ai1-1-gpu}"
 OVHAI_CMD="ovhai job run \
   --name \"${JOB_NAME}\" \
   --flavor ${FLAVOR} \
+  --gpu ${NUM_GPUS:-1} \
   --volume \"${S3_BUCKET_DATASETS}@${DATASTORE_ALIAS}:/workspace/datasets-mount:ro\" \
   --volume \"${S3_BUCKET_OUTPUTS}@${DATASTORE_ALIAS}:/workspace/outputs:rw\" \
   --env WANDB_API_KEY=\"${WANDB_API_KEY}\" \
@@ -286,10 +319,11 @@ OVHAI_CMD="ovhai job run \
   --env AWS_SECRET_ACCESS_KEY=\"${AWS_SECRET_ACCESS_KEY}\" \
   --env AWS_ENDPOINT_URL=\"${AWS_ENDPOINT_URL}\" \
   --env AWS_DEFAULT_REGION=\"${AWS_DEFAULT_REGION:-gra}\" \
+  $( [[ -n \"${GPU_IDS_TRIMMED}\" ]] && echo -n "--env CUDA_VISIBLE_DEVICES=\"${GPU_IDS_TRIMMED}\"" ) \
   --unsecure-http \
   --output json \
   \"${FULL_IMAGE}\" \
-  -- bash -c \"set -e; echo \\\"📂 Checking mount...\\\"; ls -la /workspace/datasets-mount/; echo \\\"📂 Contents of datasets-mount:\\\"; ls -la /workspace/datasets-mount/ || true; echo \\\"📂 Contents of datasets-mount/datasets (if exists):\\\"; ls -la /workspace/datasets-mount/datasets || true; echo \\\"🔗 Creating flattening symlink /workspace/datasets -> /workspace/datasets-mount/datasets\\\"; ln -sfn /workspace/datasets-mount/datasets /workspace/datasets; echo \\\"📂 Verifying expected path...\\\"; ls -la /workspace/datasets/ || true; ls -la /workspace/datasets/surge-100k || true; echo \\\"📂 Fallback: listing direct mount path\\\"; ls -la /workspace/datasets-mount/datasets/surge-100k || true; if [ -f /workspace/datasets-mount/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 at direct mount path\\\"; elif [ -f /workspace/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 via symlink\\\"; else echo \\\"❌ Missing train.h5 in both expected paths\\\"; fi; python src/train.py experiment=\\\"${EXPERIMENT_CONFIG}\\\" data.dataset_root=/workspace/datasets-mount/datasets/surge-100k\""
+  -- bash -c \"set -e; echo \\\"📂 Checking mount...\\\"; ls -la /workspace/datasets-mount/; echo \\\"📂 Contents of datasets-mount:\\\"; ls -la /workspace/datasets-mount/ || true; echo \\\"📂 Contents of datasets-mount/datasets (if exists):\\\"; ls -la /workspace/datasets-mount/datasets || true; echo \\\"🔗 Creating flattening symlink /workspace/datasets -> /workspace/datasets-mount/datasets\\\"; ln -sfn /workspace/datasets-mount/datasets /workspace/datasets; echo \\\"📂 Verifying expected path...\\\"; ls -la /workspace/datasets/ || true; ls -la /workspace/datasets/surge-100k || true; echo \\\"📂 Fallback: listing direct mount path\\\"; ls -la /workspace/datasets-mount/datasets/surge-100k || true; if [ -f /workspace/datasets-mount/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 at direct mount path\\\"; elif [ -f /workspace/datasets/surge-100k/train.h5 ]; then echo \\\"✅ Found train.h5 via symlink\\\"; else echo \\\"❌ Missing train.h5 in both expected paths\\\"; fi; python src/train.py ${HYDRA_OVERRIDES[*]} data.dataset_root=/workspace/datasets-mount/datasets/surge-100k\""
 
 # Submit job
 set +e

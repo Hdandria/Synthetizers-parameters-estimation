@@ -160,7 +160,7 @@ trainer:
   min_steps: 50000
   max_steps: 50000
   log_every_n_steps: 100
-  val_check_interval: 0  # Disable validation
+  val_check_interval: null  # Disable validation
   gradient_clip_val: 0.5
   accelerator: gpu
   devices:
