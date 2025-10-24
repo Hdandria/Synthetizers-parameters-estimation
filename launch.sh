@@ -43,9 +43,9 @@ NUM_GPUS="${NUM_GPUS:-1}"
 GPU_IDS_TRIMMED="${GPU_IDS//[[:space:]]/}"
 DATA_NUM_WORKERS="${DATA_NUM_WORKERS:-}"
 
-# Build Hydra overrides
-HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
-[[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
+# Build Hydra overrides for cloud (will add dataset_root override)
+HYDRA_OVERRIDES_CLOUD=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
+[[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES_CLOUD+=("data.num_workers=${DATA_NUM_WORKERS}")
 
 ################################################################################
 # LOCAL MODE
@@ -57,6 +57,10 @@ if [[ "$LOCAL_MODE" == true ]]; then
   [[ -n "${GPU_IDS_TRIMMED}" ]] && DOCKER_GPUS_OPT="--gpus device=${GPU_IDS_TRIMMED}"
   [[ -z "${GPU_IDS_TRIMMED}" && -n "${NUM_GPUS}" ]] && DOCKER_GPUS_OPT="--gpus ${NUM_GPUS}"
 
+  # Build Hydra overrides for local
+  HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
+  [[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
+  
   PY_ARGS=(python src/train.py "${HYDRA_OVERRIDES[@]}")
   
   docker run --rm ${DOCKER_GPUS_OPT} --shm-size=32G \
@@ -147,7 +151,25 @@ ovhai job run \
   --unsecure-http \
   --output json \
   "${FULL_IMAGE}" \
-  -- bash -c "ln -sfn /workspace/datasets-mount/datasets /workspace/datasets; python src/train.py ${HYDRA_OVERRIDES[*]} data.dataset_root=/workspace/datasets-mount/datasets/surge-100k" \
+  -- bash -c "\
+      if [ -d /workspace/datasets-mount/datasets ]; then \
+        MOUNT_BASE='/workspace/datasets-mount/datasets'; \
+      elif [ -d /workspace/datasets-mount ]; then \
+        MOUNT_BASE='/workspace/datasets-mount'; \
+      else \
+        echo 'ERROR: datasets mount not found'; exit 1; \
+      fi && \
+      CONFIG_FILE='configs/experiment/${EXPERIMENT_CONFIG}.yaml' && \
+      DATASET_REL_PATH=\$(grep -oP 'dataset_root:\s*\K.*' \"\${CONFIG_FILE}\" | tr -d \"'\\\"\" | xargs) && \
+      DATASET_NAME=\$(basename \"\${DATASET_REL_PATH}\") && \
+      DATASET_PATH=\"\${MOUNT_BASE}/\${DATASET_NAME}\" && \
+      echo \"Config dataset_root: \${DATASET_REL_PATH}\" && \
+      echo \"Extracted dataset name: \${DATASET_NAME}\" && \
+      echo \"Resolved absolute path: \${DATASET_PATH}\" && \
+      ls -lah \"\${DATASET_PATH}/\" && \
+      cd /workspace && \
+      python src/train.py ${HYDRA_OVERRIDES_CLOUD[*]} data.dataset_root=\"\${DATASET_PATH}\"\
+    " \
   | tee /tmp/job_output.json
 
 JOB_ID=$(jq -r '.id // .uuid // empty' /tmp/job_output.json)
