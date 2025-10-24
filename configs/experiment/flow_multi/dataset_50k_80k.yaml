@@ -6,7 +6,7 @@ defaults:
 
 # Experiment metadata
 experiment_name: flow_multi
-run_name: dataset_50k
+run_name: dataset_50k_80k
 
 # Data configuration
 data:
