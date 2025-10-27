@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PROJECT_ROOT=/workspace
 ENV HYDRA_FULL_ERROR=1
 
-# Create OVHcloud user with UID 42420 as required by OVH AI Training
+# Create OVHcloud user with UID 42420 (mandatory)
 RUN groupadd -g 42420 ovhcloud && \
     useradd -u 42420 -g ovhcloud -m -s /bin/bash ovhcloud
 
