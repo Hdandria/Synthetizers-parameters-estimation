@@ -1,47 +1,91 @@
-# Quick Start
+# Synthesizer Parameters Estimation
+
+Deep learning models to estimate synthesizer parameters from audio. Uses flow matching to predict VST plugin parameters (mainly Surge XT) from audio input.
+
+> Forked from [synth-permutations](https://github.com/ben-hayes/synth-permutations) by **Benjamin Hayes**.
+
+## What it does
+
+Given an audio file, the model predicts the synthesizer parameters that could have generated it. Think of it as reverse-engineering sound design.
 
 ## Setup
 
+Run the setup script to install dependencies (Docker, ovhai CLI, Terraform):
 ```bash
 ./scripts/setup.sh
-cp .env.example .env && nano .env  # Add credentials
-./launch.sh flow_multi/dataset_20k_40k # Run on server
 ```
 
-## Credentials
-
-Add to `.env`:
-
+Configure your credentials in `.env`:
 ```bash
-# S3 (OVH Manager → Object Storage)
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-
-# Docker Hub (https://hub.docker.com/settings/security)
-DOCKER_USERNAME=...
-DOCKER_PASSWORD=dckr_pat_...
-
-# W&B (https://wandb.ai/authorize)
-WANDB_API_KEY=...
+nano .env
 ```
 
-## Daily Use
-
+For local development, install Python dependencies:
 ```bash
-./launch.sh <experiment>         # Launch
-./scripts/status.sh <job-id>     # Monitor
-./scripts/logs.sh <job-id>       # Logs
-ovhai job stop <job-id>          # Stop
+pip install uv
+uv pip install -r pyproject.toml
 ```
-## Extending
 
-Edit `terraform/main.tf` to add:
-- OVH container registry (`create_registry = true`)
-- IAM policies
-- Cost budgets
-- Multi-cloud (AWS/GCP providers)
+## Usage
 
-## Troubleshooting
+**Train on OVH cloud:**
+```bash
+./launch.sh flow_multi/dataset_20k_40k
+```
 
-**Docker permission:** `sudo usermod -aG docker $USER && newgrp docker`
-**Missing config:** `find configs/experiment -name "*.yaml"`
+**Train locally with Docker:**
+```bash
+./launch.sh flow_multi/dataset_20k_40k --local
+```
+
+**Train locally without Docker:**
+```bash
+python src/train.py experiment=flow_multi/dataset_20k_40k
+```
+
+**Evaluate a checkpoint:**
+```bash
+python src/eval.py experiment=flow_multi/dataset_20k_40k ckpt_path=path/to/checkpoint.ckpt
+```
+
+**Monitor jobs:**
+```bash
+./scripts/status.sh <job-id>
+./scripts/logs.sh <job-id>
+ovhai job stop <job-id>
+```
+
+## Data
+
+Datasets are HDF5 files containing audio features and VST parameters. Located in `datasets/` with train/val/test splits.
+
+Generate new data:
+```bash
+python scripts/generate_surge_xt_data.py --surge-path vsts/Surge\ XT.vst3
+```
+
+## Model
+
+Flow matching model that learns audio → parameters mapping:
+- Audio encoder (mel spectrograms or Music2Latent embeddings)
+- Vector field network (parameter trajectory prediction)
+- Classifier-free guidance during inference
+
+Configs in `configs/experiment/flow_multi/`.
+
+## Project structure
+
+- `src/` - source code. models, data loaders, training/eval
+- `configs/` - Hydra experiment configs
+- `scripts/` - utilities (setup, monitoring, data generation)
+- `datasets/` - HDF5 training data
+- `launch.sh` - main entry point for training
+- `terraform/` - cloud infrastructure
+
+## Requirements
+
+- Python 3.10+
+- PyTorch 2.0+ (with CUDA for GPU)
+- Lightning 2.0+
+- Docker (for cloud/containerized runs)
+
