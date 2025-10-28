@@ -1,51 +1,47 @@
-# Synthesizer Parameter Estimation
+# Quick Start
 
-Train ML models to predict synthesizer parameters from audio on OVH AI Training.
+## Setup
 
 ```bash
 ./scripts/setup.sh
-cp .env.example .env && nano .env
-./launch.sh surge/base
+cp .env.example .env && nano .env  # Add credentials
+./launch.sh flow_multi/dataset_20k_40k # Run on server
 ```
 
-See [QUICKSTART.md](QUICKSTART.md).
+## Credentials
 
-## Quick Start
-
-### Option 1: Docker (Recommended)
-For GPU-optimized local training:
+Add to `.env`:
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd Synthetizers-parameters-estimation
+# S3 (OVH Manager → Object Storage)
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
 
-# Configure environment
-cp env.example .env
-# Edit .env with your Wandb credentials (optional)
+# Docker Hub (https://hub.docker.com/settings/security)
+DOCKER_USERNAME=...
+DOCKER_PASSWORD=dckr_pat_...
 
-# Build and run
-./docker/build.bat
-./docker/run_local.bat surge/base
+# W&B (https://wandb.ai/authorize)
+WANDB_API_KEY=...
 ```
 
-See [DOCKER.md](DOCKER.md) for Docker setup instructions.
-
-### Option 2: Local Installation
-For development and customization:
+## Daily Use
 
 ```bash
-# Install dependencies
-uv pip install -r requirements.txt
-
-# Run training
-python src/train.py experiment=surge/baseline
+./launch.sh <experiment>         # Launch
+./scripts/status.sh <job-id>     # Monitor
+./scripts/logs.sh <job-id>       # Logs
+ovhai job stop <job-id>          # Stop
 ```
+## Extending
 
-See [SETUP.md](SETUP.md) for detailed installation instructions.
+Edit `terraform/main.tf` to add:
+- OVH container registry (`create_registry = true`)
+- IAM policies
+- Cost budgets
+- Multi-cloud (AWS/GCP providers)
 
-## Requirements
+## Troubleshooting
 
-- Python 3.10+
-- PyTorch with GPU support recommended
-- VST3 plugins (for dataset generation with Surge XT)
+**Docker permission:** `sudo usermod -aG docker $USER && newgrp docker`
+**Missing config:** `find configs/experiment -name "*.yaml"`

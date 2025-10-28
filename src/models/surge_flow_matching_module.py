@@ -308,6 +308,37 @@ class SurgeFlowMatchingModule(LightningModule):
 
         return {"optimizer": optimizer}
 
+    # Lightning hook called right before the checkpoint state_dict is loaded.
+    # Some checkpoints were saved while modules were wrapped by torch.compile,
+    # which prefixes submodule keys with "_orig_mod". When loading without
+    # compilation, we need to strip that prefix so keys match current module names.
+    def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:  # type: ignore[override]
+        state_dict = checkpoint.get("state_dict", {})
+        if not state_dict:
+            return
+
+        # Fast-path: return if no compiled prefixes are present
+        has_compiled_prefix = any(
+            k.startswith("encoder._orig_mod.") or k.startswith("vector_field._orig_mod.")
+            for k in state_dict.keys()
+        )
+        if not has_compiled_prefix:
+            return
+
+        new_state_dict: Dict[str, Any] = {}
+        for k, v in state_dict.items():
+            # Handle keys saved from compiled modules
+            if k.startswith("encoder._orig_mod."):
+                new_key = "encoder." + k[len("encoder._orig_mod."):]
+            elif k.startswith("vector_field._orig_mod."):
+                new_key = "vector_field." + k[len("vector_field._orig_mod."):]
+            else:
+                # Keep any other keys untouched
+                new_key = k
+            new_state_dict[new_key] = v
+
+        checkpoint["state_dict"] = new_state_dict
+
 
 if __name__ == "__main__":
     _ = SurgeFlowMatchingModule(None, None, None, None)
