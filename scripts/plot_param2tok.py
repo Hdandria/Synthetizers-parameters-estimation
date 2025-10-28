@@ -180,7 +180,7 @@ def get_labels(spec: str):
     note_intervals = [(p.name, len(p)) for p in param_spec.note_params]
     intervals = synth_intervals + note_intervals
 
-    intervals = [(strip_scene_id(n), l) for n, l in intervals]
+    intervals = [(strip_scene_id(n), length) for n, length in intervals]
     true_intervals = []
 
     current_prefix = None

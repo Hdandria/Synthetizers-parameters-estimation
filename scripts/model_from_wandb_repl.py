@@ -8,10 +8,9 @@ import torch
 from IPython import embed
 from loguru import logger
 from omegaconf import DictConfig, OmegaConf
+from src.utils import register_resolvers
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-
-from src.utils import register_resolvers
 
 
 def wandb_dir_to_ckpt_and_hparams(

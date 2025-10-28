@@ -109,7 +109,7 @@ def main(root_dir, n_subdirs, output_txt):
         # Load the audio with pedalboard.io.AudioFile
         with AudioFile(target_path) as f:
             target_audio = f.read(f.frames)
-            sample_rate = f.samplerate  # We'll assume pred.wav has the same sample rate
+            # sample_rate = f.samplerate  # We'll assume pred.wav has the same sample rate (unused)
 
         with AudioFile(pred_path) as f:
             pred_audio = f.read(f.frames)

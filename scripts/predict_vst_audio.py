@@ -10,10 +10,10 @@ import rootutils
 import torch
 from pedalboard.io import AudioFile
 from tqdm import tqdm, trange
-
-rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, param_specs, render_params
 from src.data.vst.param_spec import ParamSpec
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
@@ -88,7 +88,7 @@ def params_to_csv(
     param_spec: ParamSpec,
 ) -> None:
     """Write the target and predicted parameters to a CSV file."""
-    row_names = list(pred_synth_params.keys()) + list(pred_note_params.keys())
+    # row_names = list(pred_synth_params.keys()) + list(pred_note_params.keys())  # unused variable removed
 
     synth_df = pd.DataFrame({"pred": pred_synth_params, "target": target_synth_params})
     note_df = pd.DataFrame({"pred": pred_note_params, "target": target_note_params})

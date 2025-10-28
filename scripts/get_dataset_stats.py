@@ -7,10 +7,10 @@ import numpy as np
 import rootutils
 from dask.distributed import Client, progress
 from loguru import logger
-
-rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.audio_datamodule import AudioFolderDataset
 from src.data.surge_datamodule import SurgeXTDataset
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def get_stats_hdf5(filename):

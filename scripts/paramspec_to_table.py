@@ -1,8 +1,7 @@
 import rootutils
+from src.data.vst import param_specs
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-
-from src.data.vst import param_specs
 
 TABLE_PREAMBLE = """
 \\begin{longtable}{rlccl}

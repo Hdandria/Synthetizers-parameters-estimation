@@ -255,9 +255,9 @@ class SinusoidalEncoding(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.shape[-1] == 1:
-            basis = self.basis
+            pass  # basis = self.basis (unused)
         else:
-            basis = self.basis[None, :]
+            _ = self.basis[None, :]
             x = x[:, :, None]
 
         cos_part = torch.cos(x * self.basis)
