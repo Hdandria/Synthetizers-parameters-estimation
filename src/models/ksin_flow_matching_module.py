@@ -1,7 +1,6 @@
 import math
 from functools import partial
 from typing import Any, Callable, Dict, Literal, Tuple
-from warnings import warn
 
 import ot as pot
 import torch
@@ -10,7 +9,7 @@ from scipy.optimize import linear_sum_assignment
 from lightning.pytorch.utilities import grad_norm
 
 from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance, SpectralDistance)
+                         LogSpectralDistance)
 from src.utils.math import divmod
 
 

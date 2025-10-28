@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Literal, Optional, Sequence, Union
 
 import h5py
-import hdf5plugin
 import numpy as np
 import torch
 from lightning import LightningDataModule

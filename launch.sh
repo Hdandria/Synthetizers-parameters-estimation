@@ -47,10 +47,10 @@ set -a; source "$ENV_FILE"; set +a
 echo -e "${GREEN}[+] Environment loaded from ${ENV_FILE}${RESET}"
 
 # Required variables check
-for var in WANDB_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_URL OVH_APPLICATION_KEY OVH_APPLICATION_SECRET OVH_CONSUMER_KEY OVH_PROJECT_ID; do
+for var in WANDB_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_URL; do
   [[ -z "${!var:-}" ]] && { echo -e "${RED}Error: $var not set${RESET}"; exit 1; }
 done
-echo -e "${GREEN}[+] All required environment variables set${RESET}"
+echo -e "${GREEN}[+] Required environment variables set${RESET}"
 
 # Hardware config
 NUM_GPUS="${NUM_GPUS:-1}"
@@ -121,17 +121,16 @@ echo -e "${CYAN}${BOLD}=========================================================
 command -v ovhai &> /dev/null || { echo -e "${RED}Error: ovhai CLI not found${RESET}"; exit 1; }
 echo -e "${GREEN}[+] ovhai CLI found${RESET}"
 
-echo -e "${BLUE}[*] Configuring OVH credentials...${RESET}"
-mkdir -p ~/.ovhcloud
-cat > ~/.ovhcloud/config.yaml <<EOF
-default:
-  endpoint: ${OVH_ENDPOINT:-ovh-eu}
-  application_key: ${OVH_APPLICATION_KEY}
-  application_secret: ${OVH_APPLICATION_SECRET}
-  consumer_key: ${OVH_CONSUMER_KEY}
-  project: ${OVH_PROJECT_ID}
-EOF
-echo -e "${GREEN}[+] OVH credentials configured${RESET}"
+echo -e "${BLUE}[*] Checking OVH AI Training authentication...${RESET}"
+
+# Check if logged in
+if ! ovhai me &>/dev/null; then
+  echo -e "${RED}Error: Not logged in to ovhai CLI${RESET}"
+  echo -e "${YELLOW}Please login first: ovhai login${RESET}"
+  exit 1
+fi
+
+echo -e "${GREEN}[+] Authenticated with OVH AI Training${RESET}"
 
 # Configure S3 datastore
 echo -e "${BLUE}[*] Configuring S3 datastore...${RESET}"

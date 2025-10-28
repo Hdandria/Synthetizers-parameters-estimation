@@ -1,10 +1,10 @@
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 from lightning import LightningModule
 
 from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance, SpectralDistance)
+                         LogSpectralDistance)
 from src.models.components.loss import ChamferLoss
 
 

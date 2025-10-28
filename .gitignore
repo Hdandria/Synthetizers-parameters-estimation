@@ -158,6 +158,11 @@ vst_data/
 .DS_Store
 audio/
 checkpoints/
+outputs/
+logs/
+
+# Datasets
+datasets/
 
 # Audio samples
 audio_samples*/
@@ -178,4 +183,5 @@ terraform.tfvars
 # OVH CLI config
 .ovhconfig
 
+# Private files
 *.private

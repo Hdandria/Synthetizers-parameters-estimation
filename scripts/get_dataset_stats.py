@@ -3,7 +3,6 @@ import sys
 
 import dask.array as da
 import h5py
-import hdf5plugin
 import numpy as np
 import rootutils
 from dask.distributed import Client, progress

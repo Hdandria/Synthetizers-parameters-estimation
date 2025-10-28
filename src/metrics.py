@@ -4,7 +4,6 @@ import torch
 from scipy.optimize import linear_sum_assignment
 from torchmetrics import Metric
 
-from src.data.ksin_datamodule import make_sin
 from src.models.components.loss import chamfer_loss, params_to_tokens
 
 

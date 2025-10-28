@@ -1,6 +1,4 @@
-import math
-from functools import partial
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 from lightning import LightningModule

@@ -32,7 +32,6 @@ import click
 import librosa
 import numpy as np
 import pandas as pd
-import torch
 from kymatio.numpy import Scattering1D
 from loguru import logger
 from pedalboard.io import AudioFile

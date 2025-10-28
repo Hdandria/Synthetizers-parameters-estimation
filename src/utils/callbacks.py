@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import wandb
-from einops import rearrange
 from lightning.pytorch.callbacks import BasePredictionWriter, Callback
 
 from src.data.vst import param_specs
 from src.models.components.transformer import (
     ApproxEquivTransformer,
     LearntProjection,
-    PositionalEncoding,
 )
 from src.models.ksin_flow_matching_module import KSinFlowMatchingModule
 from src.models.surge_flow_matching_module import SurgeFlowMatchingModule

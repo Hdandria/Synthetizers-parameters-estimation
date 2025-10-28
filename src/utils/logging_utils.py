@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from lightning.pytorch.loggers import Logger, WandbLogger
 from lightning_utilities.core.rank_zero import rank_zero_only
 from omegaconf import OmegaConf
 
