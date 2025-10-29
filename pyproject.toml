@@ -49,6 +49,7 @@ dependencies = [
     "boto3>=1.40.53",
     "aws>=0.2.5",
     "pandas>=2.3.3",
+    "kymatio>=0.3.0",
 ]
 
 # Dépendances optionnelles

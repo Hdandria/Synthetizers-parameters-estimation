@@ -4,7 +4,7 @@
 # Inspired by the sktime library:
 # https://github.com/alan-turing-institute/sktime/blob/main/.github/workflows/test.yml
 
-name: Code Quality PR
+name: Code Quality
 
 on:
   pull_request:

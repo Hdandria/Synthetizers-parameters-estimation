@@ -69,21 +69,23 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 1/3: Generating predictions on ${DATASET_SPLIT} set..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Build the eval command with full path to predict_file (workaround for datamodule bug)
 PREDICT_FILE_FULL="${DATASET_ROOT}/${DATASET_SPLIT}.h5"
-
 EVAL_CMD="uv run python src/eval.py \
     experiment=\"${EXPERIMENT_CONFIG}\" \
     ckpt_path=\"${CKPT_PATH}\" \
     mode=predict \
     callbacks=prediction_writer \
+    callbacks.rich_progress_bar=null \
     paths=default \
     paths.output_dir=\"${PRED_DIR}\" \
     data.predict_file=\"${PREDICT_FILE_FULL}\" \
     data.dataset_root=\"${DATASET_ROOT}\" \
-    trainer.accelerator=cpu \
-    trainer.devices=1"
-
+    model.compile=false \
+    trainer.accelerator=gpu \
+    trainer.devices=1 \
+    trainer.precision=16-mixed \
+    +trainer.limit_predict_batches=3 \
+    data.num_workers=4"
 echo "Running: $EVAL_CMD"
 eval "$EVAL_CMD"
 
@@ -95,28 +97,36 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 2/3: Rendering predictions to audio..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Find the predictions subdirectory
-PRED_SUBDIR=$(find "$PRED_DIR" -type d -name "predictions" | head -n 1)
-if [[ -z "$PRED_SUBDIR" ]]; then
-    echo "❌ Error: predictions directory not found in $PRED_DIR"
-    exit 1
+# Check if predictions exist directly in PRED_DIR or in a subdirectory
+if ls "$PRED_DIR"/pred-*.pt >/dev/null 2>&1; then
+    PRED_SUBDIR="$PRED_DIR"
+    echo "Found predictions at: $PRED_SUBDIR"
+else
+    # Try to find predictions in a subdirectory
+    PRED_SUBDIR=$(find "$PRED_DIR" -type d -name "predictions" | head -n 1)
+    if [[ -z "$PRED_SUBDIR" ]]; then
+        echo "❌ Error: No pred-*.pt files found in $PRED_DIR"
+        echo "Please ensure Step 1 has been run successfully"
+        exit 1
+    fi
+    echo "Found predictions at: $PRED_SUBDIR"
 fi
 
-echo "Found predictions at: $PRED_SUBDIR"
-
 # Plugin and preset paths (adjust these to your system)
-PLUGIN_PATH="${VST_PLUGIN_PATH:-./plugins/Surge XT.vst3/Contents/x86_64-linux/Surge XT.so}"
+# Note: Use the shorter path - pedalboard will find the .so file automatically
+PLUGIN_PATH="${VST_PLUGIN_PATH:-plugins/Surge XT.vst3}"
 PRESET_PATH="${VST_PRESET_PATH:-./presets/surge-base.vstpreset}"
 
 echo "Using plugin: $PLUGIN_PATH"
 echo "Using preset: $PRESET_PATH"
 
-if [[ ! -f "$PLUGIN_PATH" ]]; then
-    echo "⚠️  Warning: Plugin not found at $PLUGIN_PATH"
-    echo "Please set VST_PLUGIN_PATH environment variable to your Surge XT .so file"
-    echo "Example: export VST_PLUGIN_PATH=/path/to/Surge XT.vst3/Contents/x86_64-linux/Surge XT.so"
-    exit 1
-fi
+# Skip the file existence check since pedalboard handles the path internally
+# if [[ ! -f "$PLUGIN_PATH" ]]; then
+#     echo "⚠️  Warning: Plugin not found at $PLUGIN_PATH"
+#     echo "Please set VST_PLUGIN_PATH environment variable to your Surge XT .so file"
+#     echo "Example: export VST_PLUGIN_PATH=/path/to/Surge XT.vst3/Contents/x86_64-linux/Surge XT.so"
+#     exit 1
+# fi
 
 uv run python scripts/predict_vst_audio.py \
     "$PRED_SUBDIR" \
