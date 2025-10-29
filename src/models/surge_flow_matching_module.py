@@ -297,35 +297,55 @@ class SurgeFlowMatchingModule(LightningModule):
         return {"optimizer": optimizer}
 
     # Lightning hook called right before the checkpoint state_dict is loaded.
-    # Some checkpoints were saved while modules were wrapped by torch.compile,
-    # which prefixes submodule keys with "_orig_mod". When loading without
-    # compilation, we need to strip that prefix so keys match current module names.
+    # Handles mismatches between compiled and non-compiled checkpoints.
+    # When compile=True, setup() wraps modules BEFORE checkpoint loading during predict/test,
+    # so we may need to add _orig_mod prefixes to checkpoint keys.
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:  # type: ignore[override]
         state_dict = checkpoint.get("state_dict", {})
         if not state_dict:
             return
 
-        # Fast-path: return if no compiled prefixes are present
-        has_compiled_prefix = any(
+        # Check if checkpoint has compiled prefixes
+        checkpoint_has_compiled = any(
             k.startswith("encoder._orig_mod.") or k.startswith("vector_field._orig_mod.")
             for k in state_dict.keys()
         )
-        if not has_compiled_prefix:
+        
+        # Check if checkpoint has non-compiled encoder/vector_field keys
+        checkpoint_has_noncompiled = any(
+            (k.startswith("encoder.") and not k.startswith("encoder._orig_mod.")) or
+            (k.startswith("vector_field.") and not k.startswith("vector_field._orig_mod."))
+            for k in state_dict.keys()
+        )
+        
+        # If checkpoint is already in the right format or has no relevant keys, return
+        if not checkpoint_has_compiled and not checkpoint_has_noncompiled:
             return
 
         new_state_dict: Dict[str, Any] = {}
-        for k, v in state_dict.items():
-            # Handle keys saved from compiled modules
-            if k.startswith("encoder._orig_mod."):
-                new_key = "encoder." + k[len("encoder._orig_mod.") :]
-            elif k.startswith("vector_field._orig_mod."):
-                new_key = "vector_field." + k[len("vector_field._orig_mod.") :]
-            else:
-                # Keep any other keys untouched
-                new_key = k
-            new_state_dict[new_key] = v
-
-        checkpoint["state_dict"] = new_state_dict
+        
+        # When loading into a model that will be/is compiled, add _orig_mod prefix
+        if self.hparams.compile and checkpoint_has_noncompiled:
+            for k, v in state_dict.items():
+                if k.startswith("encoder.") and not k.startswith("encoder._orig_mod."):
+                    new_key = "encoder._orig_mod." + k[len("encoder.") :]
+                elif k.startswith("vector_field.") and not k.startswith("vector_field._orig_mod."):
+                    new_key = "vector_field._orig_mod." + k[len("vector_field.") :]
+                else:
+                    new_key = k
+                new_state_dict[new_key] = v
+            checkpoint["state_dict"] = new_state_dict
+        # When loading into a non-compiled model, strip _orig_mod prefix
+        elif not self.hparams.compile and checkpoint_has_compiled:
+            for k, v in state_dict.items():
+                if k.startswith("encoder._orig_mod."):
+                    new_key = "encoder." + k[len("encoder._orig_mod.") :]
+                elif k.startswith("vector_field._orig_mod."):
+                    new_key = "vector_field." + k[len("vector_field._orig_mod.") :]
+                else:
+                    new_key = k
+                new_state_dict[new_key] = v
+            checkpoint["state_dict"] = new_state_dict
 
 
 if __name__ == "__main__":
