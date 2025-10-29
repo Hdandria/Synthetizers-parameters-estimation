@@ -8,7 +8,7 @@ name: Code Quality PR
 
 on:
   pull_request:
-    branches: [main, "release/*", "dev"]
+    branches: [main, "release/*", "dev", "dev/docker"]
 
 jobs:
   code-quality:

@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, "dev/docker"]
   pull_request:
-    branches: [main, "release/*", "dev"]
+    branches: [main, "release/*", "dev", "dev/docker"]
 
 jobs:
   run_tests_ubuntu:
