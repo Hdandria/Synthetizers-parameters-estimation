@@ -179,7 +179,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return x0, x1, z
 
-    @torch.no_grad
+    @torch.no_grad()
     def _ot_sample(self, params: torch.Tensor, z: torch.Tensor):
         x0, x1 = self._basic_sample(params, oversample=self.hparams.oversample_ot)
         costs = torch.cdist(x0, x1)
@@ -194,7 +194,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return x0, x1, z
 
-    @torch.no_grad
+    @torch.no_grad()
     def _kabsch_sample(self, params: torch.Tensor, z: torch.Tensor):
         x0, x1 = self._basic_sample(params)
         H = x0.transpose(-1, -2) @ x1
@@ -208,7 +208,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return x0, x1, z
 
-    @torch.no_grad
+    @torch.no_grad()
     def _procrustes_sample(self, params: torch.Tensor, z: torch.Tensor):
         x0, x1 = self._basic_sample(params)
         H = x0.transpose(-1, -2) @ x1
@@ -218,7 +218,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return x0, x1, z
 
-    @torch.no_grad
+    @torch.no_grad()
     def _row_procrustes_sample(self, params: torch.Tensor, z: torch.Tensor):
         x0, x1 = self._basic_sample(params)
         H = x0 @ x1.transpose(-1, -2)
