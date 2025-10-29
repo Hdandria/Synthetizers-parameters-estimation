@@ -5,6 +5,7 @@ from typing import Callable
 import psutil
 import rootutils
 import torch
+
 from src.data.kosc_datamodule import make_sig
 from src.data.ksin_datamodule import make_sin
 

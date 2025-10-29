@@ -37,9 +37,10 @@ class VSTDataSample:
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
-    """Values hardcoded to be roughly like those used by the audio spectrogram
-    transformer. i.e. 100 frames per second, 128 mels, ~25ms window, hamming
-    window."""
+    """Values hardcoded to be roughly like those used by the audio spectrogram transformer.
+
+    i.e. 100 frames per second, 128 mels, ~25ms window, hamming window.
+    """
 
     n_fft = int(0.025 * sample_rate)
     hop_length = int(sample_rate / 100.0)
@@ -165,9 +166,7 @@ def create_dataset_and_get_first_unwritten_idx(
         dataset = h5py_file[name]
         return dataset, get_first_unwritten_idx(dataset)
 
-    dataset = h5py_file.create_dataset(
-        name, shape=shape, dtype=dtype, compression=compression
-    )
+    dataset = h5py_file.create_dataset(name, shape=shape, dtype=dtype, compression=compression)
     return dataset, 0
 
 
@@ -231,7 +230,7 @@ def worker_generate_samples(
 
     # Create worker's own HDF5 file
     logger.info(f"Worker {worker_id} creating file: {worker_output_path}")
-    with h5py.File(worker_output_path, 'w') as worker_file:
+    with h5py.File(worker_output_path, "w") as worker_file:
         # Create datasets in worker file
         num_samples = len(sample_indices)
         audio_dataset = worker_file.create_dataset(
@@ -262,7 +261,9 @@ def worker_generate_samples(
 
         # Generate and write samples directly
         for i, sample_idx in enumerate(sample_indices):
-            logger.info(f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})")
+            logger.info(
+                f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})"
+            )
             sample = generate_sample(
                 plugin,
                 velocity=velocity,
@@ -280,10 +281,10 @@ def worker_generate_samples(
             param_dataset[i, :] = sample.param_array
 
             # Send progress update
-            progress_queue.put(('generated', worker_id, sample_idx))
+            progress_queue.put(("generated", worker_id, sample_idx))
 
     # Signal worker completion
-    progress_queue.put(('worker_done', worker_id, len(sample_indices)))
+    progress_queue.put(("worker_done", worker_id, len(sample_indices)))
     logger.info(f"Worker {worker_id} finished and wrote to {worker_output_path}")
 
 
@@ -298,23 +299,24 @@ def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
     for worker_file_path in worker_files:
         logger.info(f"Reading worker file: {worker_file_path}")
         import os
+
         if not os.path.exists(worker_file_path):
             logger.error(f"Worker file does not exist: {worker_file_path}")
             continue
 
-        with h5py.File(worker_file_path, 'r') as worker_file:
+        with h5py.File(worker_file_path, "r") as worker_file:
             logger.info(f"Worker file contains {worker_file['audio'].shape[0]} samples")
-            all_audio.append(worker_file['audio'][:])
-            all_mel.append(worker_file['mel_spec'][:])
-            all_params.append(worker_file['param_array'][:])
+            all_audio.append(worker_file["audio"][:])
+            all_mel.append(worker_file["mel_spec"][:])
+            all_params.append(worker_file["param_array"][:])
 
     # Concatenate and write to main file
     if all_audio:
         total_samples = sum(audio.shape[0] for audio in all_audio)
         logger.info(f"Writing {total_samples} total samples to main file")
-        output_file['audio'][:] = np.concatenate(all_audio, axis=0)
-        output_file['mel_spec'][:] = np.concatenate(all_mel, axis=0)
-        output_file['param_array'][:] = np.concatenate(all_params, axis=0)
+        output_file["audio"][:] = np.concatenate(all_audio, axis=0)
+        output_file["mel_spec"][:] = np.concatenate(all_mel, axis=0)
+        output_file["param_array"][:] = np.concatenate(all_params, axis=0)
     else:
         logger.error("No worker files found to merge!")
 
@@ -336,15 +338,13 @@ def make_dataset(
     num_workers: int = 1,
 ) -> None:
 
-    audio_dataset, mel_dataset, param_dataset, start_idx = (
-        create_datasets_and_get_start_idx(
-            hdf5_file=hdf5_file,
-            num_samples=num_samples,
-            channels=channels,
-            sample_rate=sample_rate,
-            signal_duration_seconds=signal_duration_seconds,
-            num_params=len(param_spec),
-        )
+    audio_dataset, mel_dataset, param_dataset, start_idx = create_datasets_and_get_start_idx(
+        hdf5_file=hdf5_file,
+        num_samples=num_samples,
+        channels=channels,
+        sample_rate=sample_rate,
+        signal_duration_seconds=signal_duration_seconds,
+        num_params=len(param_spec),
     )
 
     audio_dataset.attrs["velocity"] = velocity
@@ -418,6 +418,7 @@ def make_dataset(
                 worker_tasks.append(worker_indices)
                 # Create unique filename for each worker in the same directory
                 import os
+
                 main_file_dir = os.path.dirname(hdf5_file.filename)
                 main_file_name = os.path.basename(hdf5_file.filename)
                 worker_file_path = os.path.join(main_file_dir, f"worker_{i}_{main_file_name}")
@@ -442,7 +443,7 @@ def make_dataset(
                     param_spec,
                     worker_files[i],
                     progress_queue,
-                )
+                ),
             )
             p.start()
             processes.append(p)
@@ -458,22 +459,25 @@ def make_dataset(
                 try:
                     while True:
                         progress_msg = progress_queue.get_nowait()
-                        if progress_msg[0] == 'generated':
+                        if progress_msg[0] == "generated":
                             samples_generated += 1
                             pbar.update(1)
-                        elif progress_msg[0] == 'worker_done':
+                        elif progress_msg[0] == "worker_done":
                             workers_finished += 1
                 except Exception:
                     pass  # No more progress messages
 
                 # Update progress bar
-                pbar.set_postfix({
-                    'generated': samples_generated,
-                    'workers_done': f"{workers_finished}/{len(processes)}"
-                })
+                pbar.set_postfix(
+                    {
+                        "generated": samples_generated,
+                        "workers_done": f"{workers_finished}/{len(processes)}",
+                    }
+                )
 
                 # Small sleep to avoid busy waiting
                 import time
+
                 time.sleep(0.1)
 
         # Wait for all processes to finish
@@ -489,6 +493,7 @@ def make_dataset(
         for worker_file in worker_files:
             try:
                 import os
+
                 os.remove(worker_file)
                 logger.info(f"Cleaned up worker file: {worker_file}")
             except Exception as e:
@@ -509,7 +514,13 @@ def make_dataset(
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
 @click.option("--param_spec", "-t", type=str, default="surge_xt")
 @click.option("--sample_batch_size", "-b", type=int, default=32)
-@click.option("--num_workers", "-w", type=int, default=1, help="Number of worker processes for parallel generation")
+@click.option(
+    "--num_workers",
+    "-w",
+    type=int,
+    default=1,
+    help="Number of worker processes for parallel generation",
+)
 def main(
     data_file: str,
     num_samples: int,

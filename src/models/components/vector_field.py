@@ -46,18 +46,12 @@ class VectorFieldBlock(nn.Module):
         )
 
         self.residual = (
-            nn.Identity()
-            if in_dim == out_dim
-            else nn.Linear(in_dim, out_dim, bias=False)
+            nn.Identity() if in_dim == out_dim else nn.Linear(in_dim, out_dim, bias=False)
         )
 
-    def forward(
-        self, x: torch.Tensor, z: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, z: Optional[torch.Tensor] = None) -> torch.Tensor:
         if self.conditioning:
-            assert (
-                z is not None
-            ), "z must be provided for conditional vector field block."
+            assert z is not None, "z must be provided for conditional vector field block."
             y = self.norm(x, z)
         else:
             y = self.norm(x)
@@ -69,9 +63,7 @@ class VectorFieldBlock(nn.Module):
 
 
 class VectorField(nn.Module):
-    def __init__(
-        self, field_dim: int, hidden_dim: int, conditioning_dim: int, num_blocks: int
-    ):
+    def __init__(self, field_dim: int, hidden_dim: int, conditioning_dim: int, num_blocks: int):
         super().__init__()
 
         self.field_dim = field_dim

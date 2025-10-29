@@ -31,9 +31,7 @@ class ResidualMLPBlock(nn.Module):
         )
 
         self.residual = (
-            nn.Identity()
-            if in_dim == out_dim
-            else nn.Linear(in_dim, out_dim, bias=False)
+            nn.Identity() if in_dim == out_dim else nn.Linear(in_dim, out_dim, bias=False)
         )
 
     def forward(self, x):
@@ -135,12 +133,9 @@ class ConditionalResidualMLP(nn.Module):
         else:
             raise ValueError("unexpected z shape")
 
-
         return torch.where(dropout_mask, z, dropout_token)
 
-    def forward(
-        self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]) -> torch.Tensor:
         if c is None:
             c = self.cfg_dropout_token[0].expand(x.shape[0], -1)
 

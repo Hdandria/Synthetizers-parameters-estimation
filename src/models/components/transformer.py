@@ -7,9 +7,7 @@ from einops import rearrange
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(
-        self, size: int, num_pos: int, init: Literal["zeros", "norm0.02"] = "zeros"
-    ):
+    def __init__(self, size: int, num_pos: int, init: Literal["zeros", "norm0.02"] = "zeros"):
         super().__init__()
 
         if init == "zeros":
@@ -64,9 +62,7 @@ class LearntProjection(nn.Module):
     ):
         super().__init__()
 
-        assignment = torch.full(
-            (num_tokens, num_params), 1.0 / math.sqrt(num_tokens * num_params)
-        )
+        assignment = torch.full((num_tokens, num_params), 1.0 / math.sqrt(num_tokens * num_params))
         assignment = assignment + 1e-4 * torch.randn_like(assignment)
         self._assignment = nn.Parameter(assignment)
 
@@ -76,7 +72,6 @@ class LearntProjection(nn.Module):
 
         self._in_projection = nn.Parameter(proj.clone())
         self._out_projection = nn.Parameter(proj.T.clone())
-
 
         if initial_ffn:
             self.initial_ffn = nn.Sequential(
@@ -135,9 +130,6 @@ class LearntProjection(nn.Module):
         return penalty
 
 
-
-
-
 class AdaptiveLayerNorm(nn.LayerNorm):
     def __init__(self, dim: int, conditioning_dim: int, *args, **kwargs):
         super().__init__(dim, *args, **kwargs)
@@ -165,9 +157,7 @@ class DiTransformerBlock(nn.Module):
     ):
         super().__init__()
         if first_norm:
-            self.norm1 = (
-                nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
-            )
+            self.norm1 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
         else:
             self.norm1 = nn.Identity()
         self.norm2 = nn.LayerNorm(d_model) if norm == "layer" else nn.RMSNorm(d_model)
@@ -240,7 +230,6 @@ class DiTransformerBlock(nn.Module):
         return x
 
 
-
 class SinusoidalEncoding(nn.Module):
     """A sinusoidal encoding of scalar values centered around zero."""
 
@@ -288,22 +277,17 @@ class SinusoidalConditioning(nn.Module):
 
 
 class MutualAttentionProjection(nn.Module):
-    """
-    p (b, n) parameters
-    sinusoidal embed -> MLP
-    +
-    pos embed
+    """P (b, n) parameters sinusoidal embed -> MLP + pos embed.
 
     to get (b, n, d) tokens
 
-    then concat with k learnt tokens for (b, n + k, d)
-    apply self attn and take last k for (b, k, d)
+    then concat with k learnt tokens for (b, n + k, d) apply self attn and take last k for (b, k,
+    d)
 
     pass through transformer
 
-    at output concat with n learnt tokens for (b, n + k, d)
-    apply self attn and take first n
-    final ffn to 1d
+    at output concat with n learnt tokens for (b, n + k, d) apply self attn and take first n final
+    ffn to 1d
     """
 
     def __init__(self, d_model: int, num_params: int, num_tokens: int):
@@ -375,9 +359,7 @@ class ApproxEquivTransformer(nn.Module):
         self.cfg_dropout_token = nn.Parameter(torch.randn(1, conditioning_dim))
 
         conditioning_dim = (
-            conditioning_dim + 1
-            if time_encoding == "scalar"
-            else conditioning_dim + d_enc
+            conditioning_dim + 1 if time_encoding == "scalar" else conditioning_dim + d_enc
         )
 
         self.conditioning_ffn = nn.Sequential(
@@ -510,6 +492,7 @@ class ApproxEquivTransformer(nn.Module):
 
 class PatchEmbed(nn.Module):
     """Convolutional patch encoder like in ViT, with overlap from AST.
+
     Difference is we zero pad up to next whole patch.
     """
 
@@ -540,9 +523,7 @@ class PatchEmbed(nn.Module):
         self.num_tokens = self._get_num_tokens(in_channels, spec_shape)
 
     def _get_num_tokens(self, in_channels, spec_shape):
-        x = torch.randn(
-            1, in_channels, *spec_shape, device=self.projection.weight.device
-        )
+        x = torch.randn(1, in_channels, *spec_shape, device=self.projection.weight.device)
         out_shape = self.projection(self.pad(x)).shape
         return math.prod(out_shape[-2:])
 

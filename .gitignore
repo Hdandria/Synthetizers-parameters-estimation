@@ -185,3 +185,5 @@ terraform.tfvars
 
 # Private files
 *.private.*
+
+reference/

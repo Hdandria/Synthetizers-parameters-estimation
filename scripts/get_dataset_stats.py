@@ -7,6 +7,7 @@ import numpy as np
 import rootutils
 from dask.distributed import Client, progress
 from loguru import logger
+
 from src.data.audio_datamodule import AudioFolderDataset
 from src.data.surge_datamodule import SurgeXTDataset
 
@@ -81,7 +82,6 @@ def get_stats_directory(directory):
             logger.info(f"Processed {i + 1} files...")
 
     mean, std = finalize(existing)
-
 
     logger.info(f"Saving to {str(out_file)}")
 

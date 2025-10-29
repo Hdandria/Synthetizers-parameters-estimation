@@ -8,9 +8,18 @@ import numpy as np
 @click.command()
 @click.argument("source_dataset_root", type=str)
 @click.argument("target_dataset_root", type=str)
-@click.option("--train-shards", "-t", type=str, help="Comma-separated shard indices for training, e.g., '0,1,2,3,4'")
-@click.option("--val-shards", "-v", type=str, help="Comma-separated shard indices for validation, e.g., '5'")
-@click.option("--test-shards", "-e", type=str, help="Comma-separated shard indices for testing, e.g., '6'")
+@click.option(
+    "--train-shards",
+    "-t",
+    type=str,
+    help="Comma-separated shard indices for training, e.g., '0,1,2,3,4'",
+)
+@click.option(
+    "--val-shards", "-v", type=str, help="Comma-separated shard indices for validation, e.g., '5'"
+)
+@click.option(
+    "--test-shards", "-e", type=str, help="Comma-separated shard indices for testing, e.g., '6'"
+)
 def main(
     source_dataset_root: str,
     target_dataset_root: str,
@@ -28,7 +37,7 @@ def main(
     def parse_shards(shard_str):
         if not shard_str:
             return []
-        return [int(x.strip()) for x in shard_str.split(',')]
+        return [int(x.strip()) for x in shard_str.split(",")]
 
     train_indices = parse_shards(train_shards)
     val_indices = parse_shards(val_shards)

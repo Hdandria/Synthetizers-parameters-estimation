@@ -5,11 +5,10 @@ from typing import Any, Callable, Dict, Literal, Tuple
 import ot as pot
 import torch
 from lightning import LightningModule
-from scipy.optimize import linear_sum_assignment
 from lightning.pytorch.utilities import grad_norm
+from scipy.optimize import linear_sum_assignment
 
-from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance)
+from src.metrics import ChamferDistance, LinearAssignmentDistance, LogSpectralDistance
 from src.utils.math import divmod
 
 
@@ -249,16 +248,12 @@ class KSinFlowMatchingModule(LightningModule):
         else:
             raise NotImplementedError(f"Unknown coupling {self.hparams.coupling}")
 
-    def _rectified_probability_path(
-        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
-    ):
+    def _rectified_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
         x_t = x0 * (1 - t) * (1 - self.hparams.rectified_sigma_min) + x1 * t
 
         return x_t
 
-    def _cfm_probability_path(
-        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
-    ):
+    def _cfm_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
         mu_t = x0 * (1 - t) + x1 * t
         sigma_t = self.hparams.cfm_sigma * torch.randn_like(mu_t)
         x_t = mu_t + sigma_t
@@ -273,9 +268,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return x_t
 
-    def _sample_probability_path(
-        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
-    ):
+    def _sample_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
         if self.hparams.probability_path == "rectified":
             x_t = self._rectified_probability_path(x0, x1, t)
         elif self.hparams.probability_path == "cfm":
@@ -283,9 +276,7 @@ class KSinFlowMatchingModule(LightningModule):
         elif self.hparams.probability_path == "fm":
             x_t = self._fm_probability_path(x0, x1, t)
         else:
-            raise NotImplementedError(
-                f"Unknown probability path {self.hparams.probability_path}"
-            )
+            raise NotImplementedError(f"Unknown probability path {self.hparams.probability_path}")
 
         return x_t
 
@@ -311,9 +302,7 @@ class KSinFlowMatchingModule(LightningModule):
         elif self.hparams.probability_path == "fm":
             target = self._fm_vector_field(x1, x_t, t)
         else:
-            raise NotImplementedError(
-                f"Unknown probability path {self.hparams.probability_path}"
-            )
+            raise NotImplementedError(f"Unknown probability path {self.hparams.probability_path}")
 
         return target
 
@@ -372,9 +361,7 @@ class KSinFlowMatchingModule(LightningModule):
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         if penalty is not None:
-            self.log(
-                "train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True
-            )
+            self.log("train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True)
 
         return loss + penalty
 
@@ -435,9 +422,7 @@ class KSinFlowMatchingModule(LightningModule):
         # self.val_lad(preds, targets)
 
         self.log("val/lsd", self.val_lsd, on_step=False, on_epoch=True, prog_bar=True)
-        self.log(
-            "val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True)
         # self.log("val/lad", self.val_lad, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self):

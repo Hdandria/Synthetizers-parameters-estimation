@@ -133,7 +133,7 @@ logger:
     _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
     save_dir: ${paths.output_dir}
     name: csv/
-    prefix: ''
+    prefix: ""
   wandb:
     _target_: lightning.pytorch.loggers.wandb.WandbLogger
     save_dir: ${paths.output_dir}
@@ -142,11 +142,11 @@ logger:
     anonymous: null
     project: synth-prediction
     log_model: true
-    prefix: ''
+    prefix: ""
     entity: paindespistes-t-l-com-paris
-    group: ''
+    group: ""
     tags: []
-    job_type: ''
+    job_type: ""
     settings:
       _target_: wandb.Settings
       code_dir: .

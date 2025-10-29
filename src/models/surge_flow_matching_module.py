@@ -84,16 +84,12 @@ class SurgeFlowMatchingModule(LightningModule):
 
         return x0, x1
 
-    def _rectified_probability_path(
-        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
-    ):
+    def _rectified_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
         x_t = x0 * (1 - t) * (1 - self.hparams.rectified_sigma_min) + x1 * t
 
         return x_t
 
-    def _sample_probability_path(
-        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
-    ):
+    def _sample_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
         x_t = self._rectified_probability_path(x0, x1, t)
         return x_t
 
@@ -106,9 +102,7 @@ class SurgeFlowMatchingModule(LightningModule):
         target = self._rectified_vector_field(x0, x1)
         return target
 
-    def _get_conditioning_from_batch(
-        self, batch: dict[str, torch.Tensor]
-    ) -> torch.Tensor:
+    def _get_conditioning_from_batch(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         if self.hparams.conditioning == "mel":
             return batch["mel_spec"]
         elif self.hparams.conditioning == "m2l":
@@ -155,9 +149,7 @@ class SurgeFlowMatchingModule(LightningModule):
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         if penalty is not None:
-            self.log(
-                "train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True
-            )
+            self.log("train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True)
 
         return loss + penalty
 
@@ -210,9 +202,7 @@ class SurgeFlowMatchingModule(LightningModule):
 
         per_param_mse = (pred_params - batch["params"]).square().mean(dim=0)
         param_mse = per_param_mse.mean()
-        self.log(
-            "val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"param_mse": param_mse, "per_param_mse": per_param_mse}
 
@@ -229,9 +219,7 @@ class SurgeFlowMatchingModule(LightningModule):
         )
 
         param_mse = (pred_params - batch["params"]).square().mean()
-        self.log(
-            "test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
 
         return param_mse
 
@@ -329,9 +317,9 @@ class SurgeFlowMatchingModule(LightningModule):
         for k, v in state_dict.items():
             # Handle keys saved from compiled modules
             if k.startswith("encoder._orig_mod."):
-                new_key = "encoder." + k[len("encoder._orig_mod."):]
+                new_key = "encoder." + k[len("encoder._orig_mod.") :]
             elif k.startswith("vector_field._orig_mod."):
-                new_key = "vector_field." + k[len("vector_field._orig_mod."):]
+                new_key = "vector_field." + k[len("vector_field._orig_mod.") :]
             else:
                 # Keep any other keys untouched
                 new_key = k

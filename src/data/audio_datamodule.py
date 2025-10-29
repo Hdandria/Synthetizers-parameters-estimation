@@ -9,9 +9,10 @@ from pedalboard.io import AudioFile
 
 
 def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
-    """Values hardcoded to be roughly like those used by the audio spectrogram
-    transformer. i.e. 100 frames per second, 128 mels, ~25ms window, hamming
-    window."""
+    """Values hardcoded to be roughly like those used by the audio spectrogram transformer.
+
+    i.e. 100 frames per second, 128 mels, ~25ms window, hamming window.
+    """
 
     n_fft = int(0.025 * sample_rate)
     hop_length = int(sample_rate / 100.0)
@@ -100,9 +101,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         if channels == 1:
             audio = np.concatenate([audio, audio], axis=0)
         elif channels > 2:
-            raise ValueError(
-                f"Audio must have two or fewer channels. Found {channels}."
-            )
+            raise ValueError(f"Audio must have two or fewer channels. Found {channels}.")
 
         start_samples = int(0.05 * sample_rate)
         target_samples = int(sample_rate * self.segment_length_seconds)
@@ -112,9 +111,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             audio = audio[:, :num_frames]
 
         elif audio.shape[1] < target_samples:
-            audio = np.pad(
-                audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant"
-            )
+            audio = np.pad(audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant")
 
         audio = audio * self.amp_scale
 

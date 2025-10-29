@@ -48,7 +48,9 @@ class CustomRealNVP(CompositeTransform):
         mask = torch.ones(features)
         mask[::2] = -1
 
-        use_dropout = True  # Quick and dirty: 'global' variable, as seen by the create_resnet function
+        use_dropout = (
+            True  # Quick and dirty: 'global' variable, as seen by the create_resnet function
+        )
 
         def create_resnet(in_features, out_features):
             return nets.ResidualNet(
@@ -64,9 +66,7 @@ class CustomRealNVP(CompositeTransform):
         layers = []
         for layer in range(num_layers):
             use_dropout = layer < (num_layers - 2)  # No dropout on the 2 last layers
-            transform = coupling_constructor(
-                mask=mask, transform_net_create_fn=create_resnet
-            )
+            transform = coupling_constructor(mask=mask, transform_net_create_fn=create_resnet)
             layers.append(transform)
             mask *= -1  # Checkerboard masking inverse
             if batch_norm_between_layers and layer < (
@@ -190,9 +190,7 @@ class DecoderBlock(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(
-        self, latent_dim: int, num_channels: int, spec_dim: Tuple[int] = (128, 401)
-    ):
+    def __init__(self, latent_dim: int, num_channels: int, spec_dim: Tuple[int] = (128, 401)):
         super().__init__()
 
         self.in_proj = nn.Linear(latent_dim, 2048)
@@ -302,9 +300,7 @@ def reconstruction_loss(y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return nn.functional.mse_loss(y_hat, y)
 
 
-def gaussian_log_prob(
-    x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor
-) -> torch.Tensor:
+def gaussian_log_prob(x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
     return -0.5 * (
         x.shape[1] * math.log(2 * math.pi)
         + torch.sum(log_var + (x - mu).pow(2) / log_var.exp(), dim=1)

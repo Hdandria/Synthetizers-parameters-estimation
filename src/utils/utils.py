@@ -48,9 +48,7 @@ def extras(cfg: DictConfig) -> None:
         rich_utils.print_config_tree(cfg, resolve=True, save_to_file=True)
 
     if precision := cfg.extras.get("float32_matmul_precision", False):
-        log.info(
-            "Enabling float32 matmul precision! <cfg.extras.float32_matmul_precision=True>"
-        )
+        log.info("Enabling float32 matmul precision! <cfg.extras.float32_matmul_precision=True>")
         torch.set_float32_matmul_precision(precision)
 
 
@@ -109,9 +107,7 @@ def task_wrapper(task_func: Callable) -> Callable:
     return wrap
 
 
-def get_metric_value(
-    metric_dict: Dict[str, Any], metric_name: Optional[str]
-) -> Optional[float]:
+def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) -> Optional[float]:
     """Safely retrieves value of the metric logged in LightningModule.
 
     :param metric_dict: A dict containing metric values.

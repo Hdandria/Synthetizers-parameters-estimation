@@ -221,9 +221,7 @@ def get_labels(spec: str):
 
         true_intervals.append((cur_name, cur_len))
 
-    true_intervals = [
-        (RENAMES.get(name, name), length) for name, length in true_intervals
-    ]
+    true_intervals = [(RENAMES.get(name, name), length) for name, length in true_intervals]
 
     return true_intervals
 
@@ -439,9 +437,7 @@ def main(
 
     if len(ckpts_and_hparams) > 1:
         # take the one with the most recently updated hparam file
-        ckpt_file, hparam_file = max(
-            ckpts_and_hparams, key=lambda x: x[1].stat().st_mtime
-        )
+        ckpt_file, hparam_file = max(ckpts_and_hparams, key=lambda x: x[1].stat().st_mtime)
     elif len(ckpts_and_hparams) == 1:
         ckpt_file, hparam_file = ckpts_and_hparams[0]
     else:

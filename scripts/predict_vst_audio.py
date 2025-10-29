@@ -10,6 +10,7 @@ import rootutils
 import torch
 from pedalboard.io import AudioFile
 from tqdm import tqdm, trange
+
 from src.data.vst import load_plugin, load_preset, param_specs, render_params
 from src.data.vst.param_spec import ParamSpec
 
@@ -187,9 +188,7 @@ def main(
                 target_params_ = target_params[j].numpy()
                 target_params_ = (target_params_ + 1) / 2
                 target_params_ = np.clip(target_params_, 0, 1)
-                target_synth_params, target_note_params = param_spec.decode(
-                    target_params_
-                )
+                target_synth_params, target_note_params = param_spec.decode(target_params_)
 
                 load_preset(plugin, preset_path)
                 new_target = render_params(

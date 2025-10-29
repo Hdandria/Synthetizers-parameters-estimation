@@ -38,7 +38,7 @@ from pedalboard.io import AudioFile
 
 
 def subdir_matches_pattern(dir: Path) -> bool:
-    """Returns true if subdir contains pred.wav and target.wav"""
+    """Returns true if subdir contains pred.wav and target.wav."""
     return (dir / "target.wav").exists() and (dir / "pred.wav").exists()
 
 
@@ -167,9 +167,7 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
-    target_stft = target_stft / np.clip(
-        target_stft.sum(axis=-1, keepdims=True), 1e-6, None
-    )
+    target_stft = target_stft / np.clip(target_stft.sum(axis=-1, keepdims=True), 1e-6, None)
     pred_stft = pred_stft / np.clip(pred_stft.sum(axis=-1, keepdims=True), 1e-6, None)
 
     dists = batched_wasserstein_distance_np(target_stft, pred_stft)
@@ -256,16 +254,12 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
 
     sublist_length = len(audio_dirs) // num_workers
     sublists = [
-        audio_dirs[i * sublist_length : (i + 1) * sublist_length]
-        for i in range(num_workers)
+        audio_dirs[i * sublist_length : (i + 1) * sublist_length] for i in range(num_workers)
     ]
 
     metric_dfs = []
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = [
-            executor.submit(compute_metrics, sublist, output_dir)
-            for sublist in sublists
-        ]
+        futures = [executor.submit(compute_metrics, sublist, output_dir) for sublist in sublists]
 
         for future in as_completed(futures):
             metric_file = future.result()

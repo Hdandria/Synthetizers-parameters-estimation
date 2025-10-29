@@ -184,9 +184,7 @@ class ChamferDistance(Metric):
 
     def __init__(self, params_per_token: int, **kwargs):
         super().__init__(**kwargs)
-        self.add_state(
-            "chamfer_distance", default=torch.tensor(0.0), dist_reduce_fx="sum"
-        )
+        self.add_state("chamfer_distance", default=torch.tensor(0.0), dist_reduce_fx="sum")
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
         self.params_per_token = params_per_token
 

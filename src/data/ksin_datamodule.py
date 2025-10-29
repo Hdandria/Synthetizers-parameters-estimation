@@ -17,9 +17,7 @@ def _sample_freqs(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
-    )
+    return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
 
 def _sample_amplitudes(
@@ -28,9 +26,7 @@ def _sample_amplitudes(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
-    )
+    return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
 
 def _sample_freqs_shifted(
@@ -40,8 +36,9 @@ def _sample_freqs_shifted(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    """Sample frequencies with different train and test distributions. These are
-    slightly overlapping truncated normal distributions.
+    """Sample frequencies with different train and test distributions.
+
+    These are slightly overlapping truncated normal distributions.
     """
     freqs = torch.empty(num_samples, k, device=device)
     mean = -1.0 / 3.0 if not is_test else 1.0 / 3.0
@@ -142,8 +139,7 @@ class KSinDataset(torch.utils.data.Dataset):
 
         if shift_test_distribution and break_symmetry:
             raise ValueError(
-                "Cannot use `shift_test_distribution` and `break_symmetry` at the same"
-                "time."
+                "Cannot use `shift_test_distribution` and `break_symmetry` at the same" "time."
             )
 
         self.sort_frequencies = sort_frequencies
@@ -196,9 +192,7 @@ class KSinDataset(torch.utils.data.Dataset):
         # modulo max int to avoid overflows
         seed = (self.seed * idx) % sys.maxsize
         freq, amp = self._sample_parameters(seed)
-        sin_fn = partial(
-            make_sin, length=self.signal_length, break_symmetry=self.break_symmetry
-        )
+        sin_fn = partial(make_sin, length=self.signal_length, break_symmetry=self.break_symmetry)
         params = torch.cat((freq, amp), dim=-1)
         sins = sin_fn(params)
         return (sins, params, sin_fn)

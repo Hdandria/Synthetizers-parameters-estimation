@@ -9,7 +9,7 @@ defaults:
   - override /callbacks: default
   - override /trainer: gpu
   - override /logger: many_loggers
-  - override /paths: docker  # Use Docker paths for S3 integration
+  - override /paths: docker # Use Docker paths for S3 integration
   - override /extras: default
   - override /hydra: default
 
@@ -36,7 +36,7 @@ data:
   use_saved_mean_and_variance: true
   batch_size: 128
   ot: true
-  num_workers: 8  # Reduced for Docker stability
+  num_workers: 8 # Reduced for Docker stability
   predict_file: null
 
 # Model configuration
@@ -54,7 +54,7 @@ model:
       - 128
       - 401
   _target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
-  warmup_steps: 1000  # Added warmup for longer training
+  warmup_steps: 1000 # Added warmup for longer training
   scheduler:
     _target_: torch.optim.lr_scheduler.CosineAnnealingLR
     _partial_: true
@@ -105,14 +105,14 @@ callbacks:
     _target_: lightning.pytorch.callbacks.ModelCheckpoint
     dirpath: ${paths.output_dir}/checkpoints
     filename: step_{step:06d}_epoch_{epoch:03d}
-    monitor: null  # No validation monitoring
+    monitor: null # No validation monitoring
     verbose: false
     save_last: true
-    save_top_k: 3  # Keep more checkpoints for longer training
+    save_top_k: 3 # Keep more checkpoints for longer training
     mode: min
     auto_insert_metric_name: false
     save_weights_only: false
-    every_n_train_steps: 10000  # Save checkpoint every 10k steps
+    every_n_train_steps: 10000 # Save checkpoint every 10k steps
     train_time_interval: null
     every_n_epochs: null
     save_on_train_epoch_end: null
@@ -137,7 +137,7 @@ logger:
     _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
     save_dir: ${paths.output_dir}
     name: csv/
-    prefix: ''
+    prefix: ""
   wandb:
     _target_: lightning.pytorch.loggers.wandb.WandbLogger
     save_dir: ${paths.output_dir}
@@ -146,7 +146,7 @@ logger:
     anonymous: null
     project: synth-param-estimation
     log_model: true
-    prefix: ''
+    prefix: ""
     entity: null
     group: docker-100k-experiments
     tags:
@@ -162,8 +162,8 @@ logger:
 trainer:
   _target_: lightning.pytorch.trainer.Trainer
   default_root_dir: ${paths.output_dir}
-  min_steps: 100000  # 100k steps
-  max_steps: 100000  # 100k steps
+  min_steps: 100000 # 100k steps
+  max_steps: 100000 # 100k steps
   log_every_n_steps: 100
   gradient_clip_val: 1.0
   accelerator: gpu
@@ -171,9 +171,9 @@ trainer:
     - 0
   check_val_every_n_epoch: null
   deterministic: false
-  precision: 16-mixed  # FP16 for memory efficiency
+  precision: 16-mixed # FP16 for memory efficiency
   accumulate_grad_batches: 1
-  max_epochs: -1  # Use steps instead of epochs
+  max_epochs: -1 # Use steps instead of epochs
   enable_checkpointing: true
   enable_progress_bar: true
   enable_model_summary: true

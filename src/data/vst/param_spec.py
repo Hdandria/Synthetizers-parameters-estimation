@@ -41,9 +41,7 @@ class CategoricalParameter(Parameter):
             raw_values = [i / (n - 1) for i in range(n)]
 
         if weights is not None:
-            assert len(values) == len(
-                weights
-            ), "values and weights must have the same length"
+            assert len(values) == len(weights), "values and weights must have the same length"
 
         else:
             weights = [1.0] * len(values)
@@ -192,13 +190,11 @@ class ContinuousParameter(Parameter):
         return self.min + encoded.item() * (self.max - self.min)
 
     def __repr__(self):
-        return (
-            f'ContinuousParameter(name="{self.name}", min={self.min}, max={self.max})'
-        )
+        return f'ContinuousParameter(name="{self.name}", min={self.min}, max={self.max})'
 
 
 class NoteDurationParameter(Parameter):
-    """A special parameter for sampling note durations"""
+    """A special parameter for sampling note durations."""
 
     def __init__(self, name: str, max_note_duration_seconds: float):
         super().__init__(name)

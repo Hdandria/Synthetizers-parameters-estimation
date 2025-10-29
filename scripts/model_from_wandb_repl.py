@@ -8,6 +8,7 @@ import torch
 from IPython import embed
 from loguru import logger
 from omegaconf import DictConfig, OmegaConf
+
 from src.utils import register_resolvers
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
@@ -96,9 +97,7 @@ def main(
 
     if len(ckpts_and_hparams) > 1:
         # take the one with the most recently updated hparam file
-        ckpt_file, hparam_file = max(
-            ckpts_and_hparams, key=lambda x: x[1].stat().st_mtime
-        )
+        ckpt_file, hparam_file = max(ckpts_and_hparams, key=lambda x: x[1].stat().st_mtime)
     elif len(ckpts_and_hparams) == 1:
         ckpt_file, hparam_file = ckpts_and_hparams[0]
     else:

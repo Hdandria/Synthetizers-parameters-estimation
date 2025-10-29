@@ -103,7 +103,7 @@ callbacks:
     _target_: lightning.pytorch.callbacks.ModelCheckpoint
     dirpath: ${paths.output_dir}/checkpoints
     filename: epoch_{epoch:03d}
-    monitor: null  # No validation monitoring
+    monitor: null # No validation monitoring
     verbose: false
     save_last: true
     save_top_k: 1
@@ -135,7 +135,7 @@ logger:
     _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
     save_dir: ${paths.output_dir}
     name: csv/
-    prefix: ''
+    prefix: ""
   wandb:
     _target_: lightning.pytorch.loggers.wandb.WandbLogger
     save_dir: ${paths.output_dir}
@@ -144,11 +144,11 @@ logger:
     anonymous: null
     project: synth-prediction
     log_model: true
-    prefix: ''
+    prefix: ""
     entity: paindespistes-t-l-com-paris
-    group: ''
+    group: ""
     tags: []
-    job_type: ''
+    job_type: ""
     settings:
       _target_: wandb.Settings
       code_dir: .
@@ -160,7 +160,7 @@ trainer:
   min_steps: 50000
   max_steps: 50000
   log_every_n_steps: 100
-  val_check_interval: null  # Disable validation
+  val_check_interval: null # Disable validation
   gradient_clip_val: 0.5
   accelerator: gpu
   devices:

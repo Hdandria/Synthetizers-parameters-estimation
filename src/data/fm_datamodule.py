@@ -13,9 +13,7 @@ def _sample_freqs(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
-    )
+    return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
 
 def _sample_amplitudes(
@@ -24,9 +22,7 @@ def _sample_amplitudes(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(
-        -1.0, 1.0, generator=generator
-    )
+    return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
 
 def _scale_freqs_and_amps_fm(freqs: torch.Tensor, amps: torch.Tensor):
@@ -42,18 +38,16 @@ def _sample_freqs_symmetry_broken(
     device: Union[str, torch.device],
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    """Sample frequencies such that each sinusoidal component has frequency drawn from
-    disjoint intervals.
-    """
+    """Sample frequencies such that each sinusoidal component has frequency drawn from disjoint
+    intervals."""
     freqs = _sample_freqs(k, num_samples, device, generator) / k
     shift = 2.0 * torch.arange(k, device=device) / k
     return freqs + shift[None, :]
 
 
-def fm_conditional_symmetry(
-    params: torch.Tensor, length: int, break_symmetry: bool = False
-):
+def fm_conditional_symmetry(params: torch.Tensor, length: int, break_symmetry: bool = False):
     """An FM synthesiser with algorithm (M1->C1) + C2.
+
     param layout: [m1, c2, c1]
     """
     freqs, amps = params.chunk(2, dim=-1)
@@ -136,9 +130,7 @@ def _sample_params_mixed_symmetry(
     return freqs, amplitudes
 
 
-def fm_hierarchical_symmetry(
-    params: torch.Tensor, length: int, break_symmetry: bool = False
-):
+def fm_hierarchical_symmetry(params: torch.Tensor, length: int, break_symmetry: bool = False):
     """An FM synthesiser with algorithm ((M1+M2)->C1) + ((M3+M4)->C2)
     layout: [m1, m2, m3, m4, c1, c2]
     """
@@ -219,9 +211,7 @@ class FMDataset(torch.utils.data.Dataset):
 
     def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
         sampler, _ = _FM_ALGORITHMS[self.algorithm]
-        freqs, amplitudes = sampler(
-            self.num_samples, torch.device("cpu"), self.generator
-        )
+        freqs, amplitudes = sampler(self.num_samples, torch.device("cpu"), self.generator)
 
         return freqs, amplitudes
 
@@ -233,9 +223,7 @@ class FMDataset(torch.utils.data.Dataset):
         amp = self.amps[idx][None]
 
         _, synth = _FM_ALGORITHMS[self.algorithm]
-        synth = partial(
-            synth, length=self.signal_length, break_symmetry=self.break_symmetry
-        )
+        synth = partial(synth, length=self.signal_length, break_symmetry=self.break_symmetry)
 
         signals = synth(freq, amp)
         params = torch.cat((freq, amp), dim=-1)
@@ -244,9 +232,8 @@ class FMDataset(torch.utils.data.Dataset):
 
 
 class FMDataModule(LightningDataModule):
-    """The FM task is designed to probe conditional symmetry by constructing signals
-    from simple frequency modulation synthesisers.
-    """
+    """The FM task is designed to probe conditional symmetry by constructing signals from simple
+    frequency modulation synthesisers."""
 
     def __init__(
         self,

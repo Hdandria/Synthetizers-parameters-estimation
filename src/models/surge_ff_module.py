@@ -46,9 +46,7 @@ class SurgeFeedForwardModule(LightningModule):
         loss, preds, targets, *_ = self.model_step(batch)
         per_param_mse = (preds - targets).square().mean(dim=0)
         param_mse = per_param_mse.mean()
-        self.log(
-            "val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"param_mse": param_mse, "per_param_mse": per_param_mse}
 
@@ -59,9 +57,7 @@ class SurgeFeedForwardModule(LightningModule):
         loss, preds, targets, *_ = self.model_step(batch)
         per_param_mse = (preds - targets).square().mean(dim=0)
         param_mse = per_param_mse.mean()
-        self.log(
-            "test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("test/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"param_mse": param_mse, "per_param_mse": per_param_mse}
 

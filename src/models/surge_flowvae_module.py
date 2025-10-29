@@ -37,9 +37,7 @@ class SurgeFlowVAEModule(LightningModule):
         mel_spec = batch["mel_spec"]
 
         vae_out = self.net(mel_spec)
-        losses = compute_flowvae_loss(
-            vae_out, mel_spec, target_params, self.hparams.param_spec
-        )
+        losses = compute_flowvae_loss(vae_out, mel_spec, target_params, self.hparams.param_spec)
 
         return losses, mel_spec, target_params, vae_out
 
@@ -48,9 +46,9 @@ class SurgeFlowVAEModule(LightningModule):
         if step > self.hparams.beta_warmup_steps:
             return self.hparams.beta_max
 
-        return self.hparams.beta_start + (
-            self.global_step / self.hparams.beta_warmup_steps
-        ) * (self.hparams.beta_max - self.hparams.beta_start)
+        return self.hparams.beta_start + (self.global_step / self.hparams.beta_warmup_steps) * (
+            self.hparams.beta_max - self.hparams.beta_start
+        )
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         losses, *_, vae_out = self.model_step(batch)
@@ -60,11 +58,7 @@ class SurgeFlowVAEModule(LightningModule):
         self.log("train/param_std", x_hat.std(), on_step=True, on_epoch=True)
 
         beta = self.get_beta()
-        loss = (
-            losses["reconstruction_loss"]
-            + beta * losses["latent_loss"]
-            + losses["param_loss"]
-        )
+        loss = losses["reconstruction_loss"] + beta * losses["latent_loss"] + losses["param_loss"]
 
         losses_to_log = {f"train/{k}": v for k, v in losses.items()}
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)

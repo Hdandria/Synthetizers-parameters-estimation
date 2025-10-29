@@ -3,16 +3,13 @@ import torch.nn as nn
 
 
 def params_to_tokens(params: torch.Tensor, params_per_token: int = 2):
-    """Assuming our model outputs a tensor of shape (batch, 2k), we stack it into a
-    tensor of shape (batch, k, 2) to allow for metric computation.
-    """
+    """Assuming our model outputs a tensor of shape (batch, 2k), we stack it into a tensor of shape
+    (batch, k, 2) to allow for metric computation."""
     units = params.chunk(params_per_token, dim=-1)
     return torch.stack(units, dim=-1)
 
 
-def chamfer_loss(
-    predicted: torch.Tensor, target: torch.Tensor, params_per_token: int = 2
-):
+def chamfer_loss(predicted: torch.Tensor, target: torch.Tensor, params_per_token: int = 2):
     predicted_tokens = params_to_tokens(predicted, params_per_token)
     target_tokens = params_to_tokens(target, params_per_token)
 

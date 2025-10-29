@@ -3,8 +3,7 @@ from typing import Any, Dict, Tuple
 import torch
 from lightning import LightningModule
 
-from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance)
+from src.metrics import ChamferDistance, LinearAssignmentDistance, LogSpectralDistance
 from src.models.components.loss import ChamferLoss
 
 
@@ -76,9 +75,7 @@ class KSinFeedForwardModule(LightningModule):
         self.val_chamfer(preds, targets)
 
         self.log("val/lsd", self.val_lsd, on_step=False, on_epoch=True, prog_bar=True)
-        self.log(
-            "val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True
-        )
+        self.log("val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self):

@@ -86,9 +86,7 @@ def regular_collate_fn(batch):
     elif isinstance(item, dict):
         fn = _collate_dict
     else:
-        raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(item)}"
-        )
+        raise NotImplementedError(f"Expected tuple or dict for batch type, got {type(item)}")
 
     return fn(batch)
 
@@ -124,8 +122,6 @@ def ot_collate_fn(batch):
     elif isinstance(item, dict):
         fn = _ot_collate_dict
     else:
-        raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(item)}"
-        )
+        raise NotImplementedError(f"Expected tuple or dict for batch type, got {type(item)}")
 
     return fn(batch)

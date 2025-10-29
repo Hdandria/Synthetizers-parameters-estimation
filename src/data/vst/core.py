@@ -11,10 +11,8 @@ from pedalboard.io import AudioFile
 
 
 def _call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
-    """
-    Calls the function fn on the main thread, while another thread
-    sends a KeyboardInterrupt (SIGINT) to the main thread.
-    """
+    """Calls the function fn on the main thread, while another thread sends a KeyboardInterrupt
+    (SIGINT) to the main thread."""
 
     def send_interrupt():
         # Brief sleep so that fn starts before we send the interrupt
@@ -58,7 +56,9 @@ def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
         try:
             plugin.parameters[k].raw_value = v
         except KeyError:
-            logger.warning(f"Parameter '{k}' not found in plugin. Available parameters: {list(plugin.parameters.keys())}")
+            logger.warning(
+                f"Parameter '{k}' not found in plugin. Available parameters: {list(plugin.parameters.keys())}"
+            )
             raise
 
 
