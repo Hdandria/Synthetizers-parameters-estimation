@@ -43,6 +43,7 @@ dependencies = [
     "tensorboard",
     # Development
     "pytest>=6.0",
+    "pytest-cov>=4.0",
     "pre-commit",
     "dask[distributed]>=2025.10.0",
     "s3fs>=0.4.2",
