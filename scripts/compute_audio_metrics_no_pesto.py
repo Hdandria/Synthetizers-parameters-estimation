@@ -132,7 +132,7 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
     min_len = min(len(target_mfcc), len(pred_mfcc))
     target_mfcc_trunc = target_mfcc[:min_len]
     pred_mfcc_trunc = pred_mfcc[:min_len]
-    
+
     dist = np.mean(np.abs(target_mfcc_trunc - pred_mfcc_trunc))
     return dist
 

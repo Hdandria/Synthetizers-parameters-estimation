@@ -11,14 +11,14 @@
 
 terraform {
   required_version = ">= 1.5"
-  
+
   required_providers {
     ovh = {
       source  = "ovh/ovh"
       version = "~> 0.48"
     }
   }
-  
+
   # Optional: Store state remotely (recommended for teams)
   # Uncomment and configure after initial setup
   # backend "s3" {
@@ -26,7 +26,7 @@ terraform {
   #   key      = "ml-training/terraform.tfstate"
   #   region   = "gra"
   #   endpoint = "https://s3.gra.io.cloud.ovh.net"
-  #   
+  #
   #   skip_credentials_validation = true
   #   skip_requesting_account_id  = true
   #   skip_metadata_api_check     = true
@@ -50,7 +50,7 @@ provider "ovh" {
 
 resource "ovh_cloud_project_containerregistry" "main" {
   count = var.create_registry ? 1 : 0
-  
+
   service_name = var.ovh_project_id
   plan_id      = var.registry_plan
   region       = var.region
@@ -60,7 +60,7 @@ resource "ovh_cloud_project_containerregistry" "main" {
 # Registry user for CI/CD (optional)
 resource "ovh_cloud_project_containerregistry_user" "ci_user" {
   count = var.create_registry && var.create_registry_user ? 1 : 0
-  
+
   service_name = var.ovh_project_id
   registry_id  = ovh_cloud_project_containerregistry.main[0].id
   email        = var.registry_user_email

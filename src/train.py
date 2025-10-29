@@ -65,7 +65,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         ```python
         # Basic training
         metrics, objects = train(cfg)
-        
+
         # Access trained model
         model = objects['model']
         trainer = objects['trainer']
@@ -154,10 +154,10 @@ def main(cfg: DictConfig) -> Optional[float]:
         ```bash
         # Train with default configuration
         python src/train.py
-        
+
         # Override specific parameters
         python src/train.py data=ksin model=ksin_flow_matching data.k=4
-        
+
         # Use specific experiment configuration
         python src/train.py experiment=ksin/baseline
         ```

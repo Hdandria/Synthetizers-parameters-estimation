@@ -53,7 +53,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
         # if not, we throw an error
         stats_file = SurgeXTDataset.get_stats_file_path(dataset_file)
-        
+
         # Local file check
         if not Path(stats_file).exists():
             raise FileNotFoundError(

@@ -68,7 +68,7 @@ if [[ "$LOCAL_MODE" == true ]]; then
   echo -e "${MAGENTA}${BOLD}============================================================${RESET}"
   echo -e "${MAGENTA}${BOLD}                    LOCAL MODE                            ${RESET}"
   echo -e "${MAGENTA}${BOLD}============================================================${RESET}"
-  
+
   if [[ "$SKIP_BUILD" == false ]]; then
     echo -e "${BLUE}[*] Building Docker image...${RESET}"
     docker build -t synth-param-estimation:latest .
@@ -76,7 +76,7 @@ if [[ "$LOCAL_MODE" == true ]]; then
   else
     echo -e "${YELLOW}[-] Skipping Docker build${RESET}"
   fi
-  
+
   DOCKER_GPUS_OPT="--gpus all"
   [[ -n "${GPU_IDS_TRIMMED}" ]] && DOCKER_GPUS_OPT="--gpus device=${GPU_IDS_TRIMMED}"
   [[ -z "${GPU_IDS_TRIMMED}" && -n "${NUM_GPUS}" ]] && DOCKER_GPUS_OPT="--gpus ${NUM_GPUS}"
@@ -84,13 +84,13 @@ if [[ "$LOCAL_MODE" == true ]]; then
   # Build Hydra overrides for local
   HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
   [[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
-  
+
   echo -e "${BLUE}[*] Running training locally with Docker...${RESET}"
   echo -e "${CYAN}    GPUs: ${NUM_GPUS}${RESET}"
   [[ -n "${DATA_NUM_WORKERS}" ]] && echo -e "${CYAN}    Workers: ${DATA_NUM_WORKERS}${RESET}"
-  
+
   PY_ARGS=(python src/train.py "${HYDRA_OVERRIDES[@]}")
-  
+
   docker run --rm ${DOCKER_GPUS_OPT} --shm-size=32G \
     -e PROJECT_ROOT=/workspace \
     -e WANDB_API_KEY="$WANDB_API_KEY" \
@@ -104,7 +104,7 @@ if [[ "$LOCAL_MODE" == true ]]; then
     -v "$(pwd)/logs:/workspace/logs" \
     synth-param-estimation:latest \
     "${PY_ARGS[@]}"
-  
+
   echo -e "${GREEN}${BOLD}[+] Local training completed${RESET}"
   exit 0
 fi

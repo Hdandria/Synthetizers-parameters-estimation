@@ -44,7 +44,7 @@ echo "$JOBS" | jq -r '.[] | [
 ] | @tsv' | while IFS=$'\t' read -r id name state gpu; do
   # Truncate name if too long
   name_short=$(echo "$name" | cut -c1-20)
-  
+
   # Color code status
   case $state in
     RUNNING)
@@ -63,7 +63,7 @@ echo "$JOBS" | jq -r '.[] | [
       state_colored="${state}"
       ;;
   esac
-  
+
   printf "│ %-19s │ %-20s │ %-10b │ %-16s │\n" \
     "${id:0:19}" "$name_short" "$state_colored" "${gpu:0:16}"
 done

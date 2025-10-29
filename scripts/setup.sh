@@ -58,14 +58,14 @@ if command -v ovhai &> /dev/null; then
 else
   echo "  Downloading ovhai CLI..."
   curl -fsSL https://cli.bhs.ai.cloud.ovh.net/install.sh | bash
-  
+
   # Add to PATH if needed
   if ! command -v ovhai &> /dev/null; then
     echo -e "  ${YELLOW}Adding ovhai to PATH...${NC}"
     echo 'export PATH="$HOME/.ovhai/bin:$PATH"' >> ~/.bashrc
     export PATH="$HOME/.ovhai/bin:$PATH"
   fi
-  
+
   echo -e "  ${GREEN}ovhai CLI installed${NC}"
 fi
 
@@ -77,7 +77,7 @@ if command -v terraform &> /dev/null; then
   echo -e "  ${GREEN}Already installed ($(terraform version | head -n1))${NC}"
 else
   echo -e "  ${YELLOW}Terraform not found, installing...${NC}"
-  
+
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
@@ -88,7 +88,7 @@ else
   else
     echo -e "  ${YELLOW}Please install Terraform manually: https://www.terraform.io/downloads${NC}"
   fi
-  
+
   echo -e "  ${GREEN}Terraform installed${NC}"
 fi
 

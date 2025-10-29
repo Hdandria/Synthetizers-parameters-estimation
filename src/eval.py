@@ -67,7 +67,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         ```python
         # Evaluate on test set
         metrics, objects = evaluate(cfg)
-        
+
         # Access evaluation results
         test_metrics = metrics
         model = objects['model']
@@ -146,10 +146,10 @@ def main(cfg: DictConfig) -> None:
         ```bash
         # Evaluate on test set
         python src/eval.py ckpt_path=path/to/checkpoint.ckpt
-        
+
         # Evaluate on validation set
         python src/eval.py ckpt_path=path/to/checkpoint.ckpt mode=val
-        
+
         # Generate predictions
         python src/eval.py ckpt_path=path/to/checkpoint.ckpt mode=predict
         ```

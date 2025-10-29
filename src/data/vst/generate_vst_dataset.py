@@ -225,10 +225,10 @@ def worker_generate_samples(
 ) -> None:
     """Worker function that generates samples in parallel and writes to its own file."""
     logger.info(f"Worker {worker_id} starting with {len(sample_indices)} samples")
-    
+
     # Each worker loads its own plugin instance
     plugin = load_plugin(plugin_path)
-    
+
     # Create worker's own HDF5 file
     logger.info(f"Worker {worker_id} creating file: {worker_output_path}")
     with h5py.File(worker_output_path, 'w') as worker_file:
@@ -252,14 +252,14 @@ def worker_generate_samples(
             dtype=np.float32,
             compression=hdf5plugin.Blosc2(),
         )
-        
+
         # Set attributes
         audio_dataset.attrs["velocity"] = velocity
         audio_dataset.attrs["signal_duration_seconds"] = signal_duration_seconds
         audio_dataset.attrs["sample_rate"] = sample_rate
         audio_dataset.attrs["channels"] = channels
         audio_dataset.attrs["min_loudness"] = min_loudness
-        
+
         # Generate and write samples directly
         for i, sample_idx in enumerate(sample_indices):
             logger.info(f"Worker {worker_id} making sample {sample_idx} ({i+1}/{len(sample_indices)})")
@@ -273,15 +273,15 @@ def worker_generate_samples(
                 param_spec=param_spec,
                 preset_path=preset_path,
             )
-            
+
             # Write directly to worker's file
             audio_dataset[i, :, :] = sample.audio.T
             mel_dataset[i, :, :] = sample.mel_spec
             param_dataset[i, :] = sample.param_array
-            
+
             # Send progress update
             progress_queue.put(('generated', worker_id, sample_idx))
-    
+
     # Signal worker completion
     progress_queue.put(('worker_done', worker_id, len(sample_indices)))
     logger.info(f"Worker {worker_id} finished and wrote to {worker_output_path}")
@@ -290,24 +290,24 @@ def worker_generate_samples(
 def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
     """Merge multiple worker HDF5 files into the main output file."""
     logger.info(f"Merging {len(worker_files)} worker files into main dataset")
-    
+
     all_audio = []
     all_mel = []
     all_params = []
-    
+
     for worker_file_path in worker_files:
         logger.info(f"Reading worker file: {worker_file_path}")
         import os
         if not os.path.exists(worker_file_path):
             logger.error(f"Worker file does not exist: {worker_file_path}")
             continue
-            
+
         with h5py.File(worker_file_path, 'r') as worker_file:
             logger.info(f"Worker file contains {worker_file['audio'].shape[0]} samples")
             all_audio.append(worker_file['audio'][:])
             all_mel.append(worker_file['mel_spec'][:])
             all_params.append(worker_file['param_array'][:])
-    
+
     # Concatenate and write to main file
     if all_audio:
         total_samples = sum(audio.shape[0] for audio in all_audio)
@@ -317,7 +317,7 @@ def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
         output_file['param_array'][:] = np.concatenate(all_params, axis=0)
     else:
         logger.error("No worker files found to merge!")
-    
+
     logger.info("Worker files merged successfully")
 
 
@@ -396,23 +396,23 @@ def make_dataset(
         # Multiprocessed generation with separate files per worker
         logger.info(f"Starting multiprocessed generation with {num_workers} workers")
         logger.info(f"Main output file: {hdf5_file.filename}")
-        
+
         # Create progress queue
         progress_queue = multiprocessing.Queue()
-        
+
         # Distribute sample indices among workers
         sample_indices = list(range(start_idx, num_samples))
         indices_per_worker = len(sample_indices) // num_workers
         worker_tasks = []
         worker_files = []
-        
+
         for i in range(num_workers):
             start_idx_worker = i * indices_per_worker
             if i == num_workers - 1:  # Last worker gets remaining samples
                 end_idx_worker = len(sample_indices)
             else:
                 end_idx_worker = (i + 1) * indices_per_worker
-            
+
             worker_indices = sample_indices[start_idx_worker:end_idx_worker]
             if worker_indices:  # Only create worker if there are samples to process
                 worker_tasks.append(worker_indices)
@@ -423,7 +423,7 @@ def make_dataset(
                 worker_file_path = os.path.join(main_file_dir, f"worker_{i}_{main_file_name}")
                 worker_files.append(worker_file_path)
                 logger.info(f"Worker {i} will write to: {worker_file_path}")
-        
+
         # Start worker processes
         processes = []
         for i, worker_indices in enumerate(worker_tasks):
@@ -446,12 +446,12 @@ def make_dataset(
             )
             p.start()
             processes.append(p)
-        
+
         # Monitor progress
         total_samples = len(sample_indices)
         samples_generated = 0
         workers_finished = 0
-        
+
         with trange(total_samples, desc="Generating samples") as pbar:
             while workers_finished < len(processes):
                 # Check for progress updates
@@ -465,26 +465,26 @@ def make_dataset(
                             workers_finished += 1
                 except Exception:
                     pass  # No more progress messages
-                
+
                 # Update progress bar
                 pbar.set_postfix({
                     'generated': samples_generated,
                     'workers_done': f"{workers_finished}/{len(processes)}"
                 })
-                
+
                 # Small sleep to avoid busy waiting
                 import time
                 time.sleep(0.1)
-        
+
         # Wait for all processes to finish
         for p in processes:
             p.join()
-        
+
         logger.info("All workers finished, merging files...")
-        
+
         # Merge worker files into main file
         merge_worker_files(worker_files, hdf5_file)
-        
+
         # Clean up worker files
         for worker_file in worker_files:
             try:
@@ -493,7 +493,7 @@ def make_dataset(
                 logger.info(f"Cleaned up worker file: {worker_file}")
             except Exception as e:
                 logger.warning(f"Could not clean up worker file {worker_file}: {e}")
-        
+
         logger.info("Multiprocessed generation completed")
 
 

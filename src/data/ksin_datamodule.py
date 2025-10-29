@@ -53,20 +53,20 @@ def _sample_freqs_shifted(
 
 def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False) -> torch.Tensor:
     """Generate a sinusoidal signal from frequency and amplitude parameters.
-    
+
     This function creates a mixture of sinusoids from parameter vectors containing
     frequencies and amplitudes. It's designed to test permutation-invariant parameter
     estimation models.
-    
+
     Args:
         params: Parameter tensor of shape (..., 2*k) where k is the number of sinusoids.
                 The first k parameters are frequencies, the last k are amplitudes.
         length: Length of the output signal in samples
         break_symmetry: If True, adds frequency shifts to break permutation symmetry
-        
+
     Returns:
         Generated sinusoidal signal of shape (..., length)
-        
+
     Example:
         ```python
         # Generate 4-sinusoid mixture
@@ -94,12 +94,12 @@ def make_sin(params: torch.Tensor, length: int, break_symmetry: bool = False) ->
 
 class KSinDataset(torch.utils.data.Dataset):
     """Dataset for k-sin parameter estimation task.
-    
+
     This dataset generates synthetic signals consisting of k sinusoidal components
     with random frequencies and amplitudes. It's designed to test permutation-invariant
     parameter estimation models by providing ground truth parameters that can be
     permuted without changing the resulting audio signal.
-    
+
     Args:
         k: Number of sinusoidal components in each signal
         signal_length: Length of generated signals in samples
@@ -109,7 +109,7 @@ class KSinDataset(torch.utils.data.Dataset):
         shift_test_distribution: If True, use different frequency distribution for test set
         is_test: Whether this is a test dataset (affects frequency distribution)
         seed: Random seed for reproducible generation
-        
+
     Example:
         ```python
         # Create dataset with 4 sinusoids
@@ -125,7 +125,7 @@ class KSinDataset(torch.utils.data.Dataset):
         )
         ```
     """
-    
+
     def __init__(
         self,
         k: int,
@@ -206,17 +206,17 @@ class KSinDataset(torch.utils.data.Dataset):
 
 class KSinDataModule(LightningDataModule):
     """PyTorch Lightning data module for the k-sin parameter estimation task.
-    
+
     The k-sin task is a synthetic synthesizer parameter estimation problem designed
     to test models' ability to handle permutation-invariant parameter spaces. Each
     sample consists of a mixture of k sinusoids and the corresponding frequency and
     amplitude parameters used to generate them.
-    
+
     The key challenge is that the parameters can be permuted without changing the
     resulting audio signal, making this a permutation-invariant learning problem.
     This data module provides various options to control the symmetry properties
     of the generated data.
-    
+
     Args:
         k: Number of sinusoidal components in each signal
         signal_length: Length of generated signals in samples
@@ -228,7 +228,7 @@ class KSinDataModule(LightningDataModule):
         batch_size: Batch size for data loaders
         ot: If True, use optimal transport for minibatch coupling
         num_workers: Number of worker processes for data loading
-        
+
     Example:
         ```python
         # Create data module
@@ -239,7 +239,7 @@ class KSinDataModule(LightningDataModule):
             batch_size=64,
             ot=True
         )
-        
+
         # Setup and use
         dm.setup()
         train_loader = dm.train_dataloader()

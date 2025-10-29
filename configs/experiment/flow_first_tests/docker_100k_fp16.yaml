@@ -149,7 +149,7 @@ logger:
     prefix: ''
     entity: null
     group: docker-100k-experiments
-    tags: 
+    tags:
       - docker
       - flow-matching
       - 100k-steps
