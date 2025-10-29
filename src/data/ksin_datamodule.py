@@ -14,8 +14,8 @@ log = RankedLogger(__name__, rank_zero_only=True)
 def _sample_freqs(
     k: int,
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
@@ -23,8 +23,8 @@ def _sample_freqs(
 def _sample_amplitudes(
     k: int,
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
@@ -33,8 +33,8 @@ def _sample_freqs_shifted(
     k: int,
     num_samples: int,
     is_test: bool,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Sample frequencies with different train and test distributions.
 
@@ -164,7 +164,7 @@ class KSinDataset(torch.utils.data.Dataset):
         # self.freqs = freqs
         # self.amps = amps
 
-    def _sample_parameters(self, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample_parameters(self, seed: int) -> tuple[torch.Tensor, torch.Tensor]:
         self.generator.manual_seed(seed)
 
         if self.shift_test_distribution:
@@ -247,8 +247,8 @@ class KSinDataModule(LightningDataModule):
         sort_frequencies: bool = False,
         break_symmetry: bool = False,
         shift_test_distribution: bool = False,
-        train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
-        train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
+        train_val_test_sizes: tuple[int, int, int] = (100_000, 10_000, 10_000),
+        train_val_test_seeds: tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
         ot: bool = False,
         num_workers: int = 0,
@@ -277,7 +277,7 @@ class KSinDataModule(LightningDataModule):
     def prepare_data(self):
         pass
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: str | None = None):
         if stage == "fit":
             train_ds = KSinDataset(
                 self.k,
@@ -344,7 +344,7 @@ class KSinDataModule(LightningDataModule):
     def predict_dataloader(self):
         raise NotImplementedError
 
-    def teardown(self, stage: Optional[str] = None):
+    def teardown(self, stage: str | None = None):
         pass
 
 

@@ -155,7 +155,7 @@ class PlotLearntProjection(Callback):
     def __init__(
         self,
         after_val: bool = True,
-        every_n_steps: Optional[int] = None,
+        every_n_steps: int | None = None,
         sort_assignments: bool = True,
     ):
         super().__init__()
@@ -375,5 +375,8 @@ class LogPerParamMSE(Callback):
         per_param_mse = self.per_param_mse / self.count
         names = self.param_spec.names
         pl_module.log_dict(
-            {f"per_param_mse/{name}": mse for name, mse in zip(names, per_param_mse)},
+            {
+                f"per_param_mse/{name}": mse
+                for name, mse in zip(names, per_param_mse, strict=False)
+            },
         )

@@ -19,7 +19,7 @@ def get_shard_id(shard_path: Path) -> int:
     return int(shard_path.stem.split("-")[1])
 
 
-def reader_process(shard_path: Path, batch_size: int, read_queue: Queue, batch_indices: List[int]):
+def reader_process(shard_path: Path, batch_size: int, read_queue: Queue, batch_indices: list[int]):
     """Opens the HDF5 file in read-only SWMR mode and reads only the batches whose indices are in
     `batch_indices` from the "audio" dataset.
 
@@ -158,8 +158,8 @@ def process_shard(shard_path: Path, batch_size: int, m2l: EncoderDecoder, num_re
 def main(
     data_dir: str,
     batch_size: int,
-    shard_range: Optional[Tuple[int, int]],
-    shard: Optional[int],
+    shard_range: tuple[int, int] | None,
+    shard: int | None,
     num_readers: int,
 ):
     data_dir = Path(data_dir)

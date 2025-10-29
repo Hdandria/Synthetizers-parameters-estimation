@@ -11,8 +11,8 @@ class ResidualMLPBlock(nn.Module):
     def __init__(
         self,
         in_dim: int,
-        hidden_dim: Optional[int] = None,
-        out_dim: Optional[int] = None,
+        hidden_dim: int | None = None,
+        out_dim: int | None = None,
     ) -> None:
         super().__init__()
         if hidden_dim is None:
@@ -135,7 +135,7 @@ class ConditionalResidualMLP(nn.Module):
 
         return torch.where(dropout_mask, z, dropout_token)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, t: torch.Tensor, c: torch.Tensor | None) -> torch.Tensor:
         if c is None:
             c = self.cfg_dropout_token[0].expand(x.shape[0], -1)
 

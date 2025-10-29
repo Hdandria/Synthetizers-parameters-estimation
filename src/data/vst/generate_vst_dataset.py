@@ -124,7 +124,7 @@ def save_sample(
 
 
 def save_samples(
-    samples: List[VSTDataSample],
+    samples: list[VSTDataSample],
     audio_dataset: h5py.Dataset,
     mel_dataset: h5py.Dataset,
     param_dataset: h5py.Dataset,
@@ -156,10 +156,10 @@ def get_first_unwritten_idx(dataset: h5py.Dataset) -> int:
 def create_dataset_and_get_first_unwritten_idx(
     h5py_file: h5py.File,
     name: str,
-    shape: Tuple[int, ...],
+    shape: tuple[int, ...],
     dtype: np.dtype,
     compression: Any,
-) -> Tuple[h5py.Dataset, int]:
+) -> tuple[h5py.Dataset, int]:
     logger.info(f"Looking for dataset {name}...")
     if name in h5py_file:
         logger.info(f"Found dataset {name}, looking for first unwritten row.")
@@ -210,7 +210,7 @@ def create_datasets_and_get_start_idx(
 
 def worker_generate_samples(
     worker_id: int,
-    sample_indices: List[int],
+    sample_indices: list[int],
     plugin_path: str,
     preset_path: str,
     sample_rate: float,
@@ -288,7 +288,7 @@ def worker_generate_samples(
     logger.info(f"Worker {worker_id} finished and wrote to {worker_output_path}")
 
 
-def merge_worker_files(worker_files: List[str], output_file: h5py.File) -> None:
+def merge_worker_files(worker_files: list[str], output_file: h5py.File) -> None:
     """Merge multiple worker HDF5 files into the main output file."""
     logger.info(f"Merging {len(worker_files)} worker files into main dataset")
 
@@ -337,7 +337,6 @@ def make_dataset(
     sample_batch_size: int,
     num_workers: int = 1,
 ) -> None:
-
     audio_dataset, mel_dataset, param_dataset, start_idx = create_datasets_and_get_start_idx(
         hdf5_file=hdf5_file,
         num_samples=num_samples,

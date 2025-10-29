@@ -147,7 +147,7 @@ def main(
     # 4. foreach .pt file
     current_offset = 0
     for i, (pred_file, target_param_file, target_audio_file) in tqdm(
-        enumerate(zip(pred_files, target_param_files, target_audio_files))
+        enumerate(zip(pred_files, target_param_files, target_audio_files, strict=False))
     ):
         pred_params = torch.load(pred_file, map_location="cpu")
         target_audio = torch.load(target_audio_file, map_location="cpu").numpy()

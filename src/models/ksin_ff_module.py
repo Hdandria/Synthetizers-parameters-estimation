@@ -48,13 +48,13 @@ class KSinFeedForwardModule(LightningModule):
         self.val_lsd.reset()
         self.val_chamfer.reset()
 
-    def model_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
+    def model_step(self, batch: tuple[torch.Tensor, torch.Tensor]):
         x, y, *_ = batch
         preds = self.forward(x)
         loss = self.criterion(preds, y)
         return loss, preds, y, x
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, preds, targets, inputs = self.model_step(batch)
 
         *_, synth_fn = batch
@@ -66,7 +66,7 @@ class KSinFeedForwardModule(LightningModule):
     def on_train_epoch_end(self) -> None:
         pass
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, preds, targets, inputs = self.model_step(batch)
 
         # update and log metrics
@@ -81,7 +81,7 @@ class KSinFeedForwardModule(LightningModule):
     def on_validation_epoch_end(self):
         pass
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, preds, targets, inputs = self.model_step(batch)
 
         *_, synth_fn = batch
@@ -113,7 +113,7 @@ class KSinFeedForwardModule(LightningModule):
         if self.hparams.compile and stage == "fit":
             self.net = torch.compile(self.net)
 
-    def configure_optimizers(self) -> Dict[str, Any]:
+    def configure_optimizers(self) -> dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
 
         if self.hparams.scheduler is not None:

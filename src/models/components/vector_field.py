@@ -21,9 +21,9 @@ class VectorFieldBlock(nn.Module):
     def __init__(
         self,
         in_dim: int,
-        conditioning_dim: Optional[int] = None,
-        hidden_dim: Optional[int] = None,
-        out_dim: Optional[int] = None,
+        conditioning_dim: int | None = None,
+        hidden_dim: int | None = None,
+        out_dim: int | None = None,
     ) -> None:
         super().__init__()
         if hidden_dim is None:
@@ -49,7 +49,7 @@ class VectorFieldBlock(nn.Module):
             nn.Identity() if in_dim == out_dim else nn.Linear(in_dim, out_dim, bias=False)
         )
 
-    def forward(self, x: torch.Tensor, z: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, z: torch.Tensor | None = None) -> torch.Tensor:
         if self.conditioning:
             assert z is not None, "z must be provided for conditional vector field block."
             y = self.norm(x, z)
@@ -93,7 +93,7 @@ class VectorField(nn.Module):
         self,
         x: torch.Tensor,
         t: torch.Tensor,
-        conditioning: Optional[torch.Tensor] = None,
+        conditioning: torch.Tensor | None = None,
     ):
         if conditioning is None:
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)

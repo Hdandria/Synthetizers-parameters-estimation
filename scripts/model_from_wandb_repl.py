@@ -16,7 +16,7 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 def wandb_dir_to_ckpt_and_hparams(
     wandb_dir: Path, ckpt_type: Literal["best", "last"]
-) -> Tuple[Path, Path]:
+) -> tuple[Path, Path]:
     log_dir = wandb_dir.parent.parent
     ckpt_dir = log_dir / "checkpoints"
 
@@ -48,7 +48,6 @@ def get_state_dict(ckpt_file: Path, map_location: str = "cuda") -> dict:
 def instantiate_model(
     model_cfg: DictConfig, ckpt_file: Path, map_location: str = "cuda"
 ) -> torch.nn.Module:
-
     logger.info(f"Instantiating model from {ckpt_file} with config:")
     logger.info(OmegaConf.to_yaml(model_cfg))
     model = hydra.utils.instantiate(model_cfg)
@@ -85,7 +84,6 @@ def main(
     ckpt_type: Literal["best", "last"] = "last",
     device: str = "cuda",
 ):
-
     register_resolvers()
     log_dir = Path(log_dir)
     possible_wandb_dirs = list(log_dir.glob(f"**/*{wandb_id}/"))

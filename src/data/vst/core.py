@@ -1,7 +1,8 @@
 import _thread
 import threading
 import time
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
+from typing import Optional, Tuple
 
 import mido
 import numpy as np
@@ -72,11 +73,11 @@ def render_params(
     params: dict[str, float],
     midi_note: int,
     velocity: int,
-    note_start_and_end: Tuple[float, float],
+    note_start_and_end: tuple[float, float],
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
-    preset_path: Optional[str] = None,
+    preset_path: str | None = None,
 ) -> np.ndarray:
     if preset_path is not None:
         load_preset(plugin, preset_path)

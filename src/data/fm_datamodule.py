@@ -10,8 +10,8 @@ from src.data.ot import ot_collate_fn, regular_collate_fn
 def _sample_freqs(
     k: int,
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
@@ -19,8 +19,8 @@ def _sample_freqs(
 def _sample_amplitudes(
     k: int,
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     return torch.empty(num_samples, k, device=device).uniform_(-1.0, 1.0, generator=generator)
 
@@ -35,8 +35,8 @@ def _scale_freqs_and_amps_fm(freqs: torch.Tensor, amps: torch.Tensor):
 def _sample_freqs_symmetry_broken(
     k: int,
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator] = None,
+    device: str | torch.device,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Sample frequencies such that each sinusoidal component has frequency drawn from disjoint
     intervals."""
@@ -79,8 +79,8 @@ def fm_conditional_symmetry(params: torch.Tensor, length: int, break_symmetry: b
 
 def _sample_params_conditional_symmetry(
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator],
+    device: str | torch.device,
+    generator: torch.Generator | None,
 ):
     amplitudes = _sample_amplitudes(3, num_samples, device, generator)
     freqs = _sample_freqs(3, num_samples, device, generator)
@@ -121,8 +121,8 @@ def fm_mixed_symmetry(params: torch.Tensor, length: int, break_symmetry: bool = 
 
 def _sample_params_mixed_symmetry(
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator],
+    device: str | torch.device,
+    generator: torch.Generator | None,
 ):
     amplitudes = _sample_amplitudes(4, num_samples, device, generator)
     freqs = _sample_freqs(4, num_samples, device, generator)
@@ -164,8 +164,8 @@ def fm_hierarchical_symmetry(params: torch.Tensor, length: int, break_symmetry: 
 
 def _sample_params_hierarchical_symmetry(
     num_samples: int,
-    device: Union[str, torch.device],
-    generator: Optional[torch.Generator],
+    device: str | torch.device,
+    generator: torch.Generator | None,
 ):
     amplitudes = _sample_amplitudes(6, num_samples, device, generator)
     freqs = _sample_freqs(6, num_samples, device, generator)
@@ -209,7 +209,7 @@ class FMDataset(torch.utils.data.Dataset):
         self.freqs = freqs
         self.amps = amps
 
-    def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample_parameters(self) -> tuple[torch.Tensor, torch.Tensor]:
         sampler, _ = _FM_ALGORITHMS[self.algorithm]
         freqs, amplitudes = sampler(self.num_samples, torch.device("cpu"), self.generator)
 
@@ -240,8 +240,8 @@ class FMDataModule(LightningDataModule):
         algorithm: Literal["conditional", "mixed", "hierarchical"],
         signal_length: int = 1024,
         break_symmetry: bool = False,
-        train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
-        train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
+        train_val_test_sizes: tuple[int, int, int] = (100_000, 10_000, 10_000),
+        train_val_test_seeds: tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
         num_workers: int = 0,
         ot: bool = False,
@@ -266,7 +266,7 @@ class FMDataModule(LightningDataModule):
     def prepare_data(self):
         pass
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: str | None = None):
         if stage == "fit":
             train_ds = FMDataset(
                 self.algorithm,
@@ -324,7 +324,7 @@ class FMDataModule(LightningDataModule):
     def predict_dataloader(self):
         raise NotImplementedError
 
-    def teardown(self, stage: Optional[str] = None):
+    def teardown(self, stage: str | None = None):
         pass
 
 

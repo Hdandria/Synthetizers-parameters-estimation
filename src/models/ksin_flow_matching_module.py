@@ -1,6 +1,7 @@
 import math
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Dict, Literal, Tuple
+from typing import Any, Dict, Literal, Tuple
 
 import ot as pot
 import torch
@@ -306,7 +307,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return target
 
-    def _train_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
+    def _train_step(self, batch: tuple[torch.Tensor, torch.Tensor]):
         signal, params, noise, _ = batch
 
         # Get conditioning vector
@@ -339,7 +340,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return loss, penalty
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         if self.global_step < self.hparams.freeze_for_first_n_steps:
             # freeze vector_field and encoder, leaving only projection active
             for param in self.vector_field.parameters():
@@ -380,7 +381,7 @@ class KSinFlowMatchingModule(LightningModule):
 
     def _sample(
         self,
-        batch: Tuple[torch.Tensor, torch.Tensor],
+        batch: tuple[torch.Tensor, torch.Tensor],
         steps: int,
         cfg_strength: float,
     ):
@@ -408,7 +409,7 @@ class KSinFlowMatchingModule(LightningModule):
 
         return sample, y, x
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         preds, targets, inputs = self._sample(
             batch,
             self.hparams.validation_sample_steps,
@@ -428,7 +429,7 @@ class KSinFlowMatchingModule(LightningModule):
     def on_validation_epoch_end(self):
         pass
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         preds, targets, inputs = self._sample(
             batch, self.hparams.test_sample_steps, self.hparams.test_cfg_strength
         )
@@ -470,7 +471,7 @@ class KSinFlowMatchingModule(LightningModule):
         self.log_dict(encoder_norms, on_step=True, on_epoch=True)
         self.log_dict(vf_norms, on_step=True, on_epoch=True)
 
-    def configure_optimizers(self) -> Dict[str, Any]:
+    def configure_optimizers(self) -> dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
 
         if self.hparams.scheduler is not None:

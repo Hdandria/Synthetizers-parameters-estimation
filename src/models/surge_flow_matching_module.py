@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 
 import torch
 from lightning import LightningModule
@@ -110,7 +111,7 @@ class SurgeFlowMatchingModule(LightningModule):
         else:
             raise ValueError(f"Unknown conditioning {self.hparams.conditioning}")
 
-    def _train_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
+    def _train_step(self, batch: tuple[torch.Tensor, torch.Tensor]):
         conditioning = self._get_conditioning_from_batch(batch)
         params = batch["params"]
         noise = batch["noise"]
@@ -144,7 +145,7 @@ class SurgeFlowMatchingModule(LightningModule):
 
         return loss, penalty
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, penalty = self._train_step(batch)
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -161,7 +162,7 @@ class SurgeFlowMatchingModule(LightningModule):
 
     def _sample(
         self,
-        conditioning: Optional[torch.Tensor],
+        conditioning: torch.Tensor | None,
         noise: torch.Tensor,
         steps: int,
         cfg_strength: float,
@@ -191,7 +192,7 @@ class SurgeFlowMatchingModule(LightningModule):
 
         return sample
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         conditioning = self._get_conditioning_from_batch(batch)
         pred_params = self._sample(
             conditioning,
@@ -209,7 +210,7 @@ class SurgeFlowMatchingModule(LightningModule):
     def on_validation_epoch_end(self):
         pass
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         conditioning = self._get_conditioning_from_batch(batch)
         pred_params = self._sample(
             conditioning,
@@ -259,7 +260,7 @@ class SurgeFlowMatchingModule(LightningModule):
         self.log_dict(vf_norms, on_step=True, on_epoch=False)
         self.log_dict(encoder_norms, on_step=True, on_epoch=False)
 
-    def configure_optimizers(self) -> Dict[str, Any]:
+    def configure_optimizers(self) -> dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
 
         if self.hparams.warmup_steps > 0:
@@ -300,7 +301,7 @@ class SurgeFlowMatchingModule(LightningModule):
     # Handles mismatches between compiled and non-compiled checkpoints.
     # When compile=True, setup() wraps modules BEFORE checkpoint loading during predict/test,
     # so we may need to add _orig_mod prefixes to checkpoint keys.
-    def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:  # type: ignore[override]
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:  # type: ignore[override]
         state_dict = checkpoint.get("state_dict", {})
         if not state_dict:
             return
@@ -310,20 +311,20 @@ class SurgeFlowMatchingModule(LightningModule):
             k.startswith("encoder._orig_mod.") or k.startswith("vector_field._orig_mod.")
             for k in state_dict.keys()
         )
-        
+
         # Check if checkpoint has non-compiled encoder/vector_field keys
         checkpoint_has_noncompiled = any(
-            (k.startswith("encoder.") and not k.startswith("encoder._orig_mod.")) or
-            (k.startswith("vector_field.") and not k.startswith("vector_field._orig_mod."))
+            (k.startswith("encoder.") and not k.startswith("encoder._orig_mod."))
+            or (k.startswith("vector_field.") and not k.startswith("vector_field._orig_mod."))
             for k in state_dict.keys()
         )
-        
+
         # If checkpoint is already in the right format or has no relevant keys, return
         if not checkpoint_has_compiled and not checkpoint_has_noncompiled:
             return
 
-        new_state_dict: Dict[str, Any] = {}
-        
+        new_state_dict: dict[str, Any] = {}
+
         # When loading into a model that will be/is compiled, add _orig_mod prefix
         if self.hparams.compile and checkpoint_has_noncompiled:
             for k, v in state_dict.items():

@@ -31,7 +31,7 @@ class SurgeFlowVAEModule(LightningModule):
         # so it's worth to make sure validation metrics don't store results from these checks
         pass
 
-    def model_step(self, batch: Dict[str, torch.Tensor]):
+    def model_step(self, batch: dict[str, torch.Tensor]):
         target_params = batch["params"]
 
         mel_spec = batch["mel_spec"]
@@ -50,7 +50,7 @@ class SurgeFlowVAEModule(LightningModule):
             self.hparams.beta_max - self.hparams.beta_start
         )
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         losses, *_, vae_out = self.model_step(batch)
         x_hat = vae_out.x_hat
 
@@ -70,7 +70,7 @@ class SurgeFlowVAEModule(LightningModule):
     def on_train_epoch_end(self) -> None:
         pass
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         losses, *_, vae_out = self.model_step(batch)
         x_hat = vae_out.x_hat
 
@@ -83,7 +83,7 @@ class SurgeFlowVAEModule(LightningModule):
     def on_validation_epoch_end(self):
         pass
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         losses, *_ = self.model_step(batch)
         losses = {f"test/{k}": v for k, v in losses.items()}
         self.log_dict(losses, on_step=False, on_epoch=True, prog_bar=True)
@@ -91,7 +91,7 @@ class SurgeFlowVAEModule(LightningModule):
     def on_test_epoch_end(self) -> None:
         pass
 
-    def predict_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def predict_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         mel_spec = batch["mel_spec"]
         out = self.net(mel_spec)
 
@@ -111,7 +111,7 @@ class SurgeFlowVAEModule(LightningModule):
         norms = {f"net/{k}": v for k, v in norms.items()}
         self.log_dict(norms, on_step=True, on_epoch=False)
 
-    def configure_optimizers(self) -> Dict[str, Any]:
+    def configure_optimizers(self) -> dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
 
         if self.hparams.warmup_steps > 0:

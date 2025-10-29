@@ -89,7 +89,6 @@ def get_stats_directory(directory):
 
 
 if __name__ == "__main__":
-
     # filename = "/data/scratch/acw585/surge/train.hdf5"
     filename = sys.argv[1]
 

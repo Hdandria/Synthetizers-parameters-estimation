@@ -8,8 +8,8 @@ class ResidualMLPBlock(nn.Module):
     def __init__(
         self,
         in_dim: int,
-        hidden_dim: Optional[int] = None,
-        out_dim: Optional[int] = None,
+        hidden_dim: int | None = None,
+        out_dim: int | None = None,
     ) -> None:
         super().__init__()
         if hidden_dim is None:
@@ -47,8 +47,8 @@ class ResidualBlock(nn.Module):
     def __init__(
         self,
         in_dim: int,
-        hidden_dim: Optional[int] = None,
-        out_dim: Optional[int] = None,
+        hidden_dim: int | None = None,
+        out_dim: int | None = None,
         kernel_size: int = 7,
         norm: Literal["bn", "ln"] = "bn",
     ):

@@ -1,6 +1,7 @@
 import random
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Union
 
 import h5py
 import numpy as np
@@ -11,12 +12,12 @@ from src.data.ot import _hungarian_match
 
 
 class SurgeXTDataset(torch.utils.data.Dataset):
-    mean: Optional[np.ndarray] = None
-    std: Optional[np.ndarray] = None
+    mean: np.ndarray | None = None
+    std: np.ndarray | None = None
 
     def __init__(
         self,
-        dataset_file: Union[str, Path],
+        dataset_file: str | Path,
         batch_size: int,
         ot: bool = True,
         read_audio: bool = False,
@@ -49,7 +50,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         if use_saved_mean_and_variance:
             self._load_dataset_statistics(dataset_file)
 
-    def _load_dataset_statistics(self, dataset_file: Union[str, Path]):
+    def _load_dataset_statistics(self, dataset_file: str | Path):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
         # if not, we throw an error
         stats_file = SurgeXTDataset.get_stats_file_path(dataset_file)
@@ -66,7 +67,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             self.std = stats["std"]
 
     @staticmethod
-    def get_stats_file_path(dataset_file: Union[str, Path]) -> Path:
+    def get_stats_file_path(dataset_file: str | Path) -> Path:
         dataset_file = Path(dataset_file)
         data_dir = dataset_file.parent
         return data_dir / "stats.npz"
@@ -96,7 +97,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             audio=audio,
         )
 
-    def _index_dataset(self, ds: h5py.Dataset, idx: Union[int, Sequence[int]]):
+    def _index_dataset(self, ds: h5py.Dataset, idx: int | Sequence[int]):
         if self.repeat_first_batch:
             return ds[: self.batch_size]
         if isinstance(idx, int):
@@ -110,7 +111,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
 
         return ds[idx]
 
-    def __getitem__(self, idx: Union[int, Sequence[int]]):
+    def __getitem__(self, idx: int | Sequence[int]):
         if self.fake:
             return self._get_fake_item()
 
@@ -234,14 +235,14 @@ class ShiftedBatchSampler(torch.utils.data.BatchSampler):
 class SurgeDataModule(LightningDataModule):
     def __init__(
         self,
-        dataset_root: Union[str, Path],
+        dataset_root: str | Path,
         use_saved_mean_and_variance: bool = True,
         batch_size: int = 1024,
         ot: bool = True,
         num_workers: int = 0,
         fake: bool = False,
         repeat_first_batch: bool = False,
-        predict_file: Optional[str] = None,
+        predict_file: str | None = None,
         conditioning: Literal["mel", "m2l"] = "mel",
     ):
         super().__init__()
@@ -256,7 +257,7 @@ class SurgeDataModule(LightningDataModule):
         self.predict_file = predict_file
         self.conditioning = conditioning
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: str | None = None):
         self.train_dataset = SurgeXTDataset(
             self.dataset_root / "train.h5",
             batch_size=self.batch_size,
@@ -342,7 +343,7 @@ class SurgeDataModule(LightningDataModule):
             pin_memory=True,
         )
 
-    def teardown(self, stage: Optional[str] = None):
+    def teardown(self, stage: str | None = None):
         self.train_dataset.dataset_file.close()
         self.val_dataset.dataset_file.close()
         self.test_dataset.dataset_file.close()

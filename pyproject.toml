@@ -45,6 +45,7 @@ dependencies = [
     "pytest>=6.0",
     "pytest-cov>=4.0",
     "pre-commit",
+    "ruff>=0.8.0",
     "dask[distributed]>=2025.10.0",
     "s3fs>=0.4.2",
     "boto3>=1.40.53",
@@ -86,3 +87,27 @@ exclude_lines = [
     "raise NotImplementedError()",
     "if __name__ == .__main__.:",
 ]
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E402",  # module level import not at top of file
+    "E722",  # bare except
+    "F401",  # imported but unused
+    "F821",  # undefined name (common in research code)
+    "F841",  # local variable assigned but never used
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

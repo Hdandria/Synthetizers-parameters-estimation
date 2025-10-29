@@ -39,7 +39,6 @@ class CustomRealNVP(CompositeTransform):
         batch_norm_within_layers=False,
         batch_norm_between_layers=False,
     ):
-
         if use_volume_preserving:
             coupling_constructor = AdditiveCouplingTransform
         else:
@@ -85,8 +84,8 @@ class EncoderBlock(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Tuple[int],
-        stride: Tuple[int],
+        kernel_size: tuple[int],
+        stride: tuple[int],
         padding: int,
     ):
         super().__init__()
@@ -114,7 +113,7 @@ class EncoderBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, latent_dim: int, spec_dim: Tuple[int] = (128, 401)):
+    def __init__(self, latent_dim: int, spec_dim: tuple[int] = (128, 401)):
         super().__init__()
 
         self.cnn = nn.Sequential(
@@ -153,10 +152,10 @@ class DecoderBlock(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Tuple[int],
-        stride: Tuple[int],
+        kernel_size: tuple[int],
+        stride: tuple[int],
         padding: int,
-        output_padding: Optional[Tuple[int]] = None,
+        output_padding: tuple[int] | None = None,
     ):
         super().__init__()
         self.conv1 = nn.ConvTranspose2d(
@@ -190,7 +189,7 @@ class DecoderBlock(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, latent_dim: int, num_channels: int, spec_dim: Tuple[int] = (128, 401)):
+    def __init__(self, latent_dim: int, num_channels: int, spec_dim: tuple[int] = (128, 401)):
         super().__init__()
 
         self.in_proj = nn.Linear(latent_dim, 2048)

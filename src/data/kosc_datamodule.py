@@ -109,7 +109,7 @@ class KOscDataset(torch.utils.data.Dataset):
         break_symmetry: bool,
         is_test: bool,
         seed: int,
-        debug_num_samples: Optional[int] = None,
+        debug_num_samples: int | None = None,
     ):
         self.k = k
         self.signal_length = signal_length
@@ -137,7 +137,7 @@ class KOscDataset(torch.utils.data.Dataset):
         # self.freqs = freqs
         # self.amps = amps
 
-    def _sample_parameters(self, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample_parameters(self, seed: int) -> tuple[torch.Tensor, torch.Tensor]:
         self.generator.manual_seed(seed)
 
         params = torch.empty(1, 3 * self.k, device=torch.device("cpu"))
@@ -181,12 +181,12 @@ class KOscDataModule(LightningDataModule):
         signal_length: int = 1024,
         sort_frequencies: bool = False,
         break_symmetry: bool = False,
-        train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
-        train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
+        train_val_test_sizes: tuple[int, int, int] = (100_000, 10_000, 10_000),
+        train_val_test_seeds: tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
         ot: bool = False,
         num_workers: int = 0,
-        debug_num_samples: Optional[int] = None,
+        debug_num_samples: int | None = None,
     ):
         super().__init__()
 
@@ -212,7 +212,7 @@ class KOscDataModule(LightningDataModule):
     def prepare_data(self):
         pass
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: str | None = None):
         if stage == "fit":
             train_ds = KOscDataset(
                 self.k,
@@ -279,7 +279,7 @@ class KOscDataModule(LightningDataModule):
     def predict_dataloader(self):
         raise NotImplementedError
 
-    def teardown(self, stage: Optional[str] = None):
+    def teardown(self, stage: str | None = None):
         pass
 
 

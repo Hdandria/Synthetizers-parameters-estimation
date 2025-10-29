@@ -42,7 +42,7 @@ def subdir_matches_pattern(dir: Path) -> bool:
     return (dir / "target.wav").exists() and (dir / "pred.wav").exists()
 
 
-def find_possible_subdirs(audio_dir: Path) -> List[Path]:
+def find_possible_subdirs(audio_dir: Path) -> list[Path]:
     all_subdirectories = [d for d in audio_dir.glob("*") if d.is_dir()]
     return [d for d in all_subdirectories if subdir_matches_pattern(d)]
 
@@ -53,7 +53,7 @@ def compute_mel_specs(y: np.ndarray, sample_rate: float = 44100.0):
     hop_sizes = [0.005, 0.01, 0.05]  # 5ms, 10ms, 50ms
     n_mels_list = [32, 64, 128]
 
-    for window_size, hop_size, n_mels in zip(window_sizes, hop_sizes, n_mels_list):
+    for window_size, hop_size, n_mels in zip(window_sizes, hop_sizes, n_mels_list, strict=False):
         win_length = int(window_size * sample_rate)
         hop_length = int(hop_size * sample_rate)
         # Ensure n_fft is at least as large as win_length
@@ -81,7 +81,7 @@ def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
     pred_specs = compute_mel_specs(pred)
 
     dist = 0.0
-    for target_spec, pred_spec in zip(target_specs, pred_specs):
+    for target_spec, pred_spec in zip(target_specs, pred_specs, strict=False):
         dist += np.mean(np.abs(target_spec - pred_spec))
 
     dist = dist / len(target_specs)
@@ -217,7 +217,7 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     return dict(mss=mss, wmfcc=wmfcc, sot=sot, rms=rms)
 
 
-def compute_metrics(audio_dirs: List[Path], output_dir: Path):
+def compute_metrics(audio_dirs: list[Path], output_dir: Path):
     idxs = []
     rows = []
     for dir in audio_dirs:

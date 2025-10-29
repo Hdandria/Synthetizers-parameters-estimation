@@ -449,7 +449,7 @@ class ApproxEquivTransformer(nn.Module):
         self,
         x: torch.Tensor,
         t: torch.Tensor,
-        conditioning: Optional[torch.Tensor] = None,
+        conditioning: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if conditioning is None:
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)
@@ -502,7 +502,7 @@ class PatchEmbed(nn.Module):
         stride: int,
         in_channels: int,
         d_model: int,
-        spec_shape: Tuple[int] = (128, 401),
+        spec_shape: tuple[int] = (128, 401),
     ):
         super().__init__()
         assert stride < patch_size, "Overlap must be less than patch size"
@@ -555,7 +555,7 @@ class AudioSpectrogramTransformer(nn.Module):
         patch_size: int = 16,
         patch_stride: int = 10,
         input_channels: int = 2,
-        spec_shape: Tuple[int] = (128, 401),
+        spec_shape: tuple[int] = (128, 401),
     ):
         super().__init__()
 
@@ -633,7 +633,7 @@ class ASTWithProjectionHead(AudioSpectrogramTransformer):
         patch_size: int = 16,
         patch_stride: int = 10,
         input_channels: int = 2,
-        spec_shape: Tuple[int] = (128, 401),
+        spec_shape: tuple[int] = (128, 401),
     ):
         super().__init__(
             d_model=d_model,

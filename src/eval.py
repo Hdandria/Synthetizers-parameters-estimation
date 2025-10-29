@@ -40,7 +40,7 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 @task_wrapper
-def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def evaluate(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
     """Evaluate a trained model checkpoint on test/validation data.
 
     This function loads a pre-trained model from a checkpoint and evaluates it on
@@ -82,10 +82,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
     log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = instantiate_callbacks(cfg.get("callbacks"))
+    callbacks: list[Callback] = instantiate_callbacks(cfg.get("callbacks"))
 
     log.info("Instantiating loggers...")
-    logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
+    logger: list[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger, callbacks=callbacks)

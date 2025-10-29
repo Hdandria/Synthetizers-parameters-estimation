@@ -54,7 +54,7 @@ def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
     pred_specs = compute_mel_specs(pred)
 
     dist = 0.0
-    for target_spec, pred_spec in zip(target_specs, pred_specs):
+    for target_spec, pred_spec in zip(target_specs, pred_specs, strict=False):
         dist += np.mean(np.abs(target_spec - pred_spec))
 
     dist /= len(target_specs)
