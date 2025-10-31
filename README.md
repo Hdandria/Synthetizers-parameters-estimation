@@ -13,7 +13,7 @@ Given an audio file, the model predicts the synthesizer parameters that could ha
 Run the setup script to install dependencies (Docker, ovhai CLI, Terraform):
 
 ```bash
-./scripts/setup.sh
+./scripts/ovh/setup.sh
 ```
 
 Configure your credentials in `.env`:
@@ -58,8 +58,8 @@ python src/eval.py experiment=flow_multi/dataset_20k_40k ckpt_path=path/to/check
 **Monitor jobs:**
 
 ```bash
-./scripts/status.sh <job-id>
-./scripts/logs.sh <job-id>
+./scripts/ovh/status.sh <job-id>
+./scripts/ovh/logs.sh <job-id>
 ovhai job stop <job-id>
 ```
 
@@ -70,7 +70,7 @@ Datasets are HDF5 files containing audio features and VST parameters. Located in
 Generate new data:
 
 ```bash
-python scripts/generate_surge_xt_data.py --surge-path vsts/Surge\ XT.vst3
+python scripts/dataset/generate_surge_xt_data.py --surge-path vsts/Surge\ XT.vst3
 ```
 
 ## Model
@@ -87,7 +87,7 @@ Configs in `configs/experiment/flow_multi/`.
 
 - `src/` - source code. models, data loaders, training/eval
 - `configs/` - Hydra experiment configs
-- `scripts/` - utilities (setup, monitoring, data generation)
+- `scripts/` - utilities split into subfolders: `scripts/ovh/`, `scripts/dataset/`, `scripts/eval/`, `scripts/render/` and helpers
 - `datasets/` - HDF5 training data
 - `launch.sh` - main entry point for training
 - `terraform/` - cloud infrastructure

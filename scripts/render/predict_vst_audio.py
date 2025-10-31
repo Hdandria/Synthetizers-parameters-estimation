@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 from pathlib import Path
 
@@ -88,9 +89,6 @@ def params_to_csv(
     save_path: str,
     param_spec: ParamSpec,
 ) -> None:
-    """Write the target and predicted parameters to a CSV file."""
-    # row_names = list(pred_synth_params.keys()) + list(pred_note_params.keys())  # unused variable removed
-
     synth_df = pd.DataFrame({"pred": pred_synth_params, "target": target_synth_params})
     note_df = pd.DataFrame({"pred": pred_note_params, "target": target_note_params})
     df = pd.concat([synth_df, note_df])

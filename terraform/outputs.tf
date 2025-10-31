@@ -33,10 +33,10 @@ output "quick_reference" {
      ./launch.sh surge/base
 
   2. Check job status:
-     ./scripts/status.sh <job-id>
+  ./scripts/ovh/status.sh <job-id>
 
   3. Stream logs:
-     ./scripts/logs.sh <job-id>
+  ./scripts/ovh/logs.sh <job-id>
 
   EOT
 }

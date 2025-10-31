@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 if [[ $# -eq 0 ]]; then
-  echo "Usage: ./scripts/status.sh <job-id>"
+  echo "Usage: ./scripts/ovh/status.sh <job-id>"
   echo ""
   echo "List all your jobs:"
   echo "  ovhai job list"
@@ -24,7 +24,7 @@ JOB_ID=$1
 
 if ! command -v ovhai &> /dev/null; then
   echo -e "${RED}Error: ovhai CLI not found${NC}"
-  echo "Install it with: ./scripts/setup.sh"
+  echo "Install it with: ./scripts/ovh/setup.sh"
   exit 1
 fi
 
@@ -87,7 +87,7 @@ if [[ "$STATE" == "RUNNING" ]]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo -e "${YELLOW}Commands:${NC}"
-  echo -e "  Stream logs:  ${BLUE}./scripts/logs.sh ${JOB_ID}${NC}"
+  echo -e "  Stream logs:  ${BLUE}./scripts/ovh/logs.sh ${JOB_ID}${NC}"
   echo -e "  Stop job:     ${BLUE}ovhai job stop ${JOB_ID}${NC}"
 elif [[ "$STATE" =~ ^(FAILED|ERROR)$ ]]; then
   echo -e "${RED}Job failed! Last logs:${NC}"
@@ -97,5 +97,5 @@ elif [[ "$STATE" =~ ^(FAILED|ERROR)$ ]]; then
 elif [[ "$STATE" == "DONE" ]]; then
   echo -e "${GREEN}✅ Job completed successfully!${NC}"
   echo ""
-  echo -e "View logs: ${BLUE}./scripts/logs.sh ${JOB_ID}${NC}"
+  echo -e "View logs: ${BLUE}./scripts/ovh/logs.sh ${JOB_ID}${NC}"
 fi

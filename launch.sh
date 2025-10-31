@@ -235,8 +235,8 @@ echo ""
 echo -e "${GREEN}${BOLD}[+] Job submitted successfully!${RESET}"
 echo -e "${CYAN}------------------------------------------------------------${RESET}"
 echo -e "${BOLD}Job ID:${RESET}    ${GREEN}${JOB_ID}${RESET}"
-echo -e "${BOLD}Monitor:${RESET}   ${BLUE}./scripts/status.sh ${JOB_ID}${RESET}"
-echo -e "${BOLD}Logs:${RESET}      ${BLUE}./scripts/logs.sh ${JOB_ID}${RESET}"
+echo -e "${BOLD}Monitor:${RESET}   ${BLUE}./scripts/ovh/status.sh ${JOB_ID}${RESET}"
+echo -e "${BOLD}Logs:${RESET}      ${BLUE}./scripts/ovh/logs.sh ${JOB_ID}${RESET}"
 echo -e "${CYAN}------------------------------------------------------------${RESET}"
 
 [[ "$STREAM_LOGS" == true ]] && { echo -e "${BLUE}[*] Streaming logs...${RESET}"; sleep 10; ovhai job logs "$JOB_ID" --follow; }

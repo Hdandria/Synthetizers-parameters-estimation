@@ -23,4 +23,4 @@ echo Metric folder is $METRIC_DIR
 
 module load gcc
 mamba activate perm
-python scripts/compute_audio_metrics.py -w 16 -- $AUDIO_DIR $METRIC_DIR
+python scripts/eval/compute_audio_metrics.py -w 16 -- $AUDIO_DIR $METRIC_DIR

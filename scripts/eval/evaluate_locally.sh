@@ -1,45 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Quick local evaluation using an existing predictions dir
+# Usage: ./scripts/eval/evaluate_locally.sh <predictions_dir> <outdir>
+
+PRED_DIR="$1"
+OUTDIR="$2"
+
+mkdir -p "$OUTDIR"
+
+# Render predictions
+scripts/render/renderscript.sh "$PRED_DIR" "$OUTDIR/audio" full
+
+# Compute metrics
+python scripts/eval/compute_audio_metrics_no_pesto.py "$OUTDIR/audio" "$OUTDIR/metrics"
+
+echo "Local evaluation complete. Results in $OUTDIR"
 #!/bin/bash
 ################################################################################
-# Evaluate Model and Compute Audio Metrics
-# This script:
-# 1. Runs prediction on test/val set using trained checkpoint
-# 2. Renders predictions to audio using VST plugin
-# 3. Computes audio metrics
+# Local Evaluation Script (No Docker)
 #
-# Usage (when called from launch.sh):
-#   Auto-detects checkpoint from training output
-# Usage (manual):
-#   ./scripts/evaluate_with_metrics.sh <checkpoint_path> <experiment_config> <dataset_split> <dataset_root>
+# Usage:
+#   ./scripts/evaluate_locally.sh <checkpoint_path> <experiment_config> <dataset_split> <dataset_root>
+#
+# Example:
+#   ./scripts/evaluate_locally.sh \
+#     ./logs/dataset_20k_40k-2025-10-24_12-59-16/checkpoints/last.ckpt \
+#     flow_multi/dataset_20k_40k \
+#     test \
+#     ./datasets/surge-20k
 ################################################################################
 
 set -euo pipefail
 
-# Arguments can be passed or auto-detected
+# Arguments
 CKPT_PATH="${1:-}"
 EXPERIMENT_CONFIG="${2:-}"
 DATASET_SPLIT="${3:-test}"
 DATASET_ROOT="${4:-}"
 
-# If checkpoint path contains wildcards, resolve it
-if [[ "$CKPT_PATH" == *"*"* ]]; then
-    echo "🔍 Resolving checkpoint path with wildcards: $CKPT_PATH"
-    # First try to find best checkpoint (epoch_*.ckpt), fallback to last.ckpt
-    RESOLVED_CKPT=$(find /workspace/outputs/train -name "epoch_*.ckpt" -type f 2>/dev/null | sort | tail -n 1)
-    if [[ -z "$RESOLVED_CKPT" ]]; then
-        RESOLVED_CKPT=$(find /workspace/outputs/train -name "last.ckpt" -type f 2>/dev/null | sort | tail -n 1)
-    fi
-    if [[ -n "$RESOLVED_CKPT" ]]; then
-        CKPT_PATH="$RESOLVED_CKPT"
-        echo "✅ Found checkpoint: $CKPT_PATH"
-    else
-        echo "❌ Error: No checkpoint found matching pattern"
-        exit 1
-    fi
-fi
-
-if [[ -z "$CKPT_PATH" ]] || [[ -z "$EXPERIMENT_CONFIG" ]]; then
-    echo "Usage: $0 <checkpoint_path> <experiment_config> [dataset_split] [dataset_root]"
-    echo "Example: $0 /workspace/outputs/train/flow_multi/run-123/checkpoints/last.ckpt flow_multi/dataset_50k test /workspace/datasets-mount/datasets/surge-100k"
+if [[ -z "$CKPT_PATH" ]] || [[ -z "$EXPERIMENT_CONFIG" ]] || [[ -z "$DATASET_ROOT" ]]; then
+    echo "Usage: $0 <checkpoint_path> <experiment_config> <dataset_split> <dataset_root>"
+    echo "Example: $0 ./logs/dataset_20k_40k-2025-10-24_12-59-16/checkpoints/last.ckpt flow_multi/dataset_20k_40k test ./datasets/surge-20k"
     exit 1
 fi
 
@@ -51,7 +53,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🎯 Evaluating model with audio metrics"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Checkpoint: $CKPT_PATH"
-# Determine if this is a best checkpoint or last checkpoint
 if [[ "$CKPT_PATH" == *"epoch_"* ]]; then
     echo "Type: Best checkpoint (lowest train/param_mse)"
 else
@@ -59,11 +60,12 @@ else
 fi
 echo "Experiment: $EXPERIMENT_CONFIG"
 echo "Dataset split: $DATASET_SPLIT"
+echo "Dataset root: $DATASET_ROOT"
 echo "Run name: $RUN_NAME"
 echo ""
 
 # Set up output directories
-EVAL_DIR="/workspace/outputs/evaluations/${RUN_NAME}"
+EVAL_DIR="./outputs/evaluations/${RUN_NAME}"
 PRED_DIR="${EVAL_DIR}/predictions"
 AUDIO_DIR="${EVAL_DIR}/audio"
 METRICS_DIR="${EVAL_DIR}/metrics"
@@ -76,26 +78,30 @@ echo "  Audio: $AUDIO_DIR"
 echo "  Metrics: $METRICS_DIR"
 echo ""
 
+# Set PROJECT_ROOT environment variable
+export PROJECT_ROOT=$(pwd)
+
 # Step 1: Generate predictions
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Step 1/3: Generating predictions on ${DATASET_SPLIT} set..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Build the eval command
-EVAL_CMD="python src/eval.py \
+PREDICT_FILE_FULL="${DATASET_ROOT}/${DATASET_SPLIT}.h5"
+EVAL_CMD="uv run python src/eval.py \
     experiment=\"${EXPERIMENT_CONFIG}\" \
     ckpt_path=\"${CKPT_PATH}\" \
     mode=predict \
     callbacks=prediction_writer \
+    callbacks.rich_progress_bar=null \
+    paths=default \
     paths.output_dir=\"${PRED_DIR}\" \
-    data.predict_file=\"${DATASET_SPLIT}.h5\""
-
-# Add dataset_root override if provided
-if [[ -n "$DATASET_ROOT" ]]; then
-    EVAL_CMD="${EVAL_CMD} data.dataset_root=\"${DATASET_ROOT}\""
-    echo "Using dataset root: $DATASET_ROOT"
-fi
-
+    data.predict_file=\"${PREDICT_FILE_FULL}\" \
+    data.dataset_root=\"${DATASET_ROOT}\" \
+    model.compile=false \
+    trainer.accelerator=gpu \
+    trainer.precision=16-mixed \
+    +trainer.limit_predict_batches=3 \
+    data.num_workers=6"
 echo "Running: $EVAL_CMD"
 eval "$EVAL_CMD"
 
@@ -107,28 +113,41 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 2/3: Rendering predictions to audio..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Find the predictions subdirectory
-PRED_SUBDIR=$(find "$PRED_DIR" -type d -name "predictions" | head -n 1)
-if [[ -z "$PRED_SUBDIR" ]]; then
-    echo "❌ Error: predictions directory not found in $PRED_DIR"
+# For robustness, we handle both pred-*.pt directly under PRED_DIR and in subfolders
+found_pred_dir=$(find "$PRED_DIR" -type f -name "pred-*.pt" -printf '%h
+'`) || true
+if [[ -n "$found_pred_dir" ]]; then
+    PRED_SUBDIR="$found_pred_dir"
+    echo "Found predictions at: $PRED_SUBDIR"
+else
+    echo "❌ Error: No pred-*.pt files found under $PRED_DIR"
+    echo "Please ensure Step 1 has been run successfully"
     exit 1
 fi
 
-# Use paths from environment variables (set in .env)
-PLUGIN_PATH="${VST_PLUGIN_PATH:-/workspace/plugins/Surge XT.vst3/Contents/x86_64-linux/Surge XT.so}"
-
-# Infer preset from experiment config
-PRESET_NAME="surge-base"
-PRESET_PATH="${VST_PRESET_PATH:-/workspace/presets/${PRESET_NAME}.vstpreset}"
+# Plugin and preset paths (adjust these to your system)
+# Note: Use the shorter path - pedalboard will find the .so file automatically
+PLUGIN_PATH="${VST_PLUGIN_PATH:-plugins/Surge XT.vst3}"
+PRESET_PATH="${VST_PRESET_PATH:-./presets/surge-base.vstpreset}"
 
 echo "Using plugin: $PLUGIN_PATH"
 echo "Using preset: $PRESET_PATH"
 
-python scripts/predict_vst_audio.py \
+# Skip the file existence check since pedalboard handles the path internally
+# if [[ ! -f "$PLUGIN_PATH" ]]; then
+#     echo "⚠️  Warning: Plugin not found at $PLUGIN_PATH"
+#     echo "Please set VST_PLUGIN_PATH environment variable to your Surge XT .so file"
+#     echo "Example: export VST_PLUGIN_PATH=/path/to/Surge XT.vst3/Contents/x86_64-linux/Surge XT.so"
+#     exit 1
+# fi
+
+# Render using the 'surge_simple' param spec by default (matches models with 92 params).
+uv run python scripts/render/predict_vst_audio.py \
     "$PRED_SUBDIR" \
     "$AUDIO_DIR" \
     --plugin_path "$PLUGIN_PATH" \
     --preset_path "$PRESET_PATH" \
+    --param_spec surge_simple \
     --skip-spectrogram
 
 echo "✅ Audio rendering complete"
@@ -139,7 +158,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 3/3: Computing audio metrics..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-python scripts/compute_audio_metrics_no_pesto.py \
+uv run python scripts/eval/compute_audio_metrics_no_pesto.py \
     "$AUDIO_DIR" \
     "$METRICS_DIR" \
     --num_workers 8

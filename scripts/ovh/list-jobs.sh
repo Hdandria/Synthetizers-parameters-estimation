@@ -14,7 +14,7 @@ NC='\033[0m'
 
 if ! command -v ovhai &> /dev/null; then
   echo -e "${RED}Error: ovhai CLI not found${NC}"
-  echo "Install it with: ./scripts/setup.sh"
+  echo "Install it with: ./scripts/ovh/setup.sh"
   exit 1
 fi
 
@@ -40,7 +40,7 @@ echo "$JOBS" | jq -r '.[] | [
   .id // .uuid,
   .spec.name // .name // "N/A",
   .status.state // .state // "UNKNOWN",
-  "\(.spec.resources.gpu // .resources.gpu // 0)x \(.spec.resources.gpuModel // .resources.gpuModel // "N/A")"
+  "\(.spec.resources.gpu // .resources.gpu // 0)x \(.spec.resources.gpuModel // .resources.gpuModel // \"N/A\")"
 ] | @tsv' | while IFS=$'\t' read -r id name state gpu; do
   # Truncate name if too long
   name_short=$(echo "$name" | cut -c1-20)
@@ -71,6 +71,6 @@ done
 echo "└─────────────────────┴──────────────────────┴────────────┴──────────────────┘"
 echo ""
 echo -e "${YELLOW}Commands:${NC}"
-echo -e "  Status:  ${BLUE}./scripts/status.sh <job-id>${NC}"
-echo -e "  Logs:    ${BLUE}./scripts/logs.sh <job-id> --follow${NC}"
+echo -e "  Status:  ${BLUE}./scripts/ovh/status.sh <job-id>${NC}"
+echo -e "  Logs:    ${BLUE}./scripts/ovh/logs.sh <job-id> --follow${NC}"
 echo -e "  Stop:    ${BLUE}ovhai job stop <job-id>${NC}"

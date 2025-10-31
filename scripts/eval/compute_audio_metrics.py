@@ -1,44 +1,25 @@
-"""Runs evaluations in the paper.
-Expects audio in the following folder structure:
+"""Compute audio metrics (uses pesto for f0 extraction).
 
-audio/
-    sample_0/
-        target.wav
-        pred.wav
-        ...
-    sample_1/
-        ...
-    ...
-
-We compute the following metrics:
-
-1. MSS: log-Mel multi-scale spectrogram (10ms, 25ms, 100ms) windows and
-    (5ms, 10ms, 50ms) hop lengths, (32, 64, 128) mels, hann window, L1 distance.
-2. JTFS: joint time-frequency scattering transform, L1 distance.
-3. wMFCC: dynamic time-warping cost between MFCCs (50ms window, 10ms hop), 128 mels, L1 distance
-4. f0 features: intermediate features from some sort of pitch NN (check speech
-    literature for an option here?). cosine sim.
-5. amp env: compute RMS amp envelopes (50ms window, 25ms hop). take cosine similarity
-    (i.e. normalized dot prod).
+This script is similar to compute_audio_metrics_no_pesto but uses pesto
+when available to extract f0 activations.
 """
 
 import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import List
 
 import click
 import librosa
 import numpy as np
 import pandas as pd
+import pesto
 from kymatio.numpy import Scattering1D
 from loguru import logger
 from pedalboard.io import AudioFile
 
 
 def subdir_matches_pattern(dir: Path) -> bool:
-    """Returns true if subdir contains pred.wav and target.wav."""
     return (dir / "target.wav").exists() and (dir / "pred.wav").exists()
 
 
@@ -49,14 +30,13 @@ def find_possible_subdirs(audio_dir: Path) -> list[Path]:
 
 def compute_mel_specs(y: np.ndarray, sample_rate: float = 44100.0):
     mel_specs = []
-    window_sizes = [0.01, 0.025, 0.1]  # 10ms, 25ms, 100ms
-    hop_sizes = [0.005, 0.01, 0.05]  # 5ms, 10ms, 50ms
+    window_sizes = [0.01, 0.025, 0.1]
+    hop_sizes = [0.005, 0.01, 0.05]
     n_mels_list = [32, 64, 128]
 
     for window_size, hop_size, n_mels in zip(window_sizes, hop_sizes, n_mels_list, strict=False):
         win_length = int(window_size * sample_rate)
         hop_length = int(hop_size * sample_rate)
-        # Ensure n_fft is at least as large as win_length
         n_fft = max(2048, win_length)
 
         mel_spec = librosa.feature.melspectrogram(
@@ -69,14 +49,12 @@ def compute_mel_specs(y: np.ndarray, sample_rate: float = 44100.0):
             window="hann",
         )
         spec_db = librosa.power_to_db(mel_spec, ref=np.max)
-
         mel_specs.append(spec_db)
 
     return mel_specs
 
 
 def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
-    logger.info("Computing MSS...")
     target_specs = compute_mel_specs(target)
     pred_specs = compute_mel_specs(pred)
 
@@ -85,7 +63,7 @@ def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
         dist += np.mean(np.abs(target_spec - pred_spec))
 
     dist = dist / len(target_specs)
-    return dist
+    return float(dist)
 
 
 scatter = None
@@ -101,10 +79,38 @@ def compute_jtfs(y: np.ndarray, J: int = 10, Q: int = 12):
     return coeffs
 
 
+pesto_model = None
+
+
+def get_pesto_f0(target: np.ndarray, pred: np.ndarray, sample_rate: int = 44100):
+    global pesto_model
+    if pesto_model is None:
+        pesto_model = pesto.load_model("mir-1k_g7", step_size=20.0)
+
+    tp = np.stack((target.mean(axis=0), pred.mean(axis=0)), axis=0)
+    x = tp[np.newaxis, ...]
+    # convert to torch tensor via pesto API
+    import torch
+
+    x = torch.from_numpy(x).float()
+    preds, confidence, _, _ = pesto_model(x, sample_rate)
+
+    # preds shape -> (batch, 2, frames)
+    preds = preds.squeeze(0)
+    confidence = confidence.squeeze(0)
+
+    t_f0 = preds[0]
+    p_f0 = preds[1]
+    t_conf = confidence[0]
+    p_conf = confidence[1]
+
+    mask = (t_conf > 0.85) & (p_conf > 0.85)
+    return t_f0[mask].numpy(), p_f0[mask].numpy()
+
+
 def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
-    logger.info("Computing wMFCC...")
-    win_length = int(0.05 * 44100)  # 50ms
-    hop_length = int(0.01 * 44100)  # 10ms
+    win_length = int(0.05 * 44100)
+    hop_length = int(0.01 * 44100)
     n_fft = max(2048, win_length)
 
     target_mfcc = librosa.feature.mfcc(
@@ -127,14 +133,12 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
         n_fft=n_fft,
     ).T
 
-    # Use simple L1 distance instead of DTW to avoid dependency issues
-    # This is a simplified version of wMFCC
     min_len = min(len(target_mfcc), len(pred_mfcc))
     target_mfcc_trunc = target_mfcc[:min_len]
     pred_mfcc_trunc = pred_mfcc[:min_len]
 
     dist = np.mean(np.abs(target_mfcc_trunc - pred_mfcc_trunc))
-    return dist
+    return float(dist)
 
 
 def get_stft(y: np.ndarray, sample_rate: float = 44100.0):
@@ -151,10 +155,7 @@ def get_stft(y: np.ndarray, sample_rate: float = 44100.0):
     return stft_mag
 
 
-def batched_wasserstein_distance_np(
-    hist1: np.ndarray,
-    hist2: np.ndarray,
-) -> np.ndarray:
+def batched_wasserstein_distance_np(hist1: np.ndarray, hist2: np.ndarray) -> np.ndarray:
     bin_width = 1 / hist1.shape[-1]
     cdf1 = np.cumsum(hist1, axis=-1)
     cdf2 = np.cumsum(hist2, axis=-1)
@@ -163,7 +164,6 @@ def batched_wasserstein_distance_np(
 
 
 def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
-    logger.info("Computing SOT...")
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
@@ -171,51 +171,39 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
     pred_stft = pred_stft / np.clip(pred_stft.sum(axis=-1, keepdims=True), 1e-6, None)
 
     dists = batched_wasserstein_distance_np(target_stft, pred_stft)
-    return dists.mean()
+    return float(dists.mean())
 
 
 def compute_rms(target: np.ndarray, pred: np.ndarray) -> float:
-    logger.info("Computing amp env...")
-    win_length = int(0.05 * 44100)  # 50ms
-    hop_length = int(0.025 * 44100)  # 25ms
-    target_rms = librosa.feature.rms(
-        y=target.mean(axis=0),
-        frame_length=win_length,
-        hop_length=hop_length,
-    ).squeeze()
+    win_length = int(0.05 * 44100)
+    hop_length = int(0.025 * 44100)
+    target_rms = librosa.feature.rms(y=target.mean(axis=0), frame_length=win_length, hop_length=hop_length)
+    pred_rms = librosa.feature.rms(y=pred.mean(axis=0), frame_length=win_length, hop_length=hop_length)
 
-    pred_rms = librosa.feature.rms(
-        y=pred.mean(axis=0),
-        frame_length=win_length,
-        hop_length=hop_length,
-    ).squeeze()
+    target_rms = target_rms.squeeze()
+    pred_rms = pred_rms.squeeze()
 
-    # Compute cosine similarity (scalar). Guard against division by zero.
     denom = np.linalg.norm(target_rms) * np.linalg.norm(pred_rms)
     if denom == 0:
-        return float(0.0)
+        return 0.0
 
     cosine_sim = np.dot(target_rms, pred_rms) / denom
     return float(cosine_sim)
 
 
-def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
+def compute_metrics_on_dir(audio_dir: Path) -> dict:
     target_file = AudioFile(str(audio_dir / "target.wav"))
     pred_file = AudioFile(str(audio_dir / "pred.wav"))
 
     target = target_file.read(target_file.frames)
     pred = pred_file.read(pred_file.frames)
 
-    # Ensure arrays are numpy and in (channels, frames) shape expected by
-    # the downstream functions (they use y.mean(axis=0) to get mono).
     target = np.asarray(target)
     pred = np.asarray(pred)
 
     def _to_channels_first(y: np.ndarray) -> np.ndarray:
-        # y may be 1D (frames,), 2D (frames, channels) or (channels, frames)
         if y.ndim == 1:
             return y[np.newaxis, :]
-        # Heuristic: if rows > cols, likely (frames, channels) -> transpose
         if y.shape[0] > y.shape[1]:
             return y.T
         return y
@@ -231,7 +219,14 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     sot = compute_sot(target, pred)
     rms = compute_rms(target, pred)
 
-    return dict(mss=mss, wmfcc=wmfcc, sot=sot, rms=rms)
+    # pesto-based f0 comparison (if available)
+    try:
+        t_f0, p_f0 = get_pesto_f0(target, pred)
+        f0_dist = float(np.mean(np.abs(t_f0 - p_f0))) if len(t_f0) and len(p_f0) else float('nan')
+    except Exception:
+        f0_dist = float('nan')
+
+    return dict(mss=mss, wmfcc=wmfcc, sot=sot, rms=rms, f0=f0_dist)
 
 
 def compute_metrics(audio_dirs: list[Path], output_dir: Path):
@@ -256,23 +251,14 @@ def compute_metrics(audio_dirs: list[Path], output_dir: Path):
 @click.argument("output_dir", type=str, default="metrics")
 @click.option("--num_workers", "-w", type=int, default=8)
 def main(audio_dir: str, output_dir: str, num_workers: int):
-    # 1. make a list of all subdirectories that match the expected structure
-    # 2. divide list up into sublists per worker
-    # 3. send each list to a worker and begin processing. each worker dumps metrics to
-    # its own file.
-    # 4. when a worker returns, take its csv file and append it to the master list
-    # 5. when all workers are done, compute the mean of each metric across the master
-    # list
     audio_dir = Path(audio_dir)
     audio_dirs = find_possible_subdirs(audio_dir)
 
     os.makedirs(output_dir, exist_ok=True)
     output_dir = Path(output_dir)
 
-    sublist_length = len(audio_dirs) // num_workers
-    sublists = [
-        audio_dirs[i * sublist_length : (i + 1) * sublist_length] for i in range(num_workers)
-    ]
+    sublist_length = max(1, len(audio_dirs) // num_workers)
+    sublists = [audio_dirs[i * sublist_length : (i + 1) * sublist_length] for i in range(num_workers)]
 
     metric_dfs = []
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
@@ -283,24 +269,17 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
             df = pd.read_csv(metric_file, index_col=0)
             metric_dfs.append(df)
 
-    # Combine all dataframes
     combined_df = pd.concat(metric_dfs, ignore_index=False)
     combined_df = combined_df.sort_index()
 
-    # Compute summary statistics
     summary_stats = combined_df.describe()
-    summary_stats.loc["mean"] = combined_df.mean()
-    summary_stats.loc["std"] = combined_df.std()
+    summary_stats.loc['mean'] = combined_df.mean()
+    summary_stats.loc['std'] = combined_df.std()
 
-    # Save results
     combined_df.to_csv(output_dir / "all_metrics.csv")
     summary_stats.to_csv(output_dir / "summary_stats.csv")
 
     logger.info(f"Computed metrics for {len(combined_df)} samples")
-    logger.info(f"Mean MSS: {summary_stats.loc['mean', 'mss']:.4f}")
-    logger.info(f"Mean wMFCC: {summary_stats.loc['mean', 'wmfcc']:.4f}")
-    logger.info(f"Mean SOT: {summary_stats.loc['mean', 'sot']:.4f}")
-    logger.info(f"Mean RMS: {summary_stats.loc['mean', 'rms']:.4f}")
 
 
 if __name__ == "__main__":

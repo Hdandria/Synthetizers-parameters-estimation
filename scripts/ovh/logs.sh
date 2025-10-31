@@ -11,12 +11,12 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 if [[ $# -eq 0 ]]; then
-  echo "Usage: ./scripts/logs.sh <job-id> [--follow]"
+  echo "Usage: ./scripts/ovh/logs.sh <job-id> [--follow]"
   echo ""
   echo "Examples:"
-  echo "  ./scripts/logs.sh abc123              # Show logs"
-  echo "  ./scripts/logs.sh abc123 --follow     # Stream logs"
-  echo "  ./scripts/logs.sh abc123 --tail 100   # Last 100 lines"
+  echo "  ./scripts/ovh/logs.sh abc123              # Show logs"
+  echo "  ./scripts/ovh/logs.sh abc123 --follow     # Stream logs"
+  echo "  ./scripts/ovh/logs.sh abc123 --tail 100   # Last 100 lines"
   exit 1
 fi
 
@@ -25,7 +25,7 @@ shift
 
 if ! command -v ovhai &> /dev/null; then
   echo -e "${RED}Error: ovhai CLI not found${NC}"
-  echo "Install it with: ./scripts/setup.sh"
+  echo "Install it with: ./scripts/ovh/setup.sh"
   exit 1
 fi
 
