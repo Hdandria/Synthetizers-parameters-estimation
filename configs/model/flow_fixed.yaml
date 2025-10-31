@@ -2,7 +2,7 @@ defaults:
   - encoder: cnn
   - _self_
 
-_target_: src.models.ksin_flow_matching_module.KSinFlowMatchingModule
+_target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
 
 scheduler: null
 
@@ -15,7 +15,7 @@ optimizer:
 vector_field:
   _target_: src.models.components.transformer.ApproxEquivTransformer
   projection:
-    _target_: src.models.components.transformer.KSinParamToTokenProjection
+    _target_: src.models.components.transformer.LearntProjection
     d_model: ${model.vector_field.d_model}
   num_layers: 5
   d_model: 128

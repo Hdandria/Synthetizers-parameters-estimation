@@ -3,36 +3,40 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.data.mnist_datamodule import MNISTDataModule
+from src.data.surge_datamodule import SurgeDataModule
 
 
-@pytest.mark.parametrize("batch_size", [32, 128])
-def test_mnist_datamodule(batch_size: int) -> None:
-    """Tests `MNISTDataModule` to verify that it can be downloaded correctly, that the necessary
-    attributes were created (e.g., the dataloader objects), and that dtypes and batch sizes
-    correctly match.
+@pytest.mark.parametrize("batch_size", [8, 32])
+def test_surge_datamodule_fake(batch_size: int) -> None:
+    """Tests `SurgeDataModule` using `fake=True` so it doesn't require on-disk HDF5 files.
 
-    :param batch_size: Batch size of the data to be loaded by the dataloader.
+    The Surge datamodule supports a `fake` flag that creates synthetic data. This test
+    verifies setup, dataloaders, and that batched tensors have expected dtypes and shapes.
     """
-    data_dir = "data/"
+    dm = SurgeDataModule(dataset_root="/tmp/not_used", batch_size=batch_size, fake=True)
 
-    dm = MNISTDataModule(data_dir=data_dir, batch_size=batch_size)
-    dm.prepare_data()
-
-    assert not dm.data_train and not dm.data_val and not dm.data_test
-    assert Path(data_dir, "MNIST").exists()
-    assert Path(data_dir, "MNIST", "raw").exists()
-
+    # call setup to create fake datasets
     dm.setup()
-    assert dm.data_train and dm.data_val and dm.data_test
-    assert dm.train_dataloader() and dm.val_dataloader() and dm.test_dataloader()
 
-    num_datapoints = len(dm.data_train) + len(dm.data_val) + len(dm.data_test)
-    assert num_datapoints == 70_000
+    # dataloaders should be available
+    td = dm.train_dataloader()
+    vd = dm.val_dataloader()
+    zd = dm.test_dataloader()
 
-    batch = next(iter(dm.train_dataloader()))
-    x, y = batch
-    assert len(x) == batch_size
-    assert len(y) == batch_size
-    assert x.dtype == torch.float32
-    assert y.dtype == torch.int64
+    assert td is not None
+    assert vd is not None
+    assert zd is not None
+
+    # iterate a single batch from train loader
+    batch = next(iter(td))
+
+    # surge batch dict contains 'params' and 'noise' at minimum
+    assert "params" in batch and "noise" in batch
+    params = batch["params"]
+    noise = batch["noise"]
+
+    # params and noise should be tensors with batch_size rows
+    assert params.shape[0] == batch_size
+    assert noise.shape[0] == batch_size
+    assert params.dtype == torch.float32
+    assert noise.dtype == torch.float32

@@ -12,7 +12,6 @@ from src.models.components.transformer import (
     ApproxEquivTransformer,
     LearntProjection,
 )
-from src.models.ksin_flow_matching_module import KSinFlowMatchingModule
 from src.models.surge_flow_matching_module import SurgeFlowMatchingModule
 
 
@@ -137,7 +136,7 @@ class PlotPositionalEncodingSimilarity(Callback):
         plt.close(fig)
 
     def on_validation_epoch_end(self, trainer, pl_module) -> None:
-        if not isinstance(pl_module, KSinFlowMatchingModule):
+        if not isinstance(pl_module, SurgeFlowMatchingModule):
             return
 
         if not isinstance(pl_module.vector_field, ApproxEquivTransformer):
@@ -263,10 +262,8 @@ class PlotLearntProjection(Callback):
         plt.close(fig_value)
 
     def _do_plotting(self, trainer, pl_module):
-        if not (
-            isinstance(pl_module, KSinFlowMatchingModule)
-            or isinstance(pl_module, SurgeFlowMatchingModule)
-        ):
+        # Only handle supported flow-matching modules (Surge)
+        if not isinstance(pl_module, SurgeFlowMatchingModule):
             return
 
         if not hasattr(pl_module.vector_field, "projection"):

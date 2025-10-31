@@ -1,4 +1,4 @@
-_target_: src.models.ksin_ff_module.KSinFeedForwardModule
+_target_: src.models.surge_ff_module.SurgeFeedForwardModule
 
 optimizer:
   _target_: torch.optim.Adam

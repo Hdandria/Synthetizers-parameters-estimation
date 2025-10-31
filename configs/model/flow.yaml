@@ -2,7 +2,7 @@ defaults:
   - encoder: cnn
   - _self_
 
-_target_: src.models.ksin_flow_matching_module.KSinFlowMatchingModule
+_target_: src.models.surge_flow_matching_module.SurgeFlowMatchingModule
 
 scheduler: null
 

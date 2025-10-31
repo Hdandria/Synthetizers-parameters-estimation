@@ -4,8 +4,8 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: ksin
-  - override /model: ksin_flow
+  - override /data: surge
+  - override /model: surge_flow
   - override /callbacks: default
   - override /trainer: gpu
   - _self_
@@ -16,12 +16,8 @@ defaults:
 experiment_name: time_weighting
 run_name: ${model.p_time}_${model.w_time}
 
-data:
-  k: 8
-
 tags:
-  - ksin
-  - k_${data.k}
+  - surge
   - time_weighting
 
 seed: 12345
