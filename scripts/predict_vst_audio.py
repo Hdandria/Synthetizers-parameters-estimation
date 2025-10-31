@@ -60,7 +60,7 @@ def write_spectrograms(
             ax=axs[i],
             cmap="magma",
         )
-        axs[i].set_title(f"Pred (Chan {i+1})")
+        axs[i].set_title(f"Pred (Chan {i + 1})")
 
     for i, spec in enumerate(target_specs):
         spec = librosa.amplitude_to_db(spec, ref=np.max)
@@ -73,7 +73,7 @@ def write_spectrograms(
             ax=axs[i + len(pred_specs)],
             cmap="magma",
         )
-        axs[i + len(pred_specs)].set_title(f"Target (Chan {i+1})")
+        axs[i + len(pred_specs)].set_title(f"Target (Chan {i + 1})")
 
     plt.tight_layout()
     plt.savefig(save_path)
@@ -150,6 +150,17 @@ def main(
         enumerate(zip(pred_files, target_param_files, target_audio_files, strict=False))
     ):
         pred_params = torch.load(pred_file, map_location="cpu")
+        # Debug: record basic statistics of the raw prediction tensor to help
+        # diagnose cases where predictions are collapsed to extreme values
+        try:
+            stats_out = Path(output_dir) / "debug-pred-stats.csv"
+            raw_min = float(pred_params.min().item())
+            raw_max = float(pred_params.max().item())
+            raw_mean = float(pred_params.mean().item())
+            with open(stats_out, "a") as fh:
+                fh.write(f"batch_{i},{raw_min},{raw_max},{raw_mean}\n")
+        except Exception:
+            pass
         target_audio = torch.load(target_audio_file, map_location="cpu").numpy()
 
         if target_param_file is None:
@@ -164,9 +175,43 @@ def main(
             os.makedirs(sample_dir, exist_ok=True)
 
             row_params = pred_params[j].float().numpy()
+            # record raw row stats for debugging
+            if i < 10:
+                try:
+                    per_sample_debug = Path(output_dir) / "debug-pred-samples.csv"
+                    with open(per_sample_debug, "a") as fh:
+                        fh.write(
+                            f"batch_{i}_row_{j},{row_params.min()},{row_params.max()},{row_params.mean()}\n"
+                        )
+                except Exception:
+                    pass
+
+            # The model outputs are expected to be in [-1, 1]; map to [0, 1]
             row_params_scaled = (row_params + 1) / 2
             row_params_scaled = np.clip(row_params_scaled, 0, 1)
             synth_params, note_params = param_spec.decode(row_params_scaled)
+
+            # Save a small human-readable example of decoded synth params for the
+            # first few samples so we can inspect whether values are extremely low.
+            if i < 10 and j == 0:
+                try:
+                    import json
+
+                    example_out = Path(output_dir) / "debug-decoded-examples.jsonl"
+                    with open(example_out, "a") as fh:
+                        fh.write(
+                            json.dumps(
+                                {
+                                    "batch": int(i),
+                                    "row": int(j),
+                                    "decoded_synth": synth_params,
+                                    "decoded_note": note_params,
+                                }
+                            )
+                            + "\n"
+                        )
+                except Exception:
+                    pass
 
             load_preset(plugin, preset_path)
             pred_audio = render_params(

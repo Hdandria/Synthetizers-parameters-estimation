@@ -8,10 +8,10 @@ import rootutils
 from dask.distributed import Client, progress
 from loguru import logger
 
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
 from src.data.audio_datamodule import AudioFolderDataset
 from src.data.surge_datamodule import SurgeXTDataset
-
-rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def get_stats_hdf5(filename):
@@ -44,6 +44,9 @@ def get_stats_hdf5(filename):
 
     print("Mean:", mean_val)
     print("std:", std_val)
+
+    print(f"Mean of mean: {mean_val.mean()}")
+    print(f"Mean of std: {std_val.mean()}")
 
     print("Saving to file...")
     out_file = SurgeXTDataset.get_stats_file_path(filename)

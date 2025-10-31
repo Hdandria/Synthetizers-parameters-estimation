@@ -1,7 +1,6 @@
 #!/bin/bash
 ################################################################################
 # Local Evaluation Script (No Docker)
-# Runs the full evaluation pipeline locally on CPU
 #
 # Usage:
 #   ./scripts/evaluate_locally.sh <checkpoint_path> <experiment_config> <dataset_split> <dataset_root>
@@ -33,7 +32,7 @@ RUN_DIR=$(dirname $(dirname "$CKPT_PATH"))
 RUN_NAME=$(basename "$RUN_DIR")
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🎯 Evaluating model with audio metrics (LOCAL - CPU)"
+echo "🎯 Evaluating model with audio metrics"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Checkpoint: $CKPT_PATH"
 if [[ "$CKPT_PATH" == *"epoch_"* ]]; then
@@ -82,10 +81,9 @@ EVAL_CMD="uv run python src/eval.py \
     data.dataset_root=\"${DATASET_ROOT}\" \
     model.compile=false \
     trainer.accelerator=gpu \
-    trainer.devices=1 \
     trainer.precision=16-mixed \
     +trainer.limit_predict_batches=3 \
-    data.num_workers=4"
+    data.num_workers=6"
 echo "Running: $EVAL_CMD"
 eval "$EVAL_CMD"
 
@@ -97,19 +95,15 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 2/3: Rendering predictions to audio..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check if predictions exist directly in PRED_DIR or in a subdirectory
-if ls "$PRED_DIR"/pred-*.pt >/dev/null 2>&1; then
-    PRED_SUBDIR="$PRED_DIR"
+# For robustness, we handle both pred-*.pt directly under PRED_DIR and in subfolders
+found_pred_dir=$(find "$PRED_DIR" -type f -name "pred-*.pt" -printf '%h\n' | head -n 1 || true)
+if [[ -n "$found_pred_dir" ]]; then
+    PRED_SUBDIR="$found_pred_dir"
     echo "Found predictions at: $PRED_SUBDIR"
 else
-    # Try to find predictions in a subdirectory
-    PRED_SUBDIR=$(find "$PRED_DIR" -type d -name "predictions" | head -n 1)
-    if [[ -z "$PRED_SUBDIR" ]]; then
-        echo "❌ Error: No pred-*.pt files found in $PRED_DIR"
-        echo "Please ensure Step 1 has been run successfully"
-        exit 1
-    fi
-    echo "Found predictions at: $PRED_SUBDIR"
+    echo "❌ Error: No pred-*.pt files found under $PRED_DIR"
+    echo "Please ensure Step 1 has been run successfully"
+    exit 1
 fi
 
 # Plugin and preset paths (adjust these to your system)
@@ -128,11 +122,13 @@ echo "Using preset: $PRESET_PATH"
 #     exit 1
 # fi
 
+# Render using the 'surge_simple' param spec by default (matches models with 92 params).
 uv run python scripts/predict_vst_audio.py \
     "$PRED_SUBDIR" \
     "$AUDIO_DIR" \
     --plugin_path "$PLUGIN_PATH" \
     --preset_path "$PRESET_PATH" \
+    --param_spec surge_simple \
     --skip-spectrogram
 
 echo "✅ Audio rendering complete"

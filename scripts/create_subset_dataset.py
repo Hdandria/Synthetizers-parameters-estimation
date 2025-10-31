@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import click
@@ -72,20 +73,29 @@ def main(
 
         # Map shards to virtual layout
         for i, file in enumerate(files):
+            # We'll open the shard with an absolute path to read shape/validate,
+            # but store a RELATIVE POSIX path in the VDS so the whole dataset
+            # tree can be moved/copied and still resolve correctly.
+            shard_abs = os.path.abspath(str(file))
+            # compute a path to store in the VDS relative to the target_root
+            rel = os.path.relpath(shard_abs, start=str(target_root))
+            vds_path = Path(rel).as_posix()  # POSIX-style (forward slashes)
+
+            # Use the VDS path (relative) when creating VirtualSource
             vs_audio = h5py.VirtualSource(
-                file, "audio", dtype=np.float32, shape=(10_000, *audio_shape)
+                vds_path, "audio", dtype=np.float32, shape=(10_000, *audio_shape)
             )
             vs_mel = h5py.VirtualSource(
-                file, "mel_spec", dtype=np.float32, shape=(10_000, *mel_shape)
+                vds_path, "mel_spec", dtype=np.float32, shape=(10_000, *mel_shape)
             )
             vs_param = h5py.VirtualSource(
-                file, "param_array", dtype=np.float32, shape=(10_000, *param_shape)
+                vds_path, "param_array", dtype=np.float32, shape=(10_000, *param_shape)
             )
 
             range_start = i * 10_000
             range_end = (i + 1) * 10_000
 
-            print(f"  Mapping {file.name} to indices {range_start}:{range_end}")
+            print(f"  Mapping {vds_path} (-> {shard_abs}) to indices {range_start}:{range_end}")
             vl_audio[range_start:range_end, :, :] = vs_audio
             vl_mel[range_start:range_end, :, :, :] = vs_mel
             vl_param[range_start:range_end, :] = vs_param

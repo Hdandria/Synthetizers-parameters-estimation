@@ -178,7 +178,6 @@ def compute_rms(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing amp env...")
     win_length = int(0.05 * 44100)  # 50ms
     hop_length = int(0.025 * 44100)  # 25ms
-
     target_rms = librosa.feature.rms(
         y=target.mean(axis=0),
         frame_length=win_length,
@@ -191,12 +190,13 @@ def compute_rms(target: np.ndarray, pred: np.ndarray) -> float:
         hop_length=hop_length,
     ).squeeze()
 
-    # Compute cosine similarity
-    cosine_sim = np.dot(target_rms, pred_rms) / (
-        np.linalg.norm(target_rms) * np.linalg.norm(pred_rms)
-    )
+    # Compute cosine similarity (scalar). Guard against division by zero.
+    denom = np.linalg.norm(target_rms) * np.linalg.norm(pred_rms)
+    if denom == 0:
+        return float(0.0)
 
-    return cosine_sim.mean()
+    cosine_sim = np.dot(target_rms, pred_rms) / denom
+    return float(cosine_sim)
 
 
 def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
@@ -205,6 +205,23 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
 
     target = target_file.read(target_file.frames)
     pred = pred_file.read(pred_file.frames)
+
+    # Ensure arrays are numpy and in (channels, frames) shape expected by
+    # the downstream functions (they use y.mean(axis=0) to get mono).
+    target = np.asarray(target)
+    pred = np.asarray(pred)
+
+    def _to_channels_first(y: np.ndarray) -> np.ndarray:
+        # y may be 1D (frames,), 2D (frames, channels) or (channels, frames)
+        if y.ndim == 1:
+            return y[np.newaxis, :]
+        # Heuristic: if rows > cols, likely (frames, channels) -> transpose
+        if y.shape[0] > y.shape[1]:
+            return y.T
+        return y
+
+    target = _to_channels_first(target)
+    pred = _to_channels_first(pred)
 
     target_file.close()
     pred_file.close()
