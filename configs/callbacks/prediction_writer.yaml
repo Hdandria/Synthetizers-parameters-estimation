@@ -1,4 +1,0 @@
-prediction_writer:
-  _target_: src.utils.callbacks.PredictionWriter
-  output_dir: ${paths.output_dir}/predictions
-  write_interval: batch

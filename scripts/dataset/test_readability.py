@@ -14,7 +14,7 @@ def check_file(path: Path, max_samples: int = 5, quiet: bool = False) -> bool:
     Prints diagnostics and returns True when the `audio` dataset has a
     non-zero storage_size and at least one of the first `max_samples`
     entries contains non-zero samples.
-    
+
     Args:
         path: Path to the HDF5 file to check
         max_samples: Maximum number of samples to check
@@ -23,7 +23,7 @@ def check_file(path: Path, max_samples: int = 5, quiet: bool = False) -> bool:
     def log(msg: str, force: bool = False):
         if not quiet or force:
             print(msg)
-    
+
     if not path.exists():
         log(f"MISSING: {path}", force=True)
         return False
