@@ -49,10 +49,11 @@ dependencies = [
     "dask[distributed]>=2025.10.0",
     "s3fs>=0.4.2",
     "boto3>=1.40.53",
-    "aws>=0.2.5",
     "pandas>=2.3.3",
     "kymatio>=0.3.0",
     "setuptools>=80.9.0",
+    "aws>=0.2.5",
+    "awscli>=1.42.64",
 ]
 
 # Dépendances optionnelles

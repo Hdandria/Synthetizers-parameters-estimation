@@ -108,6 +108,33 @@ def train(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
         watch_gradients(model, logger)
 
     if cfg.get("train"):
+        # Early visibility on dataset sizes and expected batches
+        try:
+            datamodule.setup("fit")
+            try:
+                train_samples = datamodule.train_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                train_samples = None
+            try:
+                val_samples = datamodule.val_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                val_samples = None
+            try:
+                test_samples = datamodule.test_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                test_samples = None
+            try:
+                train_batches = len(datamodule.train_dataset)
+            except Exception:
+                train_batches = None
+            log.info(
+                f"Data summary -> train_samples={train_samples} val_samples={val_samples} "
+                f"test_samples={test_samples} train_batches_per_epoch={train_batches} "
+                f"batch_size={datamodule.batch_size}"
+            )
+        except Exception as e:
+            log.warning(f"Could not pre-inspect datamodule: {e}")
+
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
 
