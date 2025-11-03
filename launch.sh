@@ -55,11 +55,43 @@ echo -e "${GREEN}[+] Required environment variables set${RESET}"
 # Hardware config
 NUM_GPUS="${NUM_GPUS:-1}"
 GPU_IDS_TRIMMED="${GPU_IDS//[[:space:]]/}"
+        echo \"Listing parent directory for shard location...\" && \
+        ls -lah \"\\$(dirname \\\"\\${DATASET_PATH}\\\")/\" && \
 DATA_NUM_WORKERS="${DATA_NUM_WORKERS:-}"
+        export HDF5_VDS_PREFIX=\"\\$(dirname \\\"\\${DATASET_PATH}\\\")\" && \
+DATASET_CHECK_VERBOSE="${DATASET_CHECK_VERBOSE:-false}"
 
 # Build Hydra overrides for cloud (will add dataset_root override)
 HYDRA_OVERRIDES_CLOUD=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
 [[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES_CLOUD+=("data.num_workers=${DATA_NUM_WORKERS}")
+
+# Helper function to extract dataset_root from config file
+extract_dataset_root() {
+  local config_file="$1"
+  if [[ ! -f "$config_file" ]]; then
+    echo -e "${YELLOW}[!] Warning: Config file not found: ${config_file}${RESET}" >&2
+    return 1
+  fi
+  
+  # Try to find dataset_root in the config or its includes
+  local dataset_root=""
+  
+  # First check the experiment config itself
+  dataset_root=$(grep -oP 'dataset_root:\s*\K.*' "$config_file" 2>/dev/null | tr -d "'\"{} " | head -1)
+  
+  # If not found, check the data config file referenced
+  if [[ -z "$dataset_root" ]]; then
+    local data_override=$(grep -oP 'override /data:\s*\K.*' "$config_file" 2>/dev/null | head -1)
+    if [[ -n "$data_override" ]]; then
+      local data_config="configs/data/${data_override}.yaml"
+      if [[ -f "$data_config" ]]; then
+        dataset_root=$(grep -oP 'dataset_root:\s*\K.*' "$data_config" 2>/dev/null | tr -d "'\"{} " | head -1)
+      fi
+    fi
+  fi
+  
+  echo "$dataset_root"
+}
 
 ################################################################################
 # LOCAL MODE
@@ -89,10 +121,46 @@ if [[ "$LOCAL_MODE" == true ]]; then
   echo -e "${CYAN}    GPUs: ${NUM_GPUS}${RESET}"
   [[ -n "${DATA_NUM_WORKERS}" ]] && echo -e "${CYAN}    Workers: ${DATA_NUM_WORKERS}${RESET}"
 
+  # Extract and check dataset
+  echo -e "${BLUE}[*] Checking dataset readability...${RESET}"
+  DATASET_REL_PATH=$(extract_dataset_root "configs/experiment/${EXPERIMENT_CONFIG}.yaml")
+  if [[ -z "$DATASET_REL_PATH" ]]; then
+    echo -e "${RED}Error: Could not extract dataset_root from config${RESET}"
+    exit 1
+  fi
+  
+  DATASET_LOCAL_PATH="$(pwd)/${DATASET_REL_PATH}"
+  echo -e "${CYAN}    Dataset path: ${DATASET_LOCAL_PATH}${RESET}"
+  
+  # Check if dataset exists locally
+  if [[ ! -d "$DATASET_LOCAL_PATH" ]]; then
+    echo -e "${RED}Error: Dataset directory not found: ${DATASET_LOCAL_PATH}${RESET}"
+    exit 1
+  fi
+  
+  # Run readability check
+  CHECK_ARGS=()
+  if [[ "${DATASET_CHECK_VERBOSE}" != "true" ]]; then
+    CHECK_ARGS+=(--quiet)
+  else
+    echo -e "${YELLOW}[debug] Dataset readability check running in verbose mode${RESET}"
+  fi
+  # Hint HDF5 where to resolve relative VDS source paths.
+  # Use project root so VDS paths like 'datasets/...' resolve both locally and in container.
+  export HDF5_VDS_PREFIX="$(pwd)"
+  if ! HDF5_VDS_PREFIX="${HDF5_VDS_PREFIX}" python scripts/dataset/test_readability.py "$DATASET_LOCAL_PATH" "${CHECK_ARGS[@]}"; then
+    echo -e "${RED}Error: Dataset readability check failed${RESET}"
+    echo -e "${YELLOW}Run without --quiet for detailed diagnostics:${RESET}"
+    echo -e "${YELLOW}  python scripts/dataset/test_readability.py ${DATASET_LOCAL_PATH}${RESET}"
+    exit 1
+  fi
+  echo -e "${GREEN}[+] Dataset readability check passed${RESET}"
+
   PY_ARGS=(python src/train.py "${HYDRA_OVERRIDES[@]}")
 
   docker run --rm ${DOCKER_GPUS_OPT} --shm-size=32G \
     -e PROJECT_ROOT=/workspace \
+    -e HDF5_VDS_PREFIX="/workspace" \
     -e WANDB_API_KEY="$WANDB_API_KEY" \
     -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
     -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
@@ -203,6 +271,7 @@ ovhai job run \
   --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
   --env AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
   --env AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-gra}" \
+  --env DATASET_CHECK_VERBOSE="${DATASET_CHECK_VERBOSE}" \
   $([ -n "${GPU_IDS_TRIMMED}" ] && echo "--env CUDA_VISIBLE_DEVICES=${GPU_IDS_TRIMMED}") \
   --unsecure-http \
   --output json \
@@ -217,12 +286,30 @@ ovhai job run \
       fi && \
       CONFIG_FILE='configs/experiment/${EXPERIMENT_CONFIG}.yaml' && \
       DATASET_REL_PATH=\$(grep -oP 'dataset_root:\s*\K.*' \"\${CONFIG_FILE}\" | tr -d \"'\\\"\" | xargs) && \
+      if [ -z \"\${DATASET_REL_PATH}\" ]; then \
+        DATA_OVERRIDE=\$(grep -oP 'override /data:\s*\K.*' \"\${CONFIG_FILE}\" | head -1) && \
+        if [ -n \"\${DATA_OVERRIDE}\" ]; then \
+          DATA_CONFIG=\"configs/data/\${DATA_OVERRIDE}.yaml\" && \
+          if [ -f \"\${DATA_CONFIG}\" ]; then \
+            DATASET_REL_PATH=\$(grep -oP 'dataset_root:\s*\K.*' \"\${DATA_CONFIG}\" | tr -d \"'\\\"\" | xargs); \
+          fi; \
+        fi; \
+      fi && \
+      if [ -z \"\${DATASET_REL_PATH}\" ]; then \
+        echo 'ERROR: Could not extract dataset_root from config'; exit 1; \
+      fi && \
       DATASET_NAME=\$(basename \"\${DATASET_REL_PATH}\") && \
       DATASET_PATH=\"\${MOUNT_BASE}/\${DATASET_NAME}\" && \
       echo \"Config dataset_root: \${DATASET_REL_PATH}\" && \
       echo \"Extracted dataset name: \${DATASET_NAME}\" && \
       echo \"Resolved absolute path: \${DATASET_PATH}\" && \
+      echo \"Checking dataset directory...\" && \
       ls -lah \"\${DATASET_PATH}/\" && \
+  echo "Running dataset readability check..." && \
+  # Ensure VDS relative filenames like 'datasets/...' resolve correctly on OVH mount
+  export HDF5_VDS_PREFIX="/workspace/datasets-mount" && \
+      python scripts/dataset/test_readability.py \"\${DATASET_PATH}\" \"\${QUIET_FLAG}\" && \
+      echo \"Dataset readability check passed\" && \
       cd /workspace && \
       python src/train.py ${HYDRA_OVERRIDES_CLOUD[*]} data.dataset_root=\"\${DATASET_PATH}\"\
     " \

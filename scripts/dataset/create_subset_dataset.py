@@ -78,8 +78,13 @@ def main(
             # tree can be moved/copied and still resolve correctly.
             shard_abs = os.path.abspath(str(file))
             # compute a path to store in the VDS relative to the target_root
-            rel = os.path.relpath(shard_abs, start=str(target_root))
-            vds_path = Path(rel).as_posix()  # POSIX-style (forward slashes)
+            # Compute relative path to the VDS file location, and force POSIX separators
+            rel_native = os.path.relpath(shard_abs, start=str(target_root))
+            # On Windows, relpath uses backslashes; make sure to store POSIX paths in VDS
+            vds_path = rel_native.replace("\\", "/")
+            # Remove any redundant ./ or ../ where possible (keeps leading .. intact)
+            while "//" in vds_path:
+                vds_path = vds_path.replace("//", "/")
 
             # Use the VDS path (relative) when creating VirtualSource
             vs_audio = h5py.VirtualSource(
