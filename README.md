@@ -41,98 +41,65 @@ ovhai datastore add s3 s3-GRA \
   --store-credentials-locally
 ```
 
-## Configuration
-
-Create `.env` with your credentials:
-
-```bash
-# Weights & Biases
-WANDB_API_KEY=your_wandb_api_key
-
-# OVH S3 Storage
-AWS_ACCESS_KEY_ID=your_s3_access_key
-AWS_SECRET_ACCESS_KEY=your_s3_secret_key
-AWS_ENDPOINT_URL=https://s3.gra.io.cloud.ovh.net
-AWS_DEFAULT_REGION=gra
-
-# S3 Buckets
-S3_BUCKET=uniform-100k
-S3_BUCKET_OUTPUTS=synth-outputs
-
-# Docker Hub
-DOCKER_USERNAME=your_docker_username
-DOCKER_PASSWORD=your_docker_access_token
-
-# Training
-FLAVOR=ai1-1-gpu
-NUM_GPUS=1
-GPU_IDS=0
-DATA_NUM_WORKERS=11
-```
-
-Get credentials:
-- Weights & Biases: https://wandb.ai/authorize
-- OVH S3: OVH Manager → Public Cloud → Object Storage → Users
-- Docker Hub: https://hub.docker.com/settings/security
-
 ## Dataset Preparation
 
-### Download Datasets
+### Generate Shards
+
+Generate 12 shards of 10k samples each (120k total):
 
 ```bash
-# List available datasets
-ovhai bucket object list uniform-100k@s3-GRA --prefix datasets/
-
-# Download locally (if needed)
-ovhai bucket object download uniform-100k@s3-GRA \
-  datasets/surge-20k/train.h5 \
-  datasets/surge-20k/val.h5 \
-  datasets/surge-20k/test.h5 \
-  --output datasets/surge-20k/
+mkdir -p datasets/surge-100k
+for i in {0..11}; do
+  python -m src.data.vst.generate_vst_dataset \
+    datasets/surge-100k/shard-$i.h5 \
+    10000 \
+    -p "vsts/Surge XT.vst3" \
+    -r "presets/surge-base.vstpreset" &
+done
+wait
 ```
 
-### Create Dataset Subsets
+### Create Virtual Dataset Files
 
 ```bash
-# 20k samples
+python scripts/dataset/create_subset_dataset.py \
+  ./datasets/surge-100k \
+  ./datasets/surge-100k \
+  --train-shards 0,1,2,3,4,5,6,7,8,9 \
+  --val-shards 10 \
+  --test-shards 11
+```
+
+### Compute Statistics
+
+```bash
+python scripts/dataset/get_dataset_stats.py datasets/surge-100k
+```
+
+### Create Subsets
+
+```bash
 python scripts/dataset/create_subset_dataset.py \
   ./datasets/surge-100k \
   ./datasets/surge-20k \
   --train-shards 0,1 \
   --val-shards 10 \
   --test-shards 11
-
-# 50k samples
-python scripts/dataset/create_subset_dataset.py \
-  ./datasets/surge-100k \
-  ./datasets/surge-50k \
-  --train-shards 0,1,2,3,4 \
-  --val-shards 10 \
-  --test-shards 11
-```
-
-### Generate New Data
-
-```bash
-python scripts/dataset/generate_surge_xt_data.py \
-  --surge-path "vsts/Surge XT.vst3" \
-  --output-dir datasets/surge-custom \
-  --num-samples 10000
 ```
 
 ### Upload to S3
 
 ```bash
+# Upload full dataset
 ovhai bucket object upload uniform-100k@s3-GRA \
-  datasets/surge-20k/train.h5 \
-  datasets/surge-20k/val.h5 \
-  datasets/surge-20k/test.h5 \
-  datasets/surge-20k/stats.npz
+  datasets/surge-100k/
+
+# Upload subsets
+ovhai bucket object upload uniform-100k@s3-GRA \
+  datasets/surge-20k/
 ```
 
 ## Training
-
-### Cloud Training (OVH)
 
 ```bash
 ./launch.sh flow_multi/dataset_20k_40k
@@ -140,40 +107,6 @@ ovhai bucket object upload uniform-100k@s3-GRA \
 
 Builds Docker image, submits job to OVH, and streams logs.
 
-### Local Training
-
-```bash
-# With Docker
-./launch.sh flow_multi/dataset_20k_40k --local
-
-# Direct (development)
-python src/train.py experiment=flow_multi/dataset_20k_40k
-```
-
-### Available Experiments
-
-Located in `configs/experiment/flow_multi/`:
-
-```bash
-# Dataset sizes
-dataset_20k_40k         # 20k samples (good for testing)
-dataset_50k             # 50k samples
-dataset_100k            # 100k samples
-
-# Hyperparameter variations
-batch_size_low, batch_size_high
-lr_low, lr_high
-
-# Model sizes
-model_enlarged
-model_reduced_50, model_reduced_75
-
-# Token counts
-tokens_64, tokens_256
-
-# Full config
-important               # All hyperparameters documented
-```
 
 ### Monitoring
 
@@ -196,10 +129,9 @@ python src/eval.py \
 ./scripts/eval/evaluate_locally.sh <checkpoint> <dataset>
 ```
 
-
 ## Dataset Structure
 
-HDF5 files with Virtual Dataset (VDS) architecture:
+HDF5 files with Virtual Dataset architecture:
 
 ```
 datasets/
@@ -228,27 +160,6 @@ python scripts/dataset/test_readability.py datasets/surge-20k
 python scripts/dataset/get_dataset_stats.py datasets/surge-20k
 ```
 
-## Model Architecture
-
-Uses conditional flow matching for parameter estimation:
-
-**Components:**
-- Audio Encoder: Converts mel spectrograms to conditioning (AST, CNN)
-- Vector Field Network: Transformer-based (`ApproxEquivTransformer`)
-- Flow Matching: Learns optimal transport trajectories with classifier-free guidance
-
-**Training:**
-1. Sample time steps t ∈ [0, 1]
-2. Interpolate between noise and target parameters
-3. Predict velocity field
-4. Minimize MSE loss
-
-**Key Config** (`configs/model/surge_flow.yaml`):
-- d_model: 512
-- num_layers: 8
-- num_tokens: 128
-- learning_rate: 1e-4
-- cfg_dropout_rate: 0.1
 
 ## Project Structure
 
@@ -284,65 +195,6 @@ Dockerfile                  # Container definition
 pyproject.toml             # Dependencies
 ```
 
-
-## Troubleshooting
-
-### Setup
-
-**"ovhai: command not found"**
-```bash
-# Add to PATH
-export PATH="$HOME/.ovhai/bin:$PATH"
-echo 'export PATH="$HOME/.ovhai/bin:$PATH"' >> ~/.bashrc
-```
-
-**"Permission denied" with Docker**
-```bash
-sudo usermod -aG docker $USER
-newgrp docker  # Or log out/in
-```
-
-### Datasets
-
-**"No readable non-zero audio found"**
-- VDS files must use forward slashes (not Windows backslashes)
-- Check `HDF5_VDS_PREFIX` is set correctly
-- Run `python scripts/dataset/test_readability.py <path>` to diagnose
-- Regenerate VDS if needed
-
-**"Permission denied" on S3**
-- Verify credentials in `.env`
-- Check buckets exist: `ovhai bucket list s3-GRA`
-- Reconfigure datastore (see setup section)
-
-**"Bucket not found"**
-```bash
-ovhai bucket create s3-GRA <bucket-name>
-```
-
-### Training
-
-**"DATASYNC_FAILED"**
-- Check S3 bucket names in `.env` and `launch.sh`
-- Verify output bucket exists with write permissions
-- Check `ovhai volume list`
-
-**Out of memory**
-- Use `batch_size_low` experiment
-- Try `model_reduced_50` or `model_reduced_75`
-- Reduce `data.num_workers`
-
-### Docker
-
-**Build fails**
-```bash
-sudo systemctl start docker     # Start daemon
-docker system prune -a          # Free space
-```
-
-
-## Quick Reference
-
 ### Common Commands
 
 ```bash
@@ -371,56 +223,3 @@ ovhai job stop <job-id>
 python src/eval.py experiment=flow_multi/<experiment> ckpt_path=<path>
 ./scripts/eval/evaluate_locally.sh <checkpoint> <dataset>
 ```
-
-### Workflows
-
-**Typical Training Cycle:**
-
-1. Test locally first:
-   ```bash
-   ./launch.sh flow_multi/dataset_20k_40k --local
-   ```
-
-2. Launch cloud training:
-   ```bash
-   ./launch.sh flow_multi/dataset_100k
-   ```
-
-3. Monitor:
-   ```bash
-   ./scripts/ovh/logs.sh <job-id>
-   ```
-
-4. Evaluate:
-   ```bash
-   ovhai bucket object download synth-outputs@s3-GRA <path>/checkpoints/best.ckpt
-   python src/eval.py experiment=flow_multi/dataset_100k ckpt_path=best.ckpt
-   ```
-
-**Tips:**
-- Start with `dataset_20k_40k` before scaling to `dataset_100k`
-- Monitor OVH costs (V100s = €1.93/hour)
-- Use W&B for experiment tracking
-- Stop unused jobs to avoid charges
-
-## License
-
-MIT License (inherited from synth-permutations)
-
-## Citation
-
-If you use this code, please cite the original work:
-
-```bibtex
-@inproceedings{hayes2024synth,
-  title={Synth Permutations: Learning Deep Synthesis from Audio},
-  author={Hayes, Benjamin},
-  year={2024}
-}
-```
-
-## Contributing
-
-This is a research project. Feel free to fork and adapt for your own experiments.
-
-For issues or questions, please open a GitHub issue.
