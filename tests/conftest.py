@@ -31,6 +31,8 @@ def cfg_train_global() -> DictConfig:
                 del cfg.data["pin_memory"]
             cfg.data.fake = True
             cfg.data.use_saved_mean_and_variance = False
+            cfg.model.num_params = 189
+            cfg.model.vector_field.projection.num_params = 189
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None
@@ -59,6 +61,8 @@ def cfg_eval_global() -> DictConfig:
                 del cfg.data["pin_memory"]
             cfg.data.fake = True
             cfg.data.use_saved_mean_and_variance = False
+            cfg.model.num_params = 189
+            cfg.model.vector_field.projection.num_params = 189
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None
