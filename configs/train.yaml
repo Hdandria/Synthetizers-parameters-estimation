@@ -6,7 +6,7 @@ defaults:
   - _self_
   - data: surge
   - model: surge_flow
-  - callbacks: default_surge
+  - callbacks: default
   - logger: many_loggers # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   - trainer: gpu
   - paths: default

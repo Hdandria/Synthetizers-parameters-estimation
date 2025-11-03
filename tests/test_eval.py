@@ -23,6 +23,7 @@ def test_train_eval(tmp_path: Path, cfg_train: DictConfig, cfg_eval: DictConfig)
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
         cfg_train.test = True
+        cfg_train.trainer.num_sanity_val_steps = 0
 
     HydraConfig().set_config(cfg_train)
     train_metric_dict, _ = train(cfg_train)

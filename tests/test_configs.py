@@ -2,6 +2,11 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 
+from src.utils import register_resolvers
+
+# Register OmegaConf custom resolvers (e.g. mul, div) before config instantiation
+register_resolvers()
+
 
 def test_train_config(cfg_train: DictConfig) -> None:
     """Tests the training configuration provided by the `cfg_train` pytest fixture.
