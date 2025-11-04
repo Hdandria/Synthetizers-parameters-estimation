@@ -123,7 +123,7 @@ echo "Using preset: $PRESET_PATH"
 # fi
 
 # Render using the 'surge_simple' param spec by default (matches models with 92 params).
-uv run python scripts/predict_vst_audio.py \
+uv run python scripts/render/predict_vst_audio.py \
     "$PRED_SUBDIR" \
     "$AUDIO_DIR" \
     --plugin_path "$PLUGIN_PATH" \
@@ -139,7 +139,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 3/3: Computing audio metrics..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-uv run python scripts/compute_audio_metrics_no_pesto.py \
+uv run python scripts/eval/compute_audio_metrics_no_pesto.py \
     "$AUDIO_DIR" \
     "$METRICS_DIR" \
     --num_workers 8
