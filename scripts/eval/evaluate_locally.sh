@@ -1,21 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Quick local evaluation using an existing predictions dir
-# Usage: ./scripts/eval/evaluate_locally.sh <predictions_dir> <outdir>
-
-PRED_DIR="$1"
-OUTDIR="$2"
-
-mkdir -p "$OUTDIR"
-
-# Render predictions
-scripts/render/renderscript.sh "$PRED_DIR" "$OUTDIR/audio" full
-
-# Compute metrics
-python scripts/eval/compute_audio_metrics_no_pesto.py "$OUTDIR/audio" "$OUTDIR/metrics"
-
-echo "Local evaluation complete. Results in $OUTDIR"
 #!/bin/bash
 ################################################################################
 # Local Evaluation Script (No Docker)
@@ -114,8 +96,7 @@ echo "Step 2/3: Rendering predictions to audio..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # For robustness, we handle both pred-*.pt directly under PRED_DIR and in subfolders
-found_pred_dir=$(find "$PRED_DIR" -type f -name "pred-*.pt" -printf '%h
-'`) || true
+found_pred_dir=$(find "$PRED_DIR" -type f -name "pred-*.pt" -printf '%h\n' | head -n 1 || true)
 if [[ -n "$found_pred_dir" ]]; then
     PRED_SUBDIR="$found_pred_dir"
     echo "Found predictions at: $PRED_SUBDIR"
@@ -142,7 +123,7 @@ echo "Using preset: $PRESET_PATH"
 # fi
 
 # Render using the 'surge_simple' param spec by default (matches models with 92 params).
-uv run python scripts/render/predict_vst_audio.py \
+uv run python scripts/predict_vst_audio.py \
     "$PRED_SUBDIR" \
     "$AUDIO_DIR" \
     --plugin_path "$PLUGIN_PATH" \
@@ -158,7 +139,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 3/3: Computing audio metrics..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-uv run python scripts/eval/compute_audio_metrics_no_pesto.py \
+uv run python scripts/compute_audio_metrics_no_pesto.py \
     "$AUDIO_DIR" \
     "$METRICS_DIR" \
     --num_workers 8
