@@ -187,3 +187,5 @@ terraform.tfvars
 *.private.*
 
 reference/
+
+*cookies*.txt
