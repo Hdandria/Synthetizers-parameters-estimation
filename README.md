@@ -1,5 +1,7 @@
 # Synthesizer Parameters Estimation
 
+Branch for trying to load presets and sample from around them.
+
 Estimate synthesizer parameters from audio using conditional flow matching. Given an audio file, predict the VST parameters that could have generated it.
 
 > Forked from [synth-permutations](https://github.com/ben-hayes/synth-permutations) by Benjamin Hayes
