@@ -57,6 +57,7 @@ dependencies = [
     "ipykernel>=7.1.0",
     "beautifulsoup4>=4.14.2",
     "patool>=4.0.1",
+    "cloudscraper>=1.2.71",
 ]
 
 # Dépendances optionnelles

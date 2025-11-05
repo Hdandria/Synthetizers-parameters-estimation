@@ -1,3 +1,7 @@
+## Notes:
+kvraudio have anti bot measures. To download it, you need to create `kvr_cookies.txt` file in this subfolder with your session cookies. Make sure to remove cloudlfare's cookies from it. (`cf_clearance` line). If no file is found, the script will skip kvraudio downloads.
+
+Note: sometimes, kvraudio is blocked by cloudflare even with cookies, so the downloads may fail.
 
 ## Downloaded and extracted automatically:
 > by running `scripts/scripting/scrapping.ipynb`
@@ -10,8 +14,10 @@
 
 [github](https://github.com/surge-synthesizer/surge-synthesizer.github.io/wiki/Additional-Content): plusieurs packs de presets. ([0](https://raw.githubusercontent.com/surge-synthesizer/surge-extra-content/main/Website/wiki/Additional%20Content/Philippe%20Favre%20Patches%202024.zip) [1](https://raw.githubusercontent.com/surge-synthesizer/surge-extra-content/main/Website/wiki/Additional%20Content/Psiome-Album.7z) 
 
-## Website where that I can't automatically download from:
+## Works only with cookies:
 kvraudio - https://www.kvraudio.com/product/surge-by-surge-synth-team/downloads
+
+## Website where that I can't automatically download from:
 presetshare - https://www.presetshare.com/presets?query=&instrument=7&page=1
 
 
