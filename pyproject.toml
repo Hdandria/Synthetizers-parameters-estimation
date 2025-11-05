@@ -54,6 +54,8 @@ dependencies = [
     "setuptools>=80.9.0",
     "aws>=0.2.5",
     "awscli>=1.42.64",
+    "ipykernel>=7.1.0",
+    "beautifulsoup4>=4.14.2",
 ]
 
 # Dépendances optionnelles
