@@ -3108,6 +3108,40 @@ wheels = [
 ]
 
 [[package]]
+name = "patool"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.11' and sys_platform == 'linux'",
+    "python_full_version < '3.11' and sys_platform != 'linux'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/c7/f9d5c6f9c51433d95399e40c9dd214f2b44bdcb79cbbd86028f55535725e/patool-4.0.1.tar.gz", hash = "sha256:41f7ee21be337a5baf07b2cb4796e9d94397ab741d2379c622f98fc001099802", size = 2006713, upload-time = "2025-05-02T19:08:16.768Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/07/a7aefd5b3ee565b4d959bcf7061666c7fbf66ed83e58d07cdcdca35c9b33/patool-4.0.1-py2.py3-none-any.whl", hash = "sha256:a7430eb08edcbd71feaf9c40f55c46f6a0ac385dc68dd0f5010cfa4ad2e9341a", size = 86512, upload-time = "2025-05-02T19:08:19.407Z" },
+]
+
+[[package]]
+name = "patool"
+version = "4.0.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_python_implementation != 'PyPy' and sys_platform == 'linux'",
+    "python_full_version == '3.13.*' and platform_python_implementation != 'PyPy' and sys_platform == 'linux'",
+    "python_full_version >= '3.13' and platform_python_implementation == 'PyPy' and sys_platform == 'linux'",
+    "python_full_version >= '3.14' and platform_python_implementation != 'PyPy' and sys_platform != 'linux'",
+    "python_full_version == '3.13.*' and platform_python_implementation != 'PyPy' and sys_platform != 'linux'",
+    "python_full_version >= '3.13' and platform_python_implementation == 'PyPy' and sys_platform != 'linux'",
+    "python_full_version == '3.12.*' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and sys_platform != 'linux'",
+    "python_full_version == '3.11.*' and sys_platform == 'linux'",
+    "python_full_version == '3.11.*' and sys_platform != 'linux'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/3e/9537c0921cddfb84f786ad6808d7b9edcee1cf606a53d0d7272fb27487d5/patool-4.0.2.tar.gz", hash = "sha256:e7f62d222f4a8a6c48dbfb38056dc7f9e5778ccc07c1f16d9653a316812f83ba", size = 2008032, upload-time = "2025-10-14T10:23:43.471Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/73/4f/f10aab9f5f1ede8dd9279faa96d16129fad45d6d10f0e564a3ca8828f364/patool-4.0.2-py2.py3-none-any.whl", hash = "sha256:c9324757cbd7d2f468bc50a93319cd63c28ca679a5c61bd89b9aedd52d15ef71", size = 87931, upload-time = "2025-10-14T10:23:46.693Z" },
+]
+
+[[package]]
 name = "pedalboard"
 version = "0.9.18"
 source = { registry = "https://pypi.org/simple" }
@@ -4547,6 +4581,8 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
+    { name = "patool", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "patool", version = "4.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pedalboard" },
     { name = "pot" },
     { name = "pre-commit" },
@@ -4599,6 +4635,7 @@ requires-dist = [
     { name = "mido", specifier = ">=1.3.3" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "patool", specifier = ">=4.0.1" },
     { name = "pedalboard", specifier = ">=0.9.18" },
     { name = "pot" },
     { name = "pre-commit" },
