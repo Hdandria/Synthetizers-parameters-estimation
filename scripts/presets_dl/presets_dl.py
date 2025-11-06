@@ -40,6 +40,9 @@ for archive in downloaded_archives:
             print(f'  Failed: {e}')
 
 # Download .fxp files directly from PresetShare
-total_fxp += presetshare.download(save_path, os.path.join(script_dir, 'presetshare_cookies.txt'))
+# Create a presetshare folder if it doesn't exist
+presetshare_path = os.path.join(save_path, 'presetshare')
+os.makedirs(presetshare_path, exist_ok=True)
+total_fxp += presetshare.download(presetshare_path, os.path.join(script_dir, 'presetshare_cookies.txt'))
 
 print(f'\n=== Total: {total_fxp} .fxp files ===')
