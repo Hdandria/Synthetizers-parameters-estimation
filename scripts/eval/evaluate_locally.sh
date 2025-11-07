@@ -7,10 +7,10 @@
 #
 # Example:
 #   ./scripts/evaluate_locally.sh \
-#     ./logs/dataset_20k_40k-2025-10-24_12-59-16/checkpoints/last.ckpt \
-#     flow_multi/dataset_20k_40k \
+#     ./outputs/evaluations/dataset_50k_80k-2025-11-04_12-01-54/checkpoints \
+#     flow_multi/dataset_50k_80k \
 #     test \
-#     ./datasets/surge-20k
+#     ./datasets/surge-50k
 ################################################################################
 
 set -euo pipefail
@@ -82,7 +82,7 @@ EVAL_CMD="uv run python src/eval.py \
     model.compile=false \
     trainer.accelerator=gpu \
     trainer.precision=16-mixed \
-    +trainer.limit_predict_batches=3 \
+    +trainer.limit_predict_batches=6 \
     data.num_workers=6"
 echo "Running: $EVAL_CMD"
 eval "$EVAL_CMD"

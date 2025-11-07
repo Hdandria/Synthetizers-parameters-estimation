@@ -1,3 +1,5 @@
+# Download informations
+
 ## Notes:
 kvraudio have anti bot measures. To download it, you need to create `kvr_cookies.txt` file in this subfolder with your session cookies. Make sure to remove cloudlfare's cookies from it. (`cf_clearance` line). If no file is found, the script will skip kvraudio downloads.
 > Note: sometimes, kvraudio is blocked by cloudflare even with cookies, so the downloads may fail.
@@ -22,3 +24,5 @@ presetshare - https://www.presetshare.com/presets?query=&instrument=7&page=1
 
 ## Notes:
 patool uses system's archive tools (unzip, unrar, 7z, tar, etc). Make sure you have what is needed for common archive formats (here .zip, .rar, .7z, .tar.gz).
+
+# Conversion informations
