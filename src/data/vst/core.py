@@ -1,3 +1,4 @@
+from __future__ import annotations
 import _thread
 import threading
 import time
@@ -7,6 +8,50 @@ from typing import Optional, Tuple
 import mido
 import numpy as np
 from loguru import logger
+FLUSH_DURATION_SECONDS = 0.5
+
+
+def _enforce_minimal_audible_params(plugin: VST3Plugin, params: dict[str, float]) -> dict[str, float]:
+    """Light guard rails to avoid silent random patches.
+
+    Only touches parameters that exist on the plugin:
+    - bypass off
+    - some output volume
+    - amp env (env1) fast attack, some sustain, some release
+    - osc1 on with some level
+    - avoid fully wet filter mix by default
+    """
+    out = dict(params)
+    keys = set(plugin.parameters.keys())
+
+    def set_if_present(k: str, v: float):
+        if k in keys and k not in out:
+            out[k] = v
+
+    def clamp_min(k: str, vmin: float, default: float | None = None):
+        if k in keys:
+            if k in out:
+                try:
+                    if float(out[k]) < vmin:
+                        out[k] = vmin
+                except Exception:
+                    pass
+            elif default is not None:
+                out[k] = default
+
+    if "bypass" in keys:
+        out["bypass"] = 0.0
+    clamp_min("volume", 0.3, default=0.7)
+    clamp_min("envelope_1_sustain", 0.3, default=0.8)
+    if "envelope_1_attack" in keys and ("envelope_1_attack" not in out or out["envelope_1_attack"] > 0.3):
+        out["envelope_1_attack"] = 0.01
+    set_if_present("envelope_1_release", 0.2)
+    set_if_present("oscillator_1_switch", 1.0)
+    clamp_min("oscillator_1_level", 0.3, default=0.7)
+    if "filter_1_mix" in keys and out.get("filter_1_mix", 0.0) > 0.9:
+        out["filter_1_mix"] = 0.2
+
+    return out
 from pedalboard import VST3Plugin
 from pedalboard.io import AudioFile
 
@@ -83,15 +128,16 @@ def render_params(
         load_preset(plugin, preset_path)
 
     logger.debug("post-load flush")
-    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
+    plugin.process([], FLUSH_DURATION_SECONDS, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
     logger.debug("setting params")
+    params = _enforce_minimal_audible_params(plugin, params)
     set_params(plugin, params)
     # plugin.reset()
 
     logger.debug("post-param flush")
-    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
+    plugin.process([], FLUSH_DURATION_SECONDS, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
 
     midi_events = make_midi_events(midi_note, velocity, *note_start_and_end)
@@ -102,9 +148,11 @@ def render_params(
     )
 
     logger.debug("post-render flush")
-    plugin.process([], 32.0, sample_rate, channels, 2048, True)  # flush
+    plugin.process([], FLUSH_DURATION_SECONDS, sample_rate, channels, 2048, True)  # flush
     plugin.reset()
-
+    # If silent, just log and return as requested
+    if np.max(np.abs(output)) == 0:
+        logger.warning("Rendered audio is silent (peak==0). Skipping.")
     return output
 
 
