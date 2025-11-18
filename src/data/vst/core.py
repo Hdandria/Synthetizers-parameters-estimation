@@ -1,13 +1,23 @@
 from __future__ import annotations
+
 import _thread
+import os
 import threading
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Optional, Tuple
 
 import mido
 import numpy as np
+import rootutils
 from loguru import logger
+from pedalboard import VST3Plugin
+from pedalboard.io import AudioFile
+
+root = rootutils.find_root(search_from=os.path.dirname(os.path.abspath(__file__)), indicator=".project-root")
+from src.data.vst.vital_preset_converter import convert_vital_preset_to_params
+
 FLUSH_DURATION_SECONDS = 0.5
 
 
@@ -52,8 +62,6 @@ def _enforce_minimal_audible_params(plugin: VST3Plugin, params: dict[str, float]
         out["filter_1_mix"] = 0.2
 
     return out
-from pedalboard import VST3Plugin
-from pedalboard.io import AudioFile
 
 
 def _call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
@@ -93,8 +101,21 @@ def load_plugin(plugin_path: str) -> VST3Plugin:
 
 def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
     logger.info(f"Loading preset {preset_path}")
-    plugin.load_preset(preset_path)
-    logger.info(f"Preset {preset_path} loaded")
+    # Handle legacy Vital JSON presets
+    if preset_path.lower().endswith(".vital"):
+        try:
+            params = convert_vital_preset_to_params(preset_path, plugin)
+            if params:
+                set_params(plugin, params)
+                logger.info("Applied .vital preset via parameter mapping")
+            else:
+                logger.warning(".vital preset produced no applicable parameters")
+        except Exception as e:
+            logger.error(f"Failed to convert/apply .vital preset: {e}")
+            raise
+    else:
+        plugin.load_preset(preset_path)
+        logger.info(f"Preset {preset_path} loaded")
 
 
 def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
