@@ -3,7 +3,7 @@ import os
 import shutil
 import patoolib
 import rootutils
-from sources import direct_urls, kvraudio, presetshare
+from sources_surge import direct_urls, kvraudio, presetshare
 
 # Setup paths
 root = rootutils.find_root(search_from=os.path.dirname(os.path.abspath(__file__)), indicator=".project-root")

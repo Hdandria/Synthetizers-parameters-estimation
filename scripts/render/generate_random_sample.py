@@ -70,11 +70,13 @@ def main(plugin_key, plugin_path, preset, duration, sr, channels, velocity, out,
         preset_path=str(preset) if preset is not None else None,
     )
 
-    # Fail if silent; don't write
+    # Clean NaN/Inf, fail if silent; then normalize
+    audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
     peak = float(np.max(np.abs(audio)))
     if peak == 0.0:
-        raise click.ClickException("Rendered audio is silent (peak==0). Aborting without writing.")
-    # Simple peak normalize
+        raise click.ClickException(
+            "Rendered audio is silent or invalid (peak==0 after cleanup). Aborting without writing."
+        )
     audio = audio / peak
 
     write_wav(audio, str(out), float(sr), int(channels))
