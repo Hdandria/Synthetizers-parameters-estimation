@@ -190,9 +190,20 @@ ovhai job run \
   --output json \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
-    MOUNT_BASE=/workspace/datasets-mount/datasets
-    [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
-    [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
+    echo "==> Inspecting mount point"
+    ls -la /workspace/datasets-mount/ || { echo "ERROR: datasets-mount not accessible"; exit 1; }
+    
+    # Try multiple possible mount structures
+    if [ -d "/workspace/datasets-mount/datasets" ]; then
+      MOUNT_BASE=/workspace/datasets-mount/datasets
+      echo "Found datasets at: $MOUNT_BASE"
+    elif [ -d "/workspace/datasets-mount" ]; then
+      MOUNT_BASE=/workspace/datasets-mount
+      echo "Using mount root: $MOUNT_BASE"
+    else
+      echo "ERROR: No valid datasets mount found"
+      exit 1
+    fi
     
     CFG=configs/experiment/'"${EXPERIMENT_CONFIG}"'.yaml
     DS_REL=$(grep -oP "dataset_root:\s*\K.*" "$CFG" | tr -d "'\''\" " | head -1)
@@ -209,8 +220,17 @@ ovhai job run \
     DS_NAME=$(basename "$DS_REL")
     DS_PATH="${MOUNT_BASE}/${DS_NAME}"
     
-    echo "==> Dataset: $DS_PATH"
-    ls -lah "$DS_PATH/" || true
+    echo "==> Looking for dataset: $DS_PATH"
+    if [ ! -d "$DS_PATH" ]; then
+      echo "ERROR: Dataset directory not found: $DS_PATH"
+      echo "Available datasets in $MOUNT_BASE:"
+      ls -la "$MOUNT_BASE/" || true
+      exit 1
+    fi
+    
+    echo "==> Dataset found: $DS_PATH"
+    echo "Contents:"
+    ls -lah "$DS_PATH/" | head -20
     
     echo "==> Checking readability"
     QUIET=""
