@@ -133,8 +133,10 @@ command -v ovhai &>/dev/null || { echo -e "${RED}Error: ovhai CLI not found${RES
 ovhai me &>/dev/null || { echo -e "${RED}Error: Not logged in. Run: ovhai login${RESET}"; exit 1; }
 
 # Configure S3 datastore
-DS_ALIAS="s3-${OVH_REGION:-gra}"
-if ! ovhai datastore list 2>/dev/null | grep -q "^${DS_ALIAS}"; then
+DS_ALIAS="s3-${OVH_REGION:-gra}-${AWS_ACCESS_KEY_ID:0:6}"
+DS_ALIAS=$(echo "$DS_ALIAS" | tr '[:upper:]' '[:lower:]')
+
+if ! ovhai datastore list 2>/dev/null | grep -q "${DS_ALIAS}"; then
   REGION=$(echo "${OVH_REGION:-GRA}" | tr '[:upper:]' '[:lower:]')
   ovhai datastore add s3 "${DS_ALIAS}" "${AWS_ENDPOINT_URL}" "${REGION}" \
     "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}" --store-credentials-locally
