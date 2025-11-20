@@ -635,6 +635,423 @@ VITAL_PARAM_SPEC = ParamSpec(
         CategoricalParameter(
             name="view_spectrogram", values=list(range(3)), raw_values=_evenly_spaced(3), encoding="onehot"
         ),
+        # Macros (pedalboard exposes macro_1..macro_4)
+        ContinuousParameter(name="macro_1", min=0.0, max=1.0),
+        ContinuousParameter(name="macro_2", min=0.0, max=1.0),
+        ContinuousParameter(name="macro_3", min=0.0, max=1.0),
+        ContinuousParameter(name="macro_4", min=0.0, max=1.0),
+
+        # Effect chain ordering
+        ContinuousParameter(name="effect_chain_order", min=0.0, max=1.0),
+
+        # Sample: random phase (present in pedalboard list but missing in spec)
+        CategoricalParameter(
+            name="sample_random_phase", values=[False, True], raw_values=[0.0, 1.0], encoding="onehot"
+        ),
+
+        # Additional oscillator parameters exposed by pedalboard
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_detune_power", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_detune_range", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_distortion_amount", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_distortion_phase", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_distortion_spread", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            CategoricalParameter(
+                name=f"oscillator_{i}_distortion_type",
+                values=list(range(7)),  # matches SynthOscillator::kNumDistortionTypes (approximate)
+                raw_values=_evenly_spaced(7),
+                encoding="onehot",
+            )
+            for i in range(1, 4)
+        ],
+        *[
+            ContinuousParameter(name=f"oscillator_{i}_transpose_quantize", min=0.0, max=1.0)
+            for i in range(1, 4)
+        ],
+        *[
+            CategoricalParameter(
+                name=f"oscillator_{i}_view_2d",
+                values=list(range(3)),
+                raw_values=_evenly_spaced(3),
+                encoding="onehot",
+            )
+            for i in range(1, 4)
+        ],
+
+        # Extend modulation matrix coverage to 64 (pedalboard exposes up to modulation_64_*)
+        *[
+            param
+            for i in range(1, 65)
+            for param in [
+                ContinuousParameter(name=f"modulation_{i}_amount", min=0.0, max=1.0),
+                ContinuousParameter(name=f"modulation_{i}_power", min=0.0, max=1.0),
+                CategoricalParameter(
+                    name=f"modulation_{i}_bipolar",
+                    values=[False, True],
+                    raw_values=[0.0, 1.0],
+                    encoding="onehot",
+                ),
+                CategoricalParameter(
+                    name=f"modulation_{i}_stereo",
+                    values=[False, True],
+                    raw_values=[0.0, 1.0],
+                    encoding="onehot",
+                ),
+                CategoricalParameter(
+                    name=f"modulation_{i}_bypass",
+                    values=[False, True],
+                    raw_values=[0.0, 1.0],
+                    encoding="onehot",
+                ),
+            ]
+        ],
+    ],
+    [
+        # Note-level parameters
+        DiscreteLiteralParameter(name="pitch", min=48, max=72),
+        NoteDurationParameter(name="note_start_and_end", max_note_duration_seconds=4.0),
+    ],
+)
+
+VITAL_SIMPLE_PARAM_SPEC = ParamSpec(
+    [
+        # Global / transport
+        ContinuousParameter(name="beats_per_minute", min=0.0, max=1.0),
+        ContinuousParameter(name="volume", min=0.0, max=1.0),
+
+        # Delay
+        CategoricalParameter(
+            name="delay_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="delay_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="delay_feedback", min=0.0, max=1.0),
+        ContinuousParameter(name="delay_frequency", min=0.0, max=1.0),
+        CategoricalParameter(
+            name="delay_sync",
+            values=list(range(4)),
+            raw_values=_evenly_spaced(4),
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="delay_tempo",
+            values=list(range(9)),
+            raw_values=_evenly_spaced(9),
+            encoding="onehot",
+        ),
+
+        # Chorus
+        CategoricalParameter(
+            name="chorus_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="chorus_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="chorus_feedback", min=0.0, max=1.0),
+        ContinuousParameter(name="chorus_frequency", min=0.0, max=1.0),
+        CategoricalParameter(
+            name="chorus_sync",
+            values=list(range(4)),
+            raw_values=_evenly_spaced(4),
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="chorus_tempo",
+            values=list(range(11)),
+            raw_values=_evenly_spaced(11),
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="chorus_mod_depth", min=0.0, max=1.0),
+
+        # Flanger
+        CategoricalParameter(
+            name="flanger_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="flanger_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="flanger_feedback", min=0.0, max=1.0),
+        ContinuousParameter(name="flanger_frequency", min=0.0, max=1.0),
+        ContinuousParameter(name="flanger_mod_depth", min=0.0, max=1.0),
+        CategoricalParameter(
+            name="flanger_sync",
+            values=list(range(4)),
+            raw_values=_evenly_spaced(4),
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="flanger_tempo",
+            values=list(range(11)),
+            raw_values=_evenly_spaced(11),
+            encoding="onehot",
+        ),
+
+        # Phaser
+        CategoricalParameter(
+            name="phaser_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="phaser_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="phaser_feedback", min=0.0, max=1.0),
+        ContinuousParameter(name="phaser_frequency", min=0.0, max=1.0),
+        CategoricalParameter(
+            name="phaser_sync",
+            values=list(range(4)),
+            raw_values=_evenly_spaced(4),
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="phaser_tempo",
+            values=list(range(11)),
+            raw_values=_evenly_spaced(11),
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="phaser_mod_depth", min=0.0, max=1.0),
+
+        # Distortion
+        CategoricalParameter(
+            name="distortion_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="distortion_type",
+            values=list(range(6)),
+            raw_values=_evenly_spaced(6),
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="distortion_drive", min=0.0, max=1.0),
+        ContinuousParameter(name="distortion_mix", min=0.0, max=1.0),
+
+        # Compressor
+        CategoricalParameter(
+            name="compressor_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="compressor_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="compressor_release", min=0.0, max=1.0),
+        ContinuousParameter(name="compressor_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="band_upper_threshold", min=0.0, max=1.0),
+        ContinuousParameter(name="band_lower_threshold", min=0.0, max=1.0),
+        ContinuousParameter(name="band_upper_ratio", min=0.0, max=1.0),
+        ContinuousParameter(name="band_lower_ratio", min=0.0, max=1.0),
+
+        # EQ
+        CategoricalParameter(
+            name="eq_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="eq_low_gain", min=0.0, max=1.0),
+        ContinuousParameter(name="eq_band_gain", min=0.0, max=1.0),
+        ContinuousParameter(name="eq_high_gain", min=0.0, max=1.0),
+
+        # Reverb
+        CategoricalParameter(
+            name="reverb_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="reverb_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="reverb_decay_time", min=0.0, max=1.0),
+        ContinuousParameter(name="reverb_size", min=0.0, max=1.0),
+        ContinuousParameter(name="reverb_chorus_amount", min=0.0, max=1.0),
+
+        # Filters (1, 2, fx)
+        *[
+            param
+            for i in [1, 2]
+            for param in [
+                CategoricalParameter(
+                    name=f"filter_{i}_switch",
+                    values=[False, True],
+                    raw_values=[0.0, 1.0],
+                    encoding="onehot",
+                ),
+                ContinuousParameter(name=f"filter_{i}_mix", min=0.0, max=1.0),
+                ContinuousParameter(name=f"filter_{i}_cutoff", min=0.0, max=1.0),
+                ContinuousParameter(name=f"filter_{i}_resonance", min=0.0, max=1.0),
+                ContinuousParameter(name=f"filter_{i}_drive", min=0.0, max=1.0),
+                ContinuousParameter(name=f"filter_{i}_blend", min=0.0, max=1.0),
+                CategoricalParameter(
+                    name=f"filter_{i}_style",
+                    values=list(range(6)),
+                    raw_values=_evenly_spaced(6),
+                    encoding="onehot",
+                ),
+            ]
+        ],
+        # Filter FX
+        CategoricalParameter(
+            name="filter_fx_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="filter_fx_mix", min=0.0, max=1.0),
+        ContinuousParameter(name="filter_fx_cutoff", min=0.0, max=1.0),
+        ContinuousParameter(name="filter_fx_resonance", min=0.0, max=1.0),
+        ContinuousParameter(name="filter_fx_drive", min=0.0, max=1.0),
+        ContinuousParameter(name="filter_fx_blend", min=0.0, max=1.0),
+        CategoricalParameter(
+            name="filter_fx_style",
+            values=list(range(6)),
+            raw_values=_evenly_spaced(6),
+            encoding="onehot",
+        ),
+
+        # Envelopes (1..5)
+        # Env 1: ADSR
+        ContinuousParameter(name="envelope_1_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="envelope_1_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="envelope_1_sustain", min=0.0, max=1.0),
+        ContinuousParameter(name="envelope_1_release", min=0.0, max=1.0),
+        # Env 2-5: ADSR + Delay
+        *[
+            ContinuousParameter(name=f"envelope_{i}_{p}", min=0.0, max=1.0)
+            for i in range(2, 6)
+            for p in ["delay", "attack", "decay", "sustain", "release"]
+        ],
+
+        # LFOs (1..6)
+        *[
+            param
+            for i in range(1, 7)
+            for param in [
+                ContinuousParameter(name=f"lfo_{i}_frequency", min=0.0, max=1.0),
+                CategoricalParameter(
+                    name=f"lfo_{i}_sync",
+                    values=list(range(5)),
+                    raw_values=_evenly_spaced(5),
+                    encoding="onehot",
+                ),
+                CategoricalParameter(
+                    name=f"lfo_{i}_tempo",
+                    values=list(range(13)),
+                    raw_values=_evenly_spaced(13),
+                    encoding="onehot",
+                ),
+                ContinuousParameter(name=f"lfo_{i}_fade_in", min=0.0, max=1.0),
+                ContinuousParameter(name=f"lfo_{i}_smooth_time", min=0.0, max=1.0),
+            ]
+        ],
+
+        # Oscillators (1..3)
+        *[
+            param
+            for i in range(1, 4)
+            for param in [
+                CategoricalParameter(
+                    name=f"oscillator_{i}_switch",
+                    values=[False, True],
+                    raw_values=[0.0, 1.0],
+                    encoding="onehot",
+                ),
+                ContinuousParameter(name=f"oscillator_{i}_level", min=0.0, max=1.0),
+                ContinuousParameter(name=f"oscillator_{i}_pan", min=0.0, max=1.0),
+                ContinuousParameter(name=f"oscillator_{i}_transpose", min=0.0, max=1.0),
+                ContinuousParameter(name=f"oscillator_{i}_tune", min=0.0, max=1.0),
+                ContinuousParameter(name=f"oscillator_{i}_unison_detune", min=0.0, max=1.0),
+                CategoricalParameter(
+                    name=f"oscillator_{i}_unison_voices",
+                    values=list(range(1, 17)),
+                    raw_values=_evenly_spaced(16),
+                    encoding="onehot",
+                ),
+                ContinuousParameter(name=f"oscillator_{i}_blend", min=0.0, max=1.0),
+                ContinuousParameter(name=f"oscillator_{i}_wave_frame", min=0.0, max=1.0),
+                ContinuousParameter(
+                    name=f"oscillator_{i}_frequency_morph_amount", min=0.0, max=1.0
+                ),
+                CategoricalParameter(
+                    name=f"oscillator_{i}_frequency_morph_type",
+                    values=list(range(17)),
+                    raw_values=_evenly_spaced(17),
+                    encoding="onehot",
+                ),
+            ]
+        ],
+
+        # Sample section
+        CategoricalParameter(
+            name="sample_switch",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="sample_keytrack",
+            values=[False, True],
+            raw_values=[0.0, 1.0],
+            encoding="onehot",
+        ),
+        ContinuousParameter(name="sample_level", min=0.0, max=1.0),
+        ContinuousParameter(name="sample_pan", min=0.0, max=1.0),
+        ContinuousParameter(name="sample_tune", min=0.0, max=1.0),
+
+        # Voice / global performance
+        CategoricalParameter(
+            name="voice_priority",
+            values=list(range(5)),
+            raw_values=_evenly_spaced(5),
+            encoding="onehot",
+        ),
+        CategoricalParameter(
+            name="polyphony",
+            values=list(range(1, 33)),
+            raw_values=_evenly_spaced(32),
+            encoding="onehot"
+        ),
+        CategoricalParameter(
+            name="pitch_bend_range",
+            values=list(range(49)),
+            raw_values=_evenly_spaced(49),
+            encoding="onehot"
+        ),
+        ContinuousParameter(name="portamento_time", min=0.0, max=1.0),
+        ContinuousParameter(name="velocity_track", min=0.0, max=1.0),
+
+        # Macros (1..4)
+        *[
+            ContinuousParameter(name=f"macro_control_{i}", min=0.0, max=1.0)
+            for i in range(1, 5)
+        ],
+
+        # Modulation Matrix (1..32)
+        *[
+            param
+            for i in range(1, 33)
+            for param in [
+                ContinuousParameter(name=f"modulation_{i}_amount", min=0.0, max=1.0),
+                ContinuousParameter(name=f"modulation_{i}_power", min=0.0, max=1.0),
+            ]
+        ],
     ],
     [
         # Note-level parameters

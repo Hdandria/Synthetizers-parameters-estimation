@@ -12,17 +12,23 @@ try:
 except Exception:
     VST3Plugin = Any  # type: ignore
 
+from src.data.vst.param_spec import (
+    CategoricalParameter,
+    ContinuousParameter,
+    DiscreteLiteralParameter,
+    Parameter,
+)
+from src.data.vst.vital_param_spec import VITAL_PARAM_SPEC
+
 
 CORE_COMPONENT_MAP: Dict[str, str] = {
-    # Component Mapping
-    "osc": "oscillator",
-    "env": "envelope",
-    "random": "random_lfo",
-
-    # Macro Control Mapping
-    "macro_control": "macro",
-
-    # Effect Mapping
+    # Support both legacy and canonical prefixes
+    "osc": "osc",
+    "oscillator": "osc",
+    "env": "env",
+    "envelope": "env",
+    "random": "random",
+    "random_lfo": "random",
     "reverb": "reverb",
     "chorus": "chorus",
     "phaser": "phaser",
@@ -30,85 +36,198 @@ CORE_COMPONENT_MAP: Dict[str, str] = {
     "eq": "eq",
     "delay": "delay",
     "compressor": "compressor",
-
-    # Other Core Modules
     "sample": "sample",
-    "wavetables": "wavetables",
-    "lfos": "lfos",
-    "modulations": "modulations",
+    "modulation": "modulation",
 }
 
 COMMON_SUFFIX_MAP: Dict[str, str] = {
-    # On/Off
-    "_on": "_switch",
+    # Map pedalboard naming back to original Vital internal names (reverse direction for preset keys)
+    "_switch": "_on",
+    "_phase_randomization": "_random_phase",
+    "_frequency_morph_type": "_spectral_morph_type",
+    "_frequency_morph_amount": "_spectral_morph_amount",
+    "_frequency_morph_spread": "_spectral_morph_spread",
+}
 
-    # Envelope Parameter Mapping
-    "_attack": "_attack",
-    "_decay": "_decay",
-    "_sustain": "_sustain",
-    "_release": "_release",
-    "_hold": "_hold",
+# Explicit overrides from legacy preset key -> pedalboard key
+EXPLICIT_KEY_MAP: Dict[str, str] = {
+    "delay_dry_wet": "delay_mix",
+    "reverb_dry_wet": "reverb_mix",
+    "chorus_dry_wet": "chorus_mix",
+    "flanger_dry_wet": "flanger_mix",
+    "phaser_dry_wet": "phaser_mix",
+    "delay_on": "delay_switch",
+    "reverb_on": "reverb_switch",
+    "chorus_on": "chorus_switch",
+    "flanger_on": "flanger_switch",
+    "phaser_on": "phaser_switch",
+    "distortion_on": "distortion_switch",
+    "compressor_on": "compressor_switch",
+    "filter_1_on": "filter_1_switch",
+    "filter_2_on": "filter_2_switch",
+    "filter_fx_on": "filter_fx_switch",
+    "sample_on": "sample_switch",
+    "macro_control_1": "macro_1",
+    "macro_control_2": "macro_2",
+    "macro_control_3": "macro_3",
+    "macro_control_4": "macro_4",
+}
 
-    # LFO Keytracking
-    "_keytrack_tune": "_tune",
-    "_keytrack_transpose": "_transpose",
-    "_fade_time": "_fade_in",
-
-    # Oscillator Specific
-    "_spectral_morph": "_frequency_morph",
-    "_random_phase": "_phase_randomization",
-    "_frame_spread": "_frame_spread",
-
-    # Effect Mix
-    "_dry_wet": "_mix",
-
-    # Filter/Effect Keytracking
-    "_keytrack": "_key_track",
+_PARAM_REGISTRY: Dict[str, Parameter] = {
+    param.name: param for param in VITAL_PARAM_SPEC.synth_params
 }
 
 
-def _remap_key(old_key: str) -> str:
-    """Apply prefix and suffix mappings to transform old .vital keys to plugin keys."""
-    new_key = old_key
-    # Prefix mapping (replace only at the start)
-    for prefix, mapped_prefix in CORE_COMPONENT_MAP.items():
-        if new_key.startswith(prefix):
-            new_key = new_key.replace(prefix, mapped_prefix, 1)
-            break
-    # Suffix mapping (replace only once at the end)
-    for suffix, mapped_suffix in COMMON_SUFFIX_MAP.items():
-        if new_key.endswith(suffix):
-            new_key = new_key[: -len(suffix)] + mapped_suffix
-            break
-    return new_key
+def _clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
 
 
-def _coerce_value_for_param(value: Any, current_raw_value: Any) -> Any:
-    """Heuristically coerce a .vital value to something acceptable for plugin.parameters[*].raw_value.
+def _normalize_continuous(param: ContinuousParameter, value: Any) -> float:
+    """Conservatively normalize a raw preset numeric to [0,1] domain spec expects.
 
     Rules:
-    - booleans pass-through
-    - ints/floats: if > 1 and <= 100, assume percent and divide by 100
-    - strings and others: pass-through as-is (plugin will reject if incompatible)
+    - If already in [0,1], keep.
+    - If 1 < v <= 100, treat as percentage.
+    - Otherwise clamp to [min,max] (currently [0,1]).
+    NOTE: Future improvement: use real Vital ranges & curve metadata.
     """
-    # Preserve bools
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        numeric = param.min
+    if 0.0 <= numeric <= 1.0:
+        return _clamp(numeric, param.min, param.max)
+    if 1.0 < numeric <= 100.0:
+        return _clamp(numeric / 100.0, param.min, param.max)
+    return _clamp(numeric, param.min, param.max)
+
+
+def _normalize_categorical(param: CategoricalParameter, value: Any) -> float:
+    raw_values = param.raw_values or []
     if isinstance(value, bool):
-        return value
+        candidate = float(value)
+    else:
+        try:
+            candidate = float(value)
+        except (TypeError, ValueError):
+            candidate = None
 
-    # Normalize common percent-like values (0..100 -> 0..1)
-    if isinstance(value, (int, float)):
-        v = float(value)
-        if v > 1.0 and v <= 100.0:
-            return v / 100.0
-        return v
+    if candidate is not None and raw_values:
+        return min(raw_values, key=lambda rv: abs(rv - candidate))
 
-    # Fallback: return unchanged
+    if value in param.values:
+        idx = param.values.index(value)
+        return raw_values[idx]
+
+    return raw_values[0] if raw_values else 0.0
+
+
+def _normalize_value_from_spec(param_name: str, value: Any) -> Any:
+    param = _PARAM_REGISTRY.get(param_name)
+    if param is None:
+        return _legacy_coerce(value)
+
+    if isinstance(param, ContinuousParameter):
+        return _normalize_continuous(param, value)
+    if isinstance(param, CategoricalParameter):
+        return _normalize_categorical(param, value)
+    if isinstance(param, DiscreteLiteralParameter):
+        return _legacy_coerce(value)
     return value
 
 
-def convert_vital_preset_to_params(
-    preset_path: str | Path, plugin: VST3Plugin
-) -> dict[str, Any]:
+def _remap_key(old_key: str) -> str:
+    """Map a legacy Vital preset parameter name to a pedalboard parameter name.
+
+    Order of operations:
+    1. Explicit mapping dictionary.
+    2. Structured group conversions (osc/env/lfo/random/filter/modulation).
+    3. Generic suffix heuristics (on->switch, dry_wet->mix, spectral->frequency).
+    4. Fallback: return original key.
+    """
+    if old_key in EXPLICIT_KEY_MAP:
+        return EXPLICIT_KEY_MAP[old_key]
+
+    # Oscillators: osc_<n>_* -> oscillator_<n>_* ; spectral_morph_* -> frequency_morph_*
+    if old_key.startswith("osc_"):
+        parts = old_key.split("_")
+        if len(parts) >= 3 and parts[1].isdigit():
+            idx = parts[1]
+            tail = "_".join(parts[2:])
+            tail = tail.replace("spectral_morph_", "frequency_morph_")
+            return f"oscillator_{idx}_{tail}"
+
+    # Envelopes
+    if old_key.startswith("env_"):
+        parts = old_key.split("_")
+        if len(parts) >= 3 and parts[1].isdigit():
+            idx = parts[1]
+            tail = "_".join(parts[2:])
+            return f"envelope_{idx}_{tail}"
+
+    # LFOs
+    if old_key.startswith("lfo_"):
+        parts = old_key.split("_")
+        if len(parts) >= 3 and parts[1].isdigit():
+            idx = parts[1]
+            tail = "_".join(parts[2:])
+            return f"lfo_{idx}_{tail}"
+
+    # Random LFOs
+    if old_key.startswith("random_"):
+        parts = old_key.split("_")
+        if len(parts) >= 3 and parts[1].isdigit():
+            idx = parts[1]
+            tail = "_".join(parts[2:])
+            return f"random_lfo_{idx}_{tail}"
+
+    # Filters: filter_<n>_* keep naming; *_on -> *_switch handled below
+    if old_key.startswith("filter_") and old_key.endswith("_on"):
+        return old_key.replace("_on", "_switch")
+
+    # Sample switch
+    if old_key == "sample_on":
+        return "sample_switch"
+
+    # Generic FX suffixes
+    if old_key.endswith("dry_wet"):
+        return old_key.replace("dry_wet", "mix")
+    if old_key.endswith("_on"):
+        return old_key.replace("_on", "_switch")
+    if "spectral_morph_" in old_key:
+        return old_key.replace("spectral_morph_", "frequency_morph_")
+
+    # Heuristic prefix replacement attempt
+    for prefix, mapped_prefix in CORE_COMPONENT_MAP.items():
+        if old_key.startswith(prefix):
+            candidate = old_key.replace(prefix, mapped_prefix, 1)
+            for suffix, mapped_suffix in COMMON_SUFFIX_MAP.items():
+                if candidate.endswith(suffix):
+                    candidate = candidate[: -len(suffix)] + mapped_suffix
+                    break
+            return candidate
+
+    # Suffix-only heuristic
+    for suffix, mapped_suffix in COMMON_SUFFIX_MAP.items():
+        if old_key.endswith(suffix):
+            return old_key[: -len(suffix)] + mapped_suffix
+
+    return old_key
+
+
+def _legacy_coerce(value: Any) -> Any:
+    """Fallback coercion when no parameter metadata is available."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        v = float(value)
+        if 1.0 < v <= 100.0:
+            return v / 100.0
+        return v
+    return value
+
+
+def convert_vital_preset_to_params(preset_path, plugin):
     """Convert a Vital .vital preset into a dict of plugin parameter raw_values.
 
     This reads the legacy JSON format, remaps keys to Pedalboard Vital parameter
@@ -133,10 +252,15 @@ def convert_vital_preset_to_params(
         )
         return {}
 
-    # Remap keys using rules from exploration
+    # Remap keys using explicit + heuristic rules, track unmapped originals
     remapped: Dict[str, Any] = {}
+    unmapped_original: list[str] = []
     for key, value in settings.items():
         new_key = _remap_key(key)
+        if new_key == key:
+            # If unchanged and not a plugin param, mark as unmapped candidate
+            if key not in plugin.parameters:
+                unmapped_original.append(key)
         remapped[new_key] = value
 
     plugin_params = set(plugin.parameters.keys())
@@ -145,15 +269,22 @@ def convert_vital_preset_to_params(
         logger.warning(
             "No overlapping parameters between .vital preset and plugin; check mapping rules."
         )
+    else:
+        skipped = len(remapped) - len(intersect)
+        if skipped > 0:
+            sample_skipped = list(sorted(set(remapped.keys()) - intersect))[:10]
+            logger.debug(
+                f"Vital preset coverage: applying {len(intersect)}/{len(remapped)}. Sample skipped: {sample_skipped}"
+            )
+        if unmapped_original:
+            logger.debug(
+                f"Original keys unmapped (first 10): {unmapped_original[:10]}"
+            )
 
     result: Dict[str, Any] = {}
     for k in intersect:
-        try:
-            current_raw = plugin.parameters[k].raw_value
-        except Exception:
-            current_raw = None
-        coerced = _coerce_value_for_param(remapped[k], current_raw)
-        result[k] = coerced
+        normalized = _normalize_value_from_spec(k, remapped[k])
+        result[k] = normalized
 
     logger.info(
         f"Converted .vital preset: mapped {len(settings)} keys -> {len(remapped)}; "

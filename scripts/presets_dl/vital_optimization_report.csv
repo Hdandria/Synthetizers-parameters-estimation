@@ -1,0 +1,776 @@
+parameter,action_recommendation,dominance_ratio,most_common_value,unique_values_count,min,max,reason
+voice_amplitude,DELETE (Constant),1.0,1.0,1,1.0,1.0,Always 1.0
+osc_3_spectral_morph_phase,DELETE (Constant),1.0,0.5,1,0.5,0.5,Always 0.5
+osc_1_spectral_morph_phase,DELETE (Constant),1.0,0.5,1,0.5,0.5,Always 0.5
+bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_8_delay_time,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_8_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_17_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_62_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_62_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_62_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_63_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_63_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_63_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_63_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_64_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_64_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_64_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_64_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_7_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_5_fade_time,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_5_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_6_delay_time,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+lfo_6_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_59_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_59_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_59_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_59_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_60_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_60_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_60_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_60_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_61_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_61_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_61_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_23_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_24_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_25_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_25_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_55_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_56_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_56_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_56_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_56_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_57_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_57_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_57_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_58_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_58_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_58_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_27_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_27_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_27_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_28_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_28_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_29_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_29_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_29_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+env_5_hold,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_53_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_53_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_53_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_54_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_54_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_54_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_55_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_55_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_30_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_31_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_32_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_33_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+env_6_release_power,DELETE (Constant),1.0,-2.0,1,-2.0,-2.0,Always -2.0
+modulation_50_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_50_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_50_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_50_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_51_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_51_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_51_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_51_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_52_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_52_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_52_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_33_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_34_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_34_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_35_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_35_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_36_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_36_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_36_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_37_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_37_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_46_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_46_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_46_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_46_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_47_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_47_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_47_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_48_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_48_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_48_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_48_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_49_bipolar,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_49_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_49_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_49_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_42_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_42_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_42_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_43_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_43_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_43_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_44_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_44_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_44_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_45_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_45_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_45_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_37_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_38_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_38_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_38_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_39_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_39_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_39_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_40_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_40_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_40_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_41_bypass,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_41_power,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+modulation_41_stereo,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+random_2_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+random_3_keytrack_transpose,DELETE (Constant),1.0,-12.0,1,-12.0,-12.0,Always -12.0
+random_3_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+random_4_keytrack_transpose,DELETE (Constant),1.0,-12.0,1,-12.0,-12.0,Always -12.0
+random_4_keytrack_tune,DELETE (Constant),1.0,0.0,1,0.0,0.0,Always 0.0
+random_1_keytrack_tune,DELETE (Near Constant),0.9997,0.0,2,0.0,0.7899999618530273,0.0 in 100.0% of cases
+modulation_15_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_9_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_28_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_44_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_47_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_34_power,DELETE (Near Constant),0.9997,0.0,2,0.0,0.2999992370605469,0.0 in 100.0% of cases
+modulation_35_power,DELETE (Near Constant),0.9997,0.0,2,0.0,2.1000003814697266,0.0 in 100.0% of cases
+modulation_52_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+env_6_delay,DELETE (Near Constant),0.9997,0.0,2,0.0,0.007071067579090595,0.0 in 100.0% of cases
+modulation_11_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_13_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_20_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+lfo_6_fade_time,DELETE (Near Constant),0.9997,0.0,2,0.0,8.0,0.0 in 100.0% of cases
+lfo_4_fade_time,DELETE (Near Constant),0.9997,0.0,2,0.0,6.0,0.0 in 100.0% of cases
+modulation_61_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_18_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+lfo_8_keytrack_transpose,DELETE (Near Constant),0.9997,-12.0,2,-12.0,19.0,-12.0 in 100.0% of cases
+lfo_8_phase,DELETE (Near Constant),0.9997,0.0,2,0.0,0.450192928314209,0.0 in 100.0% of cases
+modulation_62_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_24_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_58_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+lfo_3_fade_time,DELETE (Near Constant),0.9997,0.0,2,0.0,3.7200000286102295,0.0 in 100.0% of cases
+modulation_31_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_53_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_30_power,DELETE (Near Constant),0.9997,0.0,2,-10.0,0.0,0.0 in 100.0% of cases
+modulation_54_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_55_bipolar,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+modulation_24_stereo,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+lfo_5_delay_time,DELETE (Near Constant),0.9997,0.0,2,0.0,0.06003967300057411,0.0 in 100.0% of cases
+modulation_26_bypass,DELETE (Near Constant),0.9997,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+mpe_enabled,DELETE (Near Constant),0.9996,0.0,2,0.0,1.0,0.0 in 100.0% of cases
+lfo_5_keytrack_transpose,DELETE (Near Constant),0.9994,-12.0,3,-60.0,0.0,-12.0 in 99.9% of cases
+env_4_hold,DELETE (Near Constant),0.9994,0.0,3,0.0,1.088944435119629,0.0 in 99.9% of cases
+lfo_3_keytrack_tune,DELETE (Near Constant),0.9994,0.0,3,0.0,0.956250011920929,0.0 in 99.9% of cases
+lfo_4_keytrack_tune,DELETE (Near Constant),0.9994,0.0,3,-0.2265625,0.31507813930511475,0.0 in 99.9% of cases
+osc_3_smooth_interpolation,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_19_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_6_keytrack_transpose,DELETE (Near Constant),0.9994,-12.0,3,-24.0,36.0,-12.0 in 99.9% of cases
+modulation_23_bypass,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_26_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_32_bypass,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+env_6_attack_power,DELETE (Near Constant),0.9994,0.0,3,-7.07999324798584,0.0,0.0 in 99.9% of cases
+env_5_release_power,DELETE (Near Constant),0.9994,-2.0,3,-2.1800003051757812,1.4200000762939453,-2.0 in 99.9% of cases
+modulation_32_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_42_bipolar,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_14_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_26_power,DELETE (Near Constant),0.9994,0.0,3,0.0,6.199999809265137,0.0 in 99.9% of cases
+modulation_30_bypass,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_7_fade_time,DELETE (Near Constant),0.9994,0.0,3,0.0,7.960000038146973,0.0 in 99.9% of cases
+lfo_7_delay_time,DELETE (Near Constant),0.9994,0.0,3,0.0,1.654773235321045,0.0 in 99.9% of cases
+lfo_8_smooth_mode,DELETE (Near Constant),0.9994,1.0,2,0.0,1.0,1.0 in 99.9% of cases
+lfo_8_fade_time,DELETE (Near Constant),0.9994,0.0,3,0.0,5.504658222198486,0.0 in 99.9% of cases
+modulation_16_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_25_bypass,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_21_bypass,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_17_stereo,DELETE (Near Constant),0.9994,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_18_bypass,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+random_1_keytrack_transpose,DELETE (Near Constant),0.9991,-12.0,4,-60.0,0.0,-12.0 in 99.9% of cases
+random_2_keytrack_transpose,DELETE (Near Constant),0.9991,-12.0,3,-60.0,0.0,-12.0 in 99.9% of cases
+modulation_17_power,DELETE (Near Constant),0.9991,0.0,4,-3.4000000953674316,8.899999618530273,0.0 in 99.9% of cases
+modulation_15_stereo,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_18_power,DELETE (Near Constant),0.9991,0.0,4,-10.0,4.60505485534668,0.0 in 99.9% of cases
+modulation_21_stereo,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_19_power,DELETE (Near Constant),0.9991,0.0,4,-4.600000381469727,2.299999952316284,0.0 in 99.9% of cases
+modulation_19_bypass,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_7_keytrack_transpose,DELETE (Near Constant),0.9991,-12.0,4,-36.0,12.0,-12.0 in 99.9% of cases
+modulation_22_bypass,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_31_power,DELETE (Near Constant),0.9991,0.0,4,-10.0,10.0,0.0 in 99.9% of cases
+modulation_57_bipolar,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_33_power,DELETE (Near Constant),0.9991,0.0,3,-0.600001335144043,2.3000011444091797,0.0 in 99.9% of cases
+lfo_2_keytrack_tune,DELETE (Near Constant),0.9991,0.0,4,-0.140625,0.036796875298023224,0.0 in 99.9% of cases
+modulation_14_bypass,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_12_stereo,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_37_bipolar,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_45_bipolar,DELETE (Near Constant),0.9991,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_13_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_1_keytrack_tune,DELETE (Near Constant),0.9988,0.0,5,-0.28125,0.24000000953674316,0.0 in 99.9% of cases
+env_5_delay,DELETE (Near Constant),0.9988,0.0,4,0.0,0.3954014480113983,0.0 in 99.9% of cases
+modulation_12_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+osc_2_spectral_unison,DELETE (Near Constant),0.9988,1.0,3,0.0,2.0,1.0 in 99.9% of cases
+osc_1_spectral_unison,DELETE (Near Constant),0.9988,1.0,3,0.0,2.0,1.0 in 99.9% of cases
+modulation_16_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_7_phase,DELETE (Near Constant),0.9988,0.0,4,0.0,0.7827016711235046,0.0 in 99.9% of cases
+lfo_5_phase,DELETE (Near Constant),0.9988,0.0,5,0.0,0.5385656356811523,0.0 in 99.9% of cases
+modulation_61_amount,DELETE (Near Constant),0.9988,0.0,5,-0.25,0.08999991416931152,0.0 in 99.9% of cases
+modulation_62_amount,DELETE (Near Constant),0.9988,0.0,5,-0.06747925281524658,1.0,0.0 in 99.9% of cases
+modulation_22_power,DELETE (Near Constant),0.9988,0.0,3,-7.0,10.0,0.0 in 99.9% of cases
+modulation_8_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_4_keytrack_transpose,DELETE (Near Constant),0.9988,-12.0,5,-60.0,36.0,-12.0 in 99.9% of cases
+modulation_20_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+lfo_8_stereo,DELETE (Near Constant),0.9988,0.0,5,0.0,0.5,0.0 in 99.9% of cases
+modulation_10_bypass,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_40_bipolar,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_43_bipolar,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_41_bipolar,DELETE (Near Constant),0.9988,0.0,2,0.0,1.0,0.0 in 99.9% of cases
+modulation_63_amount,DELETE (Near Constant),0.9985,0.0,6,-0.125,1.0,0.0 in 99.8% of cases
+modulation_9_power,DELETE (Near Constant),0.9985,0.0,5,-10.0,10.0,0.0 in 99.8% of cases
+osc_3_spectral_unison,DELETE (Near Constant),0.9985,1.0,2,0.0,1.0,1.0 in 99.8% of cases
+pitch_wheel,DELETE (Near Constant),0.9985,0.0,3,-1.0,6.103515625e-05,0.0 in 99.8% of cases
+modulation_35_bipolar,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+voice_override,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_11_stereo,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_34_bipolar,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_22_stereo,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+lfo_6_smooth_mode,DELETE (Near Constant),0.9985,1.0,2,0.0,1.0,1.0 in 99.8% of cases
+modulation_23_stereo,DELETE (Near Constant),0.9985,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_58_amount,DELETE (Near Constant),0.9985,0.0,6,-0.125,0.6000001430511475,0.0 in 99.8% of cases
+lfo_6_phase,DELETE (Near Constant),0.9985,0.0,5,0.0,0.6673076748847961,0.0 in 99.8% of cases
+modulation_64_amount,DELETE (Near Constant),0.9985,0.0,5,-1.0,0.09500002861022949,0.0 in 99.8% of cases
+modulation_20_power,DELETE (Near Constant),0.9985,0.0,5,0.0,10.0,0.0 in 99.8% of cases
+lfo_7_frequency,DELETE (Near Constant),0.9982,1.0,6,-5.666815757751465,2.5999999046325684,1.0 in 99.8% of cases
+modulation_60_amount,DELETE (Near Constant),0.9982,0.0,7,-0.10999999940395355,0.48499998450279236,0.0 in 99.8% of cases
+modulation_59_amount,DELETE (Near Constant),0.9982,0.0,7,-0.32499995827674866,0.5,0.0 in 99.8% of cases
+stereo_mode,DELETE (Near Constant),0.9982,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+lfo_8_frequency,DELETE (Near Constant),0.9982,1.0,7,-7.0,1.0,1.0 in 99.8% of cases
+env_4_release_power,DELETE (Near Constant),0.9982,-2.0,7,-6.859996795654297,5.319997787475586,-2.0 in 99.8% of cases
+modulation_36_bipolar,DELETE (Near Constant),0.9982,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+env_6_hold,DELETE (Near Constant),0.9982,0.0,3,0.0,0.43133512139320374,0.0 in 99.8% of cases
+modulation_13_power,DELETE (Near Constant),0.9982,0.0,6,-7.763317108154297,3.4000000953674316,0.0 in 99.8% of cases
+modulation_33_bipolar,DELETE (Near Constant),0.9982,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+lfo_1_fade_time,DELETE (Near Constant),0.9982,0.0,5,0.0,8.0,0.0 in 99.8% of cases
+lfo_2_fade_time,DELETE (Near Constant),0.9982,0.0,6,0.0,5.440000057220459,0.0 in 99.8% of cases
+modulation_57_amount,DELETE (Near Constant),0.9982,0.0,7,-0.22500000894069672,0.5482625961303711,0.0 in 99.8% of cases
+modulation_21_power,DELETE (Near Constant),0.9982,0.0,5,-6.800000190734863,4.17441463470459,0.0 in 99.8% of cases
+modulation_8_stereo,DELETE (Near Constant),0.9979,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+lfo_5_smooth_mode,DELETE (Near Constant),0.9979,1.0,2,0.0,1.0,1.0 in 99.8% of cases
+modulation_6_stereo,DELETE (Near Constant),0.9979,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_10_stereo,DELETE (Near Constant),0.9979,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+modulation_39_bipolar,DELETE (Near Constant),0.9979,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+voice_tune,DELETE (Near Constant),0.9976,0.0,7,-1.0,0.28125,0.0 in 99.8% of cases
+modulation_14_power,DELETE (Near Constant),0.9976,0.0,7,-10.0,10.0,0.0 in 99.8% of cases
+modulation_2_power,DELETE (Near Constant),0.9976,0.0,9,-10.0,3.692187547683716,0.0 in 99.8% of cases
+modulation_30_bipolar,DELETE (Near Constant),0.9976,0.0,2,0.0,1.0,0.0 in 99.8% of cases
+lfo_3_smooth_mode,DELETE (Near Constant),0.9976,1.0,2,0.0,1.0,1.0 in 99.8% of cases
+env_3_hold,DELETE (Near Constant),0.9976,0.0,7,0.0,0.5038135647773743,0.0 in 99.8% of cases
+lfo_6_frequency,DELETE (Near Constant),0.9976,1.0,8,-5.695000171661377,2.2799999713897705,1.0 in 99.8% of cases
+lfo_7_smooth_mode,DELETE (Near Constant),0.9976,1.0,2,0.0,1.0,1.0 in 99.8% of cases
+lfo_7_stereo,DELETE (Near Constant),0.9976,0.0,8,-0.5,0.5,0.0 in 99.8% of cases
+modulation_16_power,DELETE (Near Constant),0.9976,0.0,8,-5.699999809265137,4.100000381469727,0.0 in 99.8% of cases
+modulation_9_stereo,DELETE (Near Constant),0.9973,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+random_4_stereo,DELETE (Near Constant),0.9973,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_38_bipolar,DELETE (Near Constant),0.9973,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_25_bipolar,DELETE (Near Constant),0.9973,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+lfo_4_phase,DELETE (Near Constant),0.9973,0.0,9,0.0,0.625,0.0 in 99.7% of cases
+lfo_4_smooth_mode,DELETE (Near Constant),0.9973,1.0,2,0.0,1.0,1.0 in 99.7% of cases
+modulation_55_amount,DELETE (Near Constant),0.9973,0.0,10,-0.9635546803474426,0.8775216341018677,0.0 in 99.7% of cases
+env_4_delay,DELETE (Near Constant),0.9973,0.0,10,0.0,1.1172287464141846,0.0 in 99.7% of cases
+modulation_54_amount,DELETE (Near Constant),0.9973,0.0,10,-1.0,0.5374999642372131,0.0 in 99.7% of cases
+modulation_8_power,DELETE (Near Constant),0.997,0.0,9,-6.199999809265137,8.5,0.0 in 99.7% of cases
+modulation_56_amount,DELETE (Near Constant),0.997,0.0,9,-0.1850000023841858,1.0,0.0 in 99.7% of cases
+voice_priority,DELETE (Near Constant),0.997,4.0,5,0.0,4.0,4.0 in 99.7% of cases
+sample_transpose_quantize,DELETE (Near Constant),0.997,0.0,8,0.0,7496.0,0.0 in 99.7% of cases
+env_6_decay_power,DELETE (Near Constant),0.997,-2.0,6,-9.379996299743652,1.779998779296875,-2.0 in 99.7% of cases
+modulation_31_bipolar,DELETE (Near Constant),0.997,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_27_bipolar,DELETE (Near Constant),0.997,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_28_bipolar,DELETE (Near Constant),0.997,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+osc_3_distortion_spread,DELETE (Near Constant),0.9967,0.0,11,-0.4099999964237213,0.5,0.0 in 99.7% of cases
+modulation_32_bipolar,DELETE (Near Constant),0.9967,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+lfo_8_sync,DELETE (Near Constant),0.9967,1.0,5,0.0,4.0,1.0 in 99.7% of cases
+modulation_51_amount,DELETE (Near Constant),0.9967,0.0,12,-1.0,1.0,0.0 in 99.7% of cases
+modulation_53_amount,DELETE (Near Constant),0.9967,0.0,12,-1.0,1.0,0.0 in 99.7% of cases
+lfo_2_smooth_mode,DELETE (Near Constant),0.9967,1.0,2,0.0,1.0,1.0 in 99.7% of cases
+lfo_8_sync_type,DELETE (Near Constant),0.9967,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_5_stereo,DELETE (Near Constant),0.9967,0.0,2,0.0,1.0,0.0 in 99.7% of cases
+modulation_10_power,DELETE (Near Constant),0.9967,0.0,10,-10.0,10.0,0.0 in 99.7% of cases
+env_5_attack_power,DELETE (Near Constant),0.9967,0.0,6,-1.260000228881836,5.039995193481445,0.0 in 99.7% of cases
+modulation_6_bypass,DELETE (Near Constant),0.9964,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+modulation_12_power,DELETE (Near Constant),0.9964,0.0,11,-3.40000057220459,10.0,0.0 in 99.6% of cases
+osc_3_midi_track,DELETE (Near Constant),0.9964,1.0,2,0.0,1.0,1.0 in 99.6% of cases
+env_6_release,DELETE (Near Constant),0.9964,0.5475999712944031,8,0.0,1.0113918781280518,0.5475999712944031 in 99.6% of cases
+modulation_52_amount,DELETE (Near Constant),0.9964,0.0,13,-0.9900000095367432,1.0,0.0 in 99.6% of cases
+modulation_24_bipolar,DELETE (Near Constant),0.9964,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+modulation_7_bypass,DELETE (Near Constant),0.9964,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+modulation_26_bipolar,DELETE (Near Constant),0.9961,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+lfo_4_delay_time,DELETE (Near Constant),0.9961,0.0,12,0.0,4.0,0.0 in 99.6% of cases
+osc_3_detune_range,DELETE (Near Constant),0.9961,2.0,11,0.0,48.0,2.0 in 99.6% of cases
+modulation_11_power,DELETE (Near Constant),0.9961,0.0,11,-5.04615592956543,10.0,0.0 in 99.6% of cases
+lfo_1_smooth_mode,DELETE (Near Constant),0.9961,1.0,2,0.0,1.0,1.0 in 99.6% of cases
+env_6_attack,DELETE (Near Constant),0.9961,0.14949999749660492,8,0.011892099864780903,1.0975273847579956,0.14949999749660492 in 99.6% of cases
+modulation_5_bypass,DELETE (Near Constant),0.9961,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+modulation_7_stereo,DELETE (Near Constant),0.9961,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+lfo_3_keytrack_transpose,DELETE (Near Constant),0.9958,-12.0,10,-60.0,36.0,-12.0 in 99.6% of cases
+modulation_29_bipolar,DELETE (Near Constant),0.9958,0.0,2,0.0,1.0,0.0 in 99.6% of cases
+modulation_15_power,DELETE (Near Constant),0.9958,0.0,11,-10.0,10.0,0.0 in 99.6% of cases
+modulation_6_power,DELETE (Near Constant),0.9958,0.0,13,-5.05078125,10.0,0.0 in 99.6% of cases
+osc_2_spectral_morph_phase,DELETE (Near Constant),0.9956,0.5,2,0.0,0.5,0.5 in 99.6% of cases
+random_3_frequency,DELETE (Near Constant),0.9955,1.0,16,-7.0,4.364375114440918,1.0 in 99.5% of cases
+modulation_20_bipolar,DELETE (Near Constant),0.9955,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+modulation_1_power,DELETE (Near Constant),0.9955,0.0,10,-9.640625,10.0,0.0 in 99.5% of cases
+env_3_release_power,DELETE (Near Constant),0.9955,-2.0,15,-7.579998016357422,1.8999958038330078,-2.0 in 99.5% of cases
+modulation_7_power,DELETE (Near Constant),0.9955,0.0,15,-8.614843368530273,10.0,0.0 in 99.5% of cases
+modulation_4_stereo,DELETE (Near Constant),0.9955,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+modulation_3_power,DELETE (Near Constant),0.9955,0.0,15,-9.359375,3.7551910877227783,0.0 in 99.5% of cases
+lfo_3_phase,DELETE (Near Constant),0.9955,0.0,15,0.0,0.6692308187484741,0.0 in 99.5% of cases
+chorus_sync,DELETE (Near Constant),0.9955,1.0,3,0.0,3.0,1.0 in 99.5% of cases
+lfo_7_sync,DELETE (Near Constant),0.9952,1.0,5,0.0,4.0,1.0 in 99.5% of cases
+env_6_sustain,DELETE (Near Constant),0.9952,1.0,3,0.0,1.0,1.0 in 99.5% of cases
+modulation_50_amount,DELETE (Near Constant),0.9952,0.0,14,-1.0,1.0,0.0 in 99.5% of cases
+lfo_6_stereo,DELETE (Near Constant),0.9952,0.0,15,-0.5,0.5,0.0 in 99.5% of cases
+modulation_4_power,DELETE (Near Constant),0.9952,0.0,14,-10.0,9.952342987060547,0.0 in 99.5% of cases
+env_6_decay,DELETE (Near Constant),0.9952,1.0,15,0.6448240280151367,1.3869802951812744,1.0 in 99.5% of cases
+flanger_frequency,DELETE (Near Constant),0.9952,2.0,11,-5.0,2.0,2.0 in 99.5% of cases
+modulation_3_bypass,DELETE (Near Constant),0.9949,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+modulation_5_power,DELETE (Near Constant),0.9949,0.0,15,-10.0,6.300000190734863,0.0 in 99.5% of cases
+modulation_4_bypass,DELETE (Near Constant),0.9949,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+modulation_22_bipolar,DELETE (Near Constant),0.9949,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+env_5_decay_power,DELETE (Near Constant),0.9946,-2.0,11,-9.860015869140625,1.5999889373779297,-2.0 in 99.5% of cases
+lfo_6_sync,DELETE (Near Constant),0.9946,1.0,5,0.0,4.0,1.0 in 99.5% of cases
+filter_fx_formant_spread,DELETE (Near Constant),0.9946,0.0,14,-1.0,0.8899999856948853,0.0 in 99.5% of cases
+modulation_23_bipolar,DELETE (Near Constant),0.9946,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+random_4_sync_type,DELETE (Near Constant),0.9946,0.0,2,0.0,1.0,0.0 in 99.5% of cases
+osc_2_smooth_interpolation,DELETE (Near Constant),0.9942,0.0,2,0.0,1.0,0.0 in 99.4% of cases
+osc_3_spectral_morph_spread,DELETE (Near Constant),0.9942,0.0,17,-0.5,0.5,0.0 in 99.4% of cases
+random_4_frequency,DELETE (Near Constant),0.9942,1.0,10,-7.0,4.9549150466918945,1.0 in 99.4% of cases
+modulation_3_stereo,DELETE (Near Constant),0.9942,0.0,2,0.0,1.0,0.0 in 99.4% of cases
+portamento_scale,DELETE (Near Constant),0.9939,0.0,2,0.0,1.0,0.0 in 99.4% of cases
+phaser_frequency,DELETE (Near Constant),0.9939,-3.0,15,-5.0,2.0,-3.0 in 99.4% of cases
+osc_2_midi_track,DELETE (Near Constant),0.9939,1.0,2,0.0,1.0,1.0 in 99.4% of cases
+osc_2_detune_range,DELETE (Near Constant),0.9939,2.0,15,0.0,48.0,2.0 in 99.4% of cases
+flanger_sync,DELETE (Near Constant),0.9939,1.0,3,0.0,2.0,1.0 in 99.4% of cases
+modulation_19_bipolar,DELETE (Near Constant),0.9939,0.0,2,0.0,1.0,0.0 in 99.4% of cases
+phaser_sync,DELETE (Near Constant),0.9936,1.0,4,0.0,3.0,1.0 in 99.4% of cases
+modulation_49_amount,DELETE (Near Constant),0.9936,0.0,18,-0.25,1.0,0.0 in 99.4% of cases
+modulation_48_amount,DELETE (Near Constant),0.9933,0.0,18,-1.0,1.0,0.0 in 99.3% of cases
+modulation_2_stereo,DELETE (Near Constant),0.9933,0.0,2,0.0,1.0,0.0 in 99.3% of cases
+random_3_sync,DELETE (Near Constant),0.9933,1.0,3,0.0,2.0,1.0 in 99.3% of cases
+random_4_sync,DELETE (Near Constant),0.9933,1.0,3,0.0,2.0,1.0 in 99.3% of cases
+filter_fx_formant_transpose,DELETE (Near Constant),0.9933,0.0,18,-12.0,12.0,0.0 in 99.3% of cases
+env_3_delay,DELETE (Near Constant),0.9933,0.0,18,0.0,1.1172287464141846,0.0 in 99.3% of cases
+modulation_21_bipolar,DELETE (Near Constant),0.993,0.0,2,0.0,1.0,0.0 in 99.3% of cases
+osc_3_frame_spread,DELETE (Near Constant),0.993,0.0,19,-128.0,128.0,0.0 in 99.3% of cases
+lfo_3_delay_time,DELETE (Near Constant),0.993,0.0,20,0.0,2.700000047683716,0.0 in 99.3% of cases
+env_2_hold,DELETE (Near Constant),0.9927,0.0,21,0.0,1.0182337760925293,0.0 in 99.3% of cases
+modulation_1_stereo,DELETE (Near Constant),0.9924,0.0,2,0.0,1.0,0.0 in 99.2% of cases
+env_5_attack,DELETE (Near Constant),0.9918,0.14949999749660492,14,0.0,1.369295597076416,0.14949999749660492 in 99.2% of cases
+env_4_attack_power,DELETE (Near Constant),0.9918,0.0,20,-6.600000858306885,6.480003356933594,0.0 in 99.2% of cases
+env_5_release,DELETE (Near Constant),0.9915,0.5475999712944031,15,0.0,1.6059969663619995,0.5475999712944031 in 99.2% of cases
+modulation_16_bipolar,DELETE (Near Constant),0.9915,0.0,2,0.0,1.0,0.0 in 99.2% of cases
+modulation_46_amount,DELETE (Near Constant),0.9915,0.0,22,-1.0,1.0,0.0 in 99.2% of cases
+modulation_2_bypass,DELETE (Near Constant),0.9915,0.0,2,0.0,1.0,0.0 in 99.2% of cases
+modulation_18_bipolar,DELETE (Near Constant),0.9912,0.0,2,0.0,1.0,0.0 in 99.1% of cases
+modulation_47_amount,DELETE (Near Constant),0.9912,0.0,21,-1.0,1.0,0.0 in 99.1% of cases
+modulation_44_amount,DELETE (Near Constant),0.9912,0.0,24,-1.0,1.0,0.0 in 99.1% of cases
+filter_fx_formant_resonance,DELETE (Near Constant),0.9912,0.8500000238418579,21,0.30000001192092896,1.0,0.8500000238418579 in 99.1% of cases
+chorus_frequency,DELETE (Near Constant),0.9912,-3.0,19,-6.0,3.0,-3.0 in 99.1% of cases
+modulation_17_bipolar,DELETE (Near Constant),0.9912,0.0,2,0.0,1.0,0.0 in 99.1% of cases
+osc_3_stack_style,DELETE (Near Constant),0.9912,0.0,7,0.0,10.0,0.0 in 99.1% of cases
+osc_1_midi_track,DELETE (Near Constant),0.9909,1.0,2,0.0,1.0,1.0 in 99.1% of cases
+lfo_7_sync_type,DELETE (Near Constant),0.9909,0.0,4,0.0,5.0,0.0 in 99.1% of cases
+modulation_45_amount,DELETE (Near Constant),0.9909,0.0,21,-1.0,1.0,0.0 in 99.1% of cases
+lfo_5_stereo,DELETE (Near Constant),0.9906,0.0,20,-0.5,0.5,0.0 in 99.1% of cases
+random_3_stereo,DELETE (Near Constant),0.9906,0.0,2,0.0,1.0,0.0 in 99.1% of cases
+osc_3_stereo_spread,DELETE (Near Constant),0.9906,1.0,26,0.0,1.0,1.0 in 99.1% of cases
+sample_tune,DELETE (Near Constant),0.9903,0.0,25,-1.0,1.0,0.0 in 99.0% of cases
+filter_fx_formant_y,DELETE (Near Constant),0.9903,0.5,26,0.0,1.0,0.5 in 99.0% of cases
+lfo_8_tempo,DELETE (Near Constant),0.9903,7.0,11,0.0,11.0,7.0 in 99.0% of cases
+lfo_2_phase,DELETE (Near Constant),0.99,0.0,22,0.0,0.9884615540504456,0.0 in 99.0% of cases
+filter_1_formant_spread,DELETE (Near Constant),0.9897,0.0,24,-1.0,1.0,0.0 in 99.0% of cases
+modulation_15_bipolar,DELETE (Near Constant),0.9897,0.0,2,0.0,1.0,0.0 in 99.0% of cases
+lfo_2_keytrack_transpose,DELETE (Near Constant),0.9897,-12.0,12,-60.0,36.0,-12.0 in 99.0% of cases
+osc_2_distortion_spread,DELETE (Near Constant),0.9894,0.0,28,-0.5,0.41499999165534973,0.0 in 98.9% of cases
+filter_2_formant_spread,DELETE (Near Constant),0.9891,0.0,27,-1.0,1.0,0.0 in 98.9% of cases
+random_2_frequency,DELETE (Near Constant),0.9891,1.0,32,-7.0,9.0,1.0 in 98.9% of cases
+osc_3_unison_blend,DELETE (Near Constant),0.9891,0.800000011920929,20,0.07500001043081284,1.0,0.800000011920929 in 98.9% of cases
+filter_fx_formant_x,DELETE (Near Constant),0.9888,0.5,27,0.0,1.0,0.5 in 98.9% of cases
+modulation_10_bipolar,DELETE (Near Constant),0.9885,0.0,2,0.0,1.0,0.0 in 98.8% of cases
+modulation_43_amount,DELETE (Near Constant),0.9885,0.0,27,-1.0,1.0,0.0 in 98.8% of cases
+modulation_41_amount,DELETE (Near Constant),0.9882,0.0,31,-1.0,1.0,0.0 in 98.8% of cases
+osc_1_smooth_interpolation,DELETE (Near Constant),0.9879,0.0,2,0.0,1.0,0.0 in 98.8% of cases
+eq_band_mode,DELETE (Near Constant),0.9876,0.0,2,0.0,1.0,0.0 in 98.8% of cases
+env_2_delay,DELETE (Near Constant),0.9876,0.0,25,0.0,0.839689314365387,0.0 in 98.8% of cases
+lfo_2_delay_time,DELETE (Near Constant),0.9876,0.0,29,0.0,4.0,0.0 in 98.8% of cases
+lfo_6_sync_type,DELETE (Near Constant),0.9873,0.0,3,0.0,2.0,0.0 in 98.7% of cases
+modulation_42_amount,DELETE (Near Constant),0.9873,0.0,34,-1.0,1.0,0.0 in 98.7% of cases
+lfo_1_delay_time,DELETE (Near Constant),0.9873,0.0,31,0.0,3.3949997425079346,0.0 in 98.7% of cases
+lfo_5_frequency,DELETE (Near Constant),0.987,1.0,31,-7.0,4.812866687774658,1.0 in 98.7% of cases
+random_4_style,DELETE (Near Constant),0.9867,0.0,4,0.0,3.0,0.0 in 98.7% of cases
+modulation_39_amount,DELETE (Near Constant),0.9864,0.0,39,-1.0,1.0,0.0 in 98.6% of cases
+env_1_delay,DELETE (Near Constant),0.9864,0.0,34,0.0,0.4684029817581177,0.0 in 98.6% of cases
+modulation_40_amount,DELETE (Near Constant),0.9864,0.0,40,-1.0,1.0,0.0 in 98.6% of cases
+modulation_14_bipolar,DELETE (Near Constant),0.9864,0.0,2,0.0,1.0,0.0 in 98.6% of cases
+lfo_5_sync,DELETE (Near Constant),0.9861,1.0,5,0.0,4.0,1.0 in 98.6% of cases
+osc_3_distortion_phase,DELETE (Near Constant),0.9861,0.5,32,0.0,1.0,0.5 in 98.6% of cases
+modulation_11_bipolar,DELETE (Near Constant),0.9858,0.0,2,0.0,1.0,0.0 in 98.6% of cases
+random_2_sync,DELETE (Near Constant),0.9855,1.0,5,0.0,4.0,1.0 in 98.5% of cases
+sample_pan,DELETE (Near Constant),0.9855,0.0,40,-1.0,0.7853906154632568,0.0 in 98.5% of cases
+env_5_sustain,DELETE (Near Constant),0.9855,1.0,9,0.0,1.0,1.0 in 98.5% of cases
+osc_2_frame_spread,DELETE (Near Constant),0.9852,0.0,40,-128.0,124.16000366210938,0.0 in 98.5% of cases
+osc_2_spectral_morph_spread,DELETE (Near Constant),0.9852,0.0,39,-0.2350793480873108,0.1899999976158142,0.0 in 98.5% of cases
+env_4_decay_power,DELETE (Near Constant),0.9849,-2.0,37,-14.000029563903809,4.839998722076416,-2.0 in 98.5% of cases
+env_5_decay,DELETE (Near Constant),0.9849,1.0,40,0.19678661227226257,1.534080982208252,1.0 in 98.5% of cases
+filter_fx_blend_transpose,DELETE (Near Constant),0.9849,42.0,36,0.0,84.0,42.0 in 98.5% of cases
+modulation_13_bipolar,DELETE (Near Constant),0.9846,0.0,2,0.0,1.0,0.0 in 98.5% of cases
+random_3_sync_type,DELETE (Near Constant),0.9846,0.0,2,0.0,1.0,0.0 in 98.5% of cases
+osc_1_detune_range,DELETE (Near Constant),0.9846,2.0,30,0.0,48.0,2.0 in 98.5% of cases
+lfo_4_stereo,DELETE (Near Constant),0.9843,0.0,30,-0.5,0.5,0.0 in 98.4% of cases
+env_3_attack_power,DELETE (Near Constant),0.9843,0.0,48,-11.04749870300293,6.239996910095215,0.0 in 98.4% of cases
+modulation_12_bipolar,DELETE (Near Constant),0.9843,0.0,2,0.0,1.0,0.0 in 98.4% of cases
+modulation_37_amount,DELETE (Near Constant),0.984,0.0,41,-1.0,1.0,0.0 in 98.4% of cases
+modulation_35_amount,DELETE (Near Constant),0.984,0.0,43,-1.0,1.0,0.0 in 98.4% of cases
+modulation_38_amount,DELETE (Near Constant),0.9837,0.0,44,-1.0,1.0,0.0 in 98.4% of cases
+filter_2_formant_transpose,DELETE (Near Constant),0.9837,0.0,33,-12.0,12.0,0.0 in 98.4% of cases
+osc_3_pan,DELETE (Near Constant),0.983,0.0,45,-1.0,1.0,0.0 in 98.3% of cases
+modulation_36_amount,DELETE (Near Constant),0.983,0.0,44,-1.0,1.0,0.0 in 98.3% of cases
+osc_2_stack_style,DELETE (Near Constant),0.983,0.0,11,0.0,10.0,0.0 in 98.3% of cases
+osc_3_view_2d,DELETE (Near Constant),0.9827,1.0,3,0.0,2.0,1.0 in 98.3% of cases
+lfo_7_tempo,DELETE (Near Constant),0.9821,7.0,10,0.0,10.0,7.0 in 98.2% of cases
+filter_1_formant_resonance,DELETE (Near Constant),0.9821,0.8500000238418579,34,0.30000001192092896,1.0,0.8500000238418579 in 98.2% of cases
+env_2_release_power,DELETE (Near Constant),0.9818,-2.0,47,-12.139979362487793,19.94000244140625,-2.0 in 98.2% of cases
+modulation_34_amount,DELETE (Near Constant),0.9818,0.0,47,-1.0,1.0,0.0 in 98.2% of cases
+lfo_4_frequency,DELETE (Near Constant),0.9815,1.0,43,-4.900000095367432,9.0,1.0 in 98.2% of cases
+osc_2_distortion_phase,DELETE (Near Constant),0.9806,0.5,41,0.0,1.0,0.5 in 98.1% of cases
+modulation_33_amount,DELETE (Near Constant),0.9806,0.0,53,-1.0,1.0,0.0 in 98.1% of cases
+osc_3_detune_power,DELETE (Near Constant),0.9803,1.5,42,-5.0,5.0,1.5 in 98.0% of cases
+random_4_tempo,DELETE (Near Constant),0.9803,8.0,12,0.0,12.0,8.0 in 98.0% of cases
+modulation_32_amount,KEEP,0.9797,0.0,54,-1.0,1.0,Variable
+lfo_1_phase,KEEP,0.9797,0.0,45,0.0,0.75,Variable
+env_4_release,KEEP,0.9797,0.5475999712944031,44,0.0,2.378420114517212,Variable
+env_4_attack,KEEP,0.9794,0.14949999749660492,41,0.0,1.5233162641525269,Variable
+osc_3_tune,KEEP,0.9794,0.0,32,-0.5699999928474426,0.3500000238418579,Variable
+modulation_1_bypass,REVIEW,0.9794,0.0,2,0.0,1.0,Low variance
+modulation_9_bipolar,REVIEW,0.9794,0.0,2,0.0,1.0,Low variance
+lfo_5_sync_type,REVIEW,0.9791,0.0,4,0.0,3.0,Low variance
+filter_2_formant_resonance,KEEP,0.9791,0.8500000238418579,42,0.30000001192092896,1.0,Variable
+osc_2_unison_blend,KEEP,0.9785,0.800000011920929,48,0.0,1.0,Variable
+filter_1_formant_transpose,KEEP,0.9782,0.0,45,-12.0,12.0,Variable
+osc_3_phase,KEEP,0.9782,0.5,31,0.0,1.0,Variable
+osc_2_stereo_spread,KEEP,0.9773,1.0,51,0.0,1.0,Variable
+random_2_stereo,REVIEW,0.9773,0.0,2,0.0,1.0,Low variance
+oversampling,REVIEW,0.977,1.0,4,0.0,3.0,Low variance
+filter_2_formant_y,KEEP,0.9761,0.5,51,0.0,1.0,Variable
+modulation_8_bipolar,REVIEW,0.9761,0.0,2,0.0,1.0,Low variance
+modulation_31_amount,KEEP,0.9755,0.0,62,-1.0,1.0,Variable
+random_2_sync_type,REVIEW,0.9752,0.0,2,0.0,1.0,Low variance
+sample_bounce,REVIEW,0.9752,0.0,2,0.0,1.0,Low variance
+osc_3_transpose_quantize,KEEP,0.9749,0.0,42,0.0,7514.0,Variable
+lfo_1_keytrack_transpose,KEEP,0.974,-12.0,15,-60.0,36.0,Variable
+lfo_4_sync,KEEP,0.9737,1.0,5,0.0,4.0,Variable
+lfo_3_frequency,KEEP,0.9734,1.0,66,-7.0,8.875,Variable
+filter_1_formant_y,KEEP,0.9734,0.5,46,0.0,1.0,Variable
+filter_1_formant_x,KEEP,0.9731,0.5,66,0.0,1.0,Variable
+random_3_style,REVIEW,0.9721,0.0,4,0.0,3.0,Low variance
+modulation_30_amount,KEEP,0.9721,0.0,70,-1.0,1.0,Variable
+modulation_7_bipolar,REVIEW,0.9721,0.0,2,0.0,1.0,Low variance
+filter_2_formant_x,KEEP,0.9718,0.5,64,0.0,1.0,Variable
+modulation_6_bipolar,REVIEW,0.9718,0.0,2,0.0,1.0,Low variance
+modulation_29_amount,KEEP,0.9718,0.0,80,-1.0,1.0,Variable
+delay_aux_frequency,KEEP,0.9718,2.0,67,-2.0,9.0,Variable
+random_1_frequency,KEEP,0.9718,1.0,70,-7.0,9.0,Variable
+osc_1_distortion_spread,KEEP,0.9715,0.0,70,-0.5,0.5,Variable
+lfo_6_tempo,KEEP,0.9712,7.0,11,0.0,11.0,Variable
+lfo_8_smooth_time,KEEP,0.9709,-7.5,5,-10.0,4.0,Variable
+osc_2_transpose_quantize,KEEP,0.9703,0.0,49,0.0,7514.0,Variable
+lfo_3_stereo,KEEP,0.97,0.0,54,-0.5,0.5,Variable
+pitch_bend_range,KEEP,0.9697,2.0,11,0.0,48.0,Variable
+osc_2_detune_power,KEEP,0.9685,1.5,66,-5.0,5.0,Variable
+osc_1_pan,KEEP,0.9685,0.0,70,-1.0,1.0,Variable
+filter_1_filter_input,REVIEW,0.9685,0.0,2,0.0,1.0,Low variance
+env_1_hold,KEEP,0.9682,0.0,83,0.0,1.4142135381698608,Variable
+modulation_28_amount,KEEP,0.9682,0.0,86,-1.0,1.0,Variable
+osc_1_stack_style,KEEP,0.9679,0.0,11,0.0,10.0,Variable
+modulation_5_bipolar,REVIEW,0.967,0.0,2,0.0,1.0,Low variance
+phaser_blend,KEEP,0.9664,1.0,64,0.0,2.0,Variable
+osc_1_distortion_phase,KEEP,0.9664,0.5,58,0.0,1.0,Variable
+osc_1_spectral_morph_spread,KEEP,0.9664,0.0,82,-0.5,0.5,Variable
+modulation_27_amount,KEEP,0.9658,0.0,93,-1.0,1.0,Variable
+mod_wheel,KEEP,0.9649,0.0,85,0.0,1.0,Variable
+lfo_7_smooth_time,KEEP,0.9649,-7.5,9,-10.0,4.0,Variable
+random_1_sync,KEEP,0.964,1.0,5,0.0,4.0,Variable
+modulation_26_amount,KEEP,0.964,0.0,91,-1.0,1.0,Variable
+osc_1_frame_spread,KEEP,0.964,0.0,85,-128.0,128.0,Variable
+osc_2_view_2d,REVIEW,0.9631,1.0,3,0.0,2.0,Low variance
+osc_2_pan,KEEP,0.9631,0.0,83,-1.0,1.0,Variable
+voice_transpose,KEEP,0.9625,0.0,12,-36.0,24.0,Variable
+random_3_tempo,KEEP,0.9622,8.0,11,0.0,12.0,Variable
+osc_1_tune,KEEP,0.9616,0.0,77,-1.0,1.0,Variable
+osc_1_unison_blend,KEEP,0.9609,0.800000011920929,70,0.0,1.0,Variable
+sample_random_phase,REVIEW,0.9603,0.0,2,0.0,1.0,Low variance
+modulation_25_amount,KEEP,0.9603,0.0,98,-1.0,1.0,Variable
+osc_1_transpose_quantize,KEEP,0.9594,0.0,64,0.0,7514.0,Variable
+osc_1_stereo_spread,KEEP,0.9585,1.0,81,0.0,1.0,Variable
+lfo_3_sync,KEEP,0.9582,1.0,5,0.0,4.0,Variable
+env_2_attack_power,KEEP,0.9576,0.0,125,-12.07546615600586,14.3399658203125,Variable
+lfo_6_smooth_time,KEEP,0.9558,-7.5,17,-10.0,-1.3039062023162842,Variable
+modulation_3_bipolar,REVIEW,0.9552,0.0,2,0.0,1.0,Low variance
+env_3_decay_power,KEEP,0.9552,-2.0,92,-20.0,7.7199859619140625,Variable
+modulation_4_bipolar,REVIEW,0.9549,0.0,2,0.0,1.0,Low variance
+osc_1_on,REVIEW,0.9546,1.0,2,0.0,1.0,Low variance
+distortion_filter_blend,KEEP,0.954,0.0,76,0.0,2.0,Variable
+lfo_2_stereo,KEEP,0.9537,0.0,75,-0.5,0.5,Variable
+modulation_24_amount,KEEP,0.9534,0.0,116,-1.0,1.0,Variable
+lfo_4_sync_type,KEEP,0.9507,0.0,6,0.0,5.0,Variable
+env_4_sustain,KEEP,0.95,1.0,29,0.0,1.0,Variable
+env_4_decay,KEEP,0.9491,1.0,143,0.0,1.541245698928833,Variable
+filter_fx_keytrack,KEEP,0.9491,0.0,43,-1.0,1.0,Variable
+lfo_5_tempo,KEEP,0.9488,7.0,12,1.0,12.0,Variable
+modulation_23_amount,KEEP,0.9482,0.0,125,-1.0,1.0,Variable
+modulation_1_bipolar,REVIEW,0.9476,0.0,2,0.0,1.0,Low variance
+osc_2_tune,KEEP,0.9467,0.0,85,-0.8600000143051147,1.0,Variable
+lfo_2_frequency,KEEP,0.9464,1.0,119,-7.0,9.0,Variable
+velocity_track,KEEP,0.9455,0.0,109,-0.3100000023841858,1.0,Variable
+modulation_2_bipolar,REVIEW,0.9449,0.0,2,0.0,1.0,Low variance
+lfo_5_smooth_time,KEEP,0.9443,-7.5,21,-10.0,4.0,Variable
+delay_frequency,KEEP,0.944,2.0,135,-2.0,9.0,Variable
+random_1_sync_type,REVIEW,0.9425,0.0,2,0.0,1.0,Low variance
+filter_2_blend_transpose,KEEP,0.9425,42.0,105,0.0,84.0,Variable
+osc_2_phase,KEEP,0.9425,0.5,64,0.0,1.0,Variable
+random_2_style,REVIEW,0.9422,0.0,4,0.0,3.0,Low variance
+stereo_routing,KEEP,0.941,1.0,76,0.0,1.0,Variable
+modulation_22_amount,KEEP,0.9404,0.0,145,-1.0,1.0,Variable
+filter_1_blend_transpose,KEEP,0.9401,42.0,111,0.0,84.0,Variable
+random_1_stereo,REVIEW,0.9398,0.0,2,0.0,1.0,Low variance
+flanger_phase_offset,KEEP,0.9394,0.3333333432674408,125,0.0,1.0,Variable
+osc_3_random_phase,KEEP,0.9391,1.0,26,0.0,1.0,Variable
+filter_1_mix,KEEP,0.9385,1.0,116,0.0,1.0,Variable
+sample_loop,REVIEW,0.9385,1.0,2,0.0,1.0,Low variance
+flanger_tempo,KEEP,0.9385,4.0,11,0.0,10.0,Variable
+portamento_force,REVIEW,0.9379,0.0,2,0.0,1.0,Low variance
+env_3_release,KEEP,0.9373,0.5475999712944031,123,0.0,2.378420114517212,Variable
+osc_1_detune_power,KEEP,0.9355,1.5,125,-5.0,5.0,Variable
+phaser_tempo,KEEP,0.9349,3.0,11,0.0,10.0,Variable
+lfo_1_stereo,KEEP,0.9337,0.0,109,-0.5,0.5,Variable
+compressor_low_lower_ratio,KEEP,0.9328,0.800000011920929,203,-1.0126760005950928,1.0112500190734863,Variable
+env_3_attack,KEEP,0.9328,0.14949999749660492,122,0.0,2.0917162895202637,Variable
+filter_fx_mix,KEEP,0.9322,1.0,113,0.0,1.0,Variable
+view_spectrogram,REVIEW,0.9312,0.0,2,0.0,1.0,Low variance
+filter_fx_drive,KEEP,0.9307,0.0,125,0.0,20.0,Variable
+modulation_21_amount,KEEP,0.9304,0.0,181,-1.0,1.0,Variable
+env_1_attack_power,KEEP,0.9295,0.0,196,-20.0,16.20001983642578,Variable
+lfo_4_smooth_time,KEEP,0.9276,-7.5,29,-10.0,4.0,Variable
+portamento_slope,KEEP,0.9273,0.0,122,-4.5,8.0,Variable
+env_1_release_power,KEEP,0.9267,-2.0,174,-20.0,20.0,Variable
+filter_2_drive,KEEP,0.9234,0.0,152,0.0,20.0,Variable
+lfo_2_sync,KEEP,0.9231,1.0,5,0.0,4.0,Variable
+random_2_tempo,KEEP,0.9228,8.0,12,0.0,12.0,Variable
+osc_1_phase,KEEP,0.9222,0.5,58,0.0,1.0,Variable
+modulation_20_amount,KEEP,0.9219,0.0,184,-1.0,1.0,Variable
+phaser_phase_offset,KEEP,0.9213,0.3333333432674408,151,0.0,1.0,Variable
+flanger_mod_depth,KEEP,0.9207,0.5,153,0.0,1.0,Variable
+filter_2_mix,KEEP,0.9204,1.0,128,0.0,1.0,Variable
+filter_fx_blend,KEEP,0.9183,0.0,96,0.0,2.0,Variable
+flanger_center,KEEP,0.9183,64.0,193,8.0,136.0,Variable
+eq_high_resonance,KEEP,0.9161,0.31630000472068787,137,0.0,0.8951601386070251,Variable
+eq_low_resonance,KEEP,0.9134,0.31630000472068787,125,0.0,0.7715176343917847,Variable
+modulation_19_amount,KEEP,0.9128,0.0,202,-1.0,1.0,Variable
+compressor_low_upper_ratio,KEEP,0.9128,0.8999999761581421,269,-0.5205716490745544,1.009448766708374,Variable
+filter_fx_model,KEEP,0.9119,0.0,8,0.0,7.0,Variable
+lfo_3_sync_type,KEEP,0.911,0.0,6,0.0,5.0,Variable
+eq_high_mode,REVIEW,0.9104,0.0,2,0.0,1.0,Low variance
+reverb_delay,KEEP,0.9092,0.0,169,0.0,0.30000001192092896,Variable
+filter_fx_style,KEEP,0.9068,0.0,6,0.0,5.0,Variable
+phaser_mod_depth,KEEP,0.9055,24.0,147,0.0,48.0,Variable
+legato,REVIEW,0.9052,0.0,2,0.0,1.0,Low variance
+lfo_4_tempo,KEEP,0.9031,7.0,13,0.0,12.0,Variable
+lfo_1_frequency,KEEP,0.9031,1.0,198,-6.920000076293945,9.0,Variable
+flanger_feedback,KEEP,0.9025,0.5,205,-0.9899999499320984,1.0,Variable
+sample_transpose,KEEP,0.9025,0.0,56,-48.0,48.0,Variable
+modulation_18_amount,KEEP,0.9013,0.0,219,-1.0,1.0,Variable
+reverb_pre_high_cutoff,KEEP,0.9007,110.0,175,0.0,128.0,Variable
+compressor_band_lower_ratio,KEEP,0.8989,0.800000011920929,309,-1.0112500190734863,1.009448766708374,Variable
+reverb_chorus_frequency,KEEP,0.898,-2.0,179,-8.0,3.0,Variable
+phaser_center,KEEP,0.898,80.0,226,8.0,136.0,Variable
+delay_aux_sync,KEEP,0.8977,1.0,4,0.0,3.0,Variable
+osc_1_view_2d,KEEP,0.8955,1.0,3,0.0,2.0,Variable
+lfo_3_smooth_time,KEEP,0.8925,-7.5,56,-10.0,4.0,Variable
+osc_3_distortion_type,KEEP,0.8913,0.0,13,0.0,12.0,Variable
+random_1_style,KEEP,0.8901,0.0,4,0.0,3.0,Variable
+phaser_feedback,KEEP,0.8898,0.5,224,0.0,1.0,Variable
+osc_3_spectral_morph_type,KEEP,0.8886,0.0,16,0.0,15.0,Variable
+osc_3_distortion_amount,KEEP,0.8874,0.5,183,0.0,1.0,Variable
+osc_2_random_phase,KEEP,0.8868,1.0,49,0.0,1.0,Variable
+modulation_17_amount,KEEP,0.8862,0.0,260,-1.0,1.0,Variable
+flanger_on,KEEP,0.8847,0.0,2,0.0,1.0,Variable
+distortion_filter_order,KEEP,0.8828,0.0,3,0.0,2.0,Variable
+env_2_decay_power,KEEP,0.8807,-2.0,258,-20.0,17.380001068115234,Variable
+osc_3_spectral_morph_amount,KEEP,0.8801,0.5,194,0.0,1.0,Variable
+compressor_high_lower_ratio,KEEP,0.8777,0.800000011920929,373,-1.004724383354187,1.018897533416748,Variable
+chorus_delay_2,KEEP,0.8771,-7.0,215,-10.0,-5.64385986328125,Variable
+modulation_16_amount,KEEP,0.8728,0.0,280,-1.0,1.0,Variable
+sample_keytrack,KEEP,0.8725,0.0,2,0.0,1.0,Variable
+delay_aux_tempo,KEEP,0.8725,9.0,9,4.0,12.0,Variable
+filter_2_keytrack,KEEP,0.868,0.0,74,-1.0,1.0,Variable
+chorus_delay_1,KEEP,0.8671,-9.0,238,-10.0,-5.64385986328125,Variable
+lfo_1_sync,KEEP,0.8644,1.0,5,0.0,4.0,Variable
+flanger_dry_wet,KEEP,0.8638,0.5,195,0.0,0.7071999907493591,Variable
+env_1_decay_power,KEEP,0.8619,-2.0,337,-20.0,20.0,Variable
+delay_sync,KEEP,0.8595,1.0,4,0.0,3.0,Variable
+chorus_tempo,KEEP,0.8592,4.0,11,0.0,10.0,Variable
+distortion_filter_resonance,KEEP,0.8577,0.5,262,0.0,1.0,Variable
+chorus_voices,KEEP,0.8571,4.0,4,1.0,4.0,Variable
+random_1_tempo,KEEP,0.8568,8.0,13,0.0,12.0,Variable
+compressor_high_upper_ratio,KEEP,0.8562,1.0,443,-0.0056603774428367615,1.0112500190734863,Variable
+modulation_15_amount,KEEP,0.8559,0.0,313,-1.0,1.0,Variable
+compressor_band_upper_ratio,KEEP,0.8556,0.8569999933242798,445,-0.26004159450531006,1.0075000524520874,Variable
+filter_2_filter_input,KEEP,0.8556,0.0,2,0.0,1.0,Variable
+phaser_on,KEEP,0.8544,0.0,2,0.0,1.0,Variable
+osc_1_random_phase,KEEP,0.8504,1.0,62,0.0,1.0,Variable
+macro_control_4,KEEP,0.8477,0.0,315,0.0,1.0,Variable
+compressor_low_lower_threshold,KEEP,0.8456,-35.0,387,-79.0,-9.257102012634277,Variable
+reverb_pre_low_cutoff,KEEP,0.8429,0.0,258,0.0,128.0,Variable
+distortion_filter_cutoff,KEEP,0.8426,80.0,370,8.0,136.0,Variable
+compressor_low_gain,KEEP,0.8411,16.299999237060547,261,-30.0,30.0,Variable
+modulation_14_amount,KEEP,0.8398,0.0,375,-1.0,1.0,Variable
+compressor_enabled_bands,KEEP,0.8383,0.0,4,0.0,3.0,Variable
+osc_1_destination,KEEP,0.838,0.0,5,0.0,4.0,Variable
+compressor_low_upper_threshold,KEEP,0.8371,-28.0,418,-79.0,0.3137502670288086,Variable
+reverb_chorus_amount,KEEP,0.8365,0.22360700368881226,231,0.0,1.0,Variable
+lfo_2_smooth_time,KEEP,0.8344,-7.5,95,-10.0,4.0,Variable
+phaser_dry_wet,KEEP,0.8341,1.0,240,0.0,1.0,Variable
+compressor_band_gain,KEEP,0.8308,11.699999809265137,246,-30.0,30.0,Variable
+lfo_3_tempo,KEEP,0.8302,7.0,13,0.0,12.0,Variable
+osc_3_wave_frame,KEEP,0.8299,0.0,399,0.0,256.0,Variable
+filter_1_blend,KEEP,0.8244,0.0,228,0.0,2.0,Variable
+env_3_sustain,KEEP,0.8241,1.0,92,0.0,1.0,Variable
+modulation_13_amount,KEEP,0.8208,0.0,400,-1.0,1.0,Variable
+env_3_decay,KEEP,0.8183,1.0,459,0.0,2.378420114517212,Variable
+compressor_high_gain,KEEP,0.8171,16.299999237060547,282,-30.0,30.0,Variable
+lfo_2_sync_type,KEEP,0.8165,0.0,7,0.0,6.0,Variable
+filter_2_blend,KEEP,0.8126,0.0,217,0.0,2.0,Variable
+delay_tempo,KEEP,0.8126,9.0,9,4.0,12.0,Variable
+eq_band_resonance,KEEP,0.8117,0.447299987077713,267,0.0,1.0,Variable
+compressor_high_lower_threshold,KEEP,0.8102,-35.0,486,-79.0,-6.914889812469482,Variable
+compressor_high_upper_threshold,KEEP,0.8056,-30.0,468,-79.0,0.43061769008636475,Variable
+env_2_attack,KEEP,0.8056,0.14949999749660492,364,0.0,1.9207251071929932,Variable
+compressor_band_lower_threshold,KEEP,0.8029,-36.0,473,-79.0,-12.585380554199219,Variable
+macro_control_3,KEEP,0.8029,0.0,368,0.0,1.0,Variable
+eq_low_mode,KEEP,0.7987,0.0,2,0.0,1.0,Variable
+filter_1_on,KEEP,0.7984,1.0,2,0.0,1.0,Variable
+filter_fx_on,KEEP,0.7981,0.0,2,0.0,1.0,Variable
+filter_2_model,KEEP,0.7981,0.0,8,0.0,7.0,Variable
+filter_1_keytrack,KEEP,0.7981,0.0,140,-1.0,1.0,Variable
+osc_2_spectral_morph_type,KEEP,0.7981,0.0,16,0.0,15.0,Variable
+chorus_feedback,KEEP,0.7962,0.4000000059604645,350,-0.949999988079071,0.949999988079071,Variable
+filter_1_drive,KEEP,0.7962,0.0,309,0.0,20.0,Variable
+filter_2_style,KEEP,0.7956,0.0,6,0.0,5.0,Variable
+osc_3_unison_voices,KEEP,0.7926,1.0,16,1.0,16.0,Variable
+modulation_12_amount,KEEP,0.789,0.0,437,-1.0,1.0,Variable
+osc_3_unison_detune,KEEP,0.7887,4.4721360206604,317,0.0,10.0,Variable
+osc_2_spectral_morph_amount,KEEP,0.7853,0.5,321,0.0,1.0,Variable
+compressor_band_upper_threshold,KEEP,0.7835,-25.0,483,-55.14494705200195,-1.0,Variable
+env_2_release,KEEP,0.7805,0.5475999712944031,361,0.0,2.378420114517212,Variable
+osc_2_distortion_amount,KEEP,0.7729,0.5,303,0.0,1.0,Variable
+osc_2_distortion_type,KEEP,0.7696,0.0,13,0.0,12.0,Variable
+chorus_spread,KEEP,0.7696,1.0,470,0.0,1.0,Variable
+filter_fx_resonance,KEEP,0.7657,0.5,323,0.0,1.0,Variable
+chorus_mod_depth,KEEP,0.7651,0.5,340,0.0,1.0,Variable
+lfo_1_smooth_time,KEEP,0.7614,-7.5,160,-10.0,4.0,Variable
+distortion_mix,KEEP,0.7578,1.0,351,0.0,1.0,Variable
+modulation_11_amount,KEEP,0.7572,0.0,495,-1.0,1.0,Variable
+filter_fx_cutoff,KEEP,0.7517,60.0,579,8.0,136.0,Variable
+portamento_time,KEEP,0.7508,-10.0,375,-10.0,4.0,Variable
+macro_control_2,KEEP,0.7496,0.0,438,0.0,1.0,Variable
+distortion_type,KEEP,0.7436,0.0,6,0.0,5.0,Variable
+chorus_cutoff,KEEP,0.743,60.0,434,8.0,136.0,Variable
+compressor_mix,KEEP,0.7414,1.0,378,0.0,1.0,Variable
+osc_2_on,KEEP,0.7408,1.0,2,0.0,1.0,Variable
+sample_destination,KEEP,0.7278,3.0,5,0.0,4.0,Variable
+osc_3_transpose,KEEP,0.7212,0.0,60,-48.0,48.0,Variable
+eq_band_gain,KEEP,0.7193,0.0,561,-15.0,15.0,Variable
+modulation_10_amount,KEEP,0.7172,0.0,573,-1.0,1.0,Variable
+reverb_on,KEEP,0.7109,1.0,2,0.0,1.0,Variable
+eq_band_cutoff,KEEP,0.71,80.0,673,8.0,136.0,Variable
+osc_2_wave_frame,KEEP,0.7097,0.0,650,0.0,256.0,Variable
+lfo_2_tempo,KEEP,0.7069,7.0,14,0.0,12.0,Variable
+compressor_release,KEEP,0.7063,0.5,395,0.0,1.0,Variable
+delay_feedback,KEEP,0.6985,0.5,431,-1.0,1.0,Variable
+lfo_1_sync_type,KEEP,0.6954,0.0,7,0.0,6.0,Variable
+modulation_9_amount,KEEP,0.6873,0.0,614,-1.0,1.0,Variable
+eq_high_gain,KEEP,0.6863,0.0,582,-15.0,15.0,Variable
+osc_3_destination,KEEP,0.6863,3.0,5,0.0,4.0,Variable
+reverb_high_shelf_cutoff,KEEP,0.6839,90.0,452,0.0,128.0,Variable
+eq_low_gain,KEEP,0.6827,0.0,543,-15.0,15.0,Variable
+reverb_high_shelf_gain,KEEP,0.6809,-1.0,377,-6.0,0.0,Variable
+filter_1_model,KEEP,0.68,0.0,8,0.0,7.0,Variable
+delay_filter_spread,KEEP,0.6767,1.0,654,0.0,1.0,Variable
+osc_1_spectral_morph_amount,KEEP,0.6754,0.5,399,0.0,1.0,Variable
+osc_1_spectral_morph_type,KEEP,0.6715,0.0,16,0.0,15.0,Variable
+eq_high_cutoff,KEEP,0.6688,100.0,666,8.0,136.0,Variable
+macro_control_1,KEEP,0.6612,0.0,524,0.0,1.0,Variable
+sample_on,KEEP,0.6591,0.0,2,0.0,1.0,Variable
+compressor_attack,KEEP,0.6573,0.5,421,0.0,1.0,Variable
+compressor_on,KEEP,0.654,1.0,2,0.0,1.0,Variable
+delay_filter_cutoff,KEEP,0.6533,60.0,663,8.0,136.0,Variable
+eq_low_cutoff,KEEP,0.653,40.0,694,8.0,109.06666564941406,Variable
+modulation_8_amount,KEEP,0.6497,0.0,681,-1.0,1.0,Variable
+osc_1_distortion_type,KEEP,0.6491,0.0,13,0.0,12.0,Variable
+osc_1_distortion_amount,KEEP,0.6491,0.5,396,0.0,1.0,Variable
+delay_style,KEEP,0.6385,0.0,4,0.0,3.0,Variable
+osc_3_level,KEEP,0.6367,0.7071067690849304,431,0.0,1.0,Variable
+polyphony,KEEP,0.6343,8.0,22,1.0,32.0,Variable
+filter_1_style,KEEP,0.6337,0.0,6,0.0,5.0,Variable
+filter_2_resonance,KEEP,0.6197,0.5,611,0.0,1.0,Variable
+osc_2_unison_voices,KEEP,0.614,1.0,16,1.0,16.0,Variable
+filter_2_on,KEEP,0.6082,0.0,2,0.0,1.0,Variable
+sample_level,KEEP,0.6073,0.7071067690849304,430,0.0,1.0,Variable
+osc_1_transpose,KEEP,0.6061,0.0,56,-48.0,48.0,Variable
+filter_2_cutoff,KEEP,0.6049,60.0,993,8.0,136.0,Variable
+reverb_low_shelf_gain,KEEP,0.6043,0.0,352,-6.0,0.0,Variable
+reverb_size,KEEP,0.6025,0.5,518,0.0,1.0,Variable
+reverb_low_shelf_cutoff,KEEP,0.5973,0.0,541,0.0,128.0,Variable
+osc_1_wave_frame,KEEP,0.594,0.0,846,0.0,256.0,Variable
+osc_2_unison_detune,KEEP,0.5934,4.4721360206604,479,0.0,10.0,Variable
+modulation_7_amount,KEEP,0.5904,0.0,761,-1.0,1.0,Variable
+osc_3_on,KEEP,0.5867,0.0,2,0.0,1.0,Variable
+env_1_attack,KEEP,0.5737,0.14949999749660492,698,0.0,1.9417939186096191,Variable
+osc_2_transpose,KEEP,0.5616,0.0,62,-48.0,48.0,Variable
+eq_on,KEEP,0.5616,0.0,2,0.0,1.0,Variable
+delay_dry_wet,KEEP,0.5565,0.33340001106262207,511,0.0,1.0,Variable
+env_1_sustain,KEEP,0.5522,1.0,627,0.0,1.0,Variable
+delay_on,KEEP,0.5456,0.0,2,0.0,1.0,Variable
+env_2_sustain,KEEP,0.5453,1.0,276,0.0,1.0,Variable
+chorus_on,KEEP,0.541,0.0,2,0.0,1.0,Variable
+volume,KEEP,0.5347,5473.04052734375,906,0.0,7399.4404296875,Variable
+modulation_6_amount,KEEP,0.531,0.0,811,-1.0,1.0,Variable
+env_2_decay,KEEP,0.5283,1.0,1081,0.0,2.378420114517212,Variable
+lfo_1_tempo,KEEP,0.5259,7.0,13,0.0,12.0,Variable
+chorus_dry_wet,KEEP,0.5241,0.5,457,0.0,1.0,Variable
+distortion_on,KEEP,0.515,1.0,2,0.0,1.0,Variable
+osc_1_level,KEEP,0.4956,0.7071067690849304,588,0.0,1.0,Variable
+env_1_decay,KEEP,0.4877,1.0,1179,0.0,2.378420114517212,Variable
+modulation_5_amount,KEEP,0.4675,0.0,957,-1.0,1.0,Variable
+osc_2_destination,KEEP,0.4535,1.0,5,0.0,4.0,Variable
+env_1_release,KEEP,0.4502,0.5475999712944031,931,0.0,2.2008748054504395,Variable
+osc_1_unison_voices,KEEP,0.4372,1.0,16,1.0,16.0,Variable
+distortion_drive,KEEP,0.4342,0.0,882,-30.0,30.0,Variable
+osc_2_level,KEEP,0.4308,0.7071067690849304,633,0.0,1.0,Variable
+reverb_decay_time,KEEP,0.4124,0.0,745,-6.0,6.0,Variable
+effect_chain_order,KEEP,0.412,0.0,816,0.0,360911.0,Variable
+osc_1_unison_detune,KEEP,0.3781,4.4721360206604,650,0.0,10.0,Variable
+modulation_4_amount,KEEP,0.3706,0.0,1072,-1.0,1.0,Variable
+reverb_dry_wet,KEEP,0.346,0.25,673,0.0,1.0,Variable
+beats_per_minute,KEEP,0.3115,2.0,107,0.8333333730697632,6.016666889190674,Variable
+filter_1_resonance,KEEP,0.3021,0.0,940,0.0,1.0,Variable
+modulation_3_amount,KEEP,0.277,0.0,1160,-1.0,1.0,Variable
+filter_1_cutoff,KEEP,0.2437,60.0,1849,8.0,136.0,Variable
+modulation_2_amount,KEEP,0.1729,0.0,1273,-1.0,1.0,Variable
+modulation_1_amount,KEEP,0.1659,1.0,1357,-1.0,1.0,Variable
