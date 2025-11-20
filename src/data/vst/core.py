@@ -6,7 +6,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 import mido
 import numpy as np
@@ -32,7 +32,9 @@ def _enforce_minimal_audible_params(plugin: VST3Plugin, params: dict[str, float]
     - avoid fully wet filter mix by default
     """
     out = dict(params)
-    keys = set(plugin.parameters.keys())
+    # Use getattr to avoid mypy/pyright complaints if type stubs lack 'parameters'
+    plugin_params = getattr(plugin, "parameters", {})
+    keys = set(plugin_params.keys())
 
     def set_if_present(k: str, v: float):
         if k in keys and k not in out:
@@ -118,15 +120,55 @@ def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
         logger.info(f"Preset {preset_path} loaded")
 
 
-def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
-    for k, v in params.items():
+def _apply_param(plugin: VST3Plugin, name: str, value: float) -> bool:
+    """Apply a parameter value to the plugin.
+
+    Strategy:
+    1. Prefer raw_value when incoming value already in [0,1].
+    2. If outside [0,1] try attribute assignment (plugin.<name> = value) letting Pedalboard
+       perform its guessed scaling.
+    3. If attribute assignment fails, clamp into [0,1] for raw_value and log the fallback.
+
+    Returns True if the parameter was applied, False if the parameter does not exist.
+    """
+    plugin_params = getattr(plugin, "parameters", {})
+    if name not in plugin_params:
+        return False
+    param_obj = plugin_params[name]
+    try:
+        if 0.0 <= value <= 1.0:
+            param_obj.raw_value = float(value)
+            return True
+        # Attempt semantic assignment (may internally map domain)
         try:
-            plugin.parameters[k].raw_value = v
-        except KeyError:
-            logger.warning(
-                f"Parameter '{k}' not found in plugin. Available parameters: {list(plugin.parameters.keys())}"
+            setattr(plugin, name, float(value))
+            return True
+        except Exception:
+            # Fallback: clamp and use raw_value
+            clamped = max(0.0, min(1.0, float(value)))
+            param_obj.raw_value = clamped
+            logger.debug(
+                f"Param '{name}': value {value} outside [0,1]; clamped to {clamped} and applied as raw_value"
             )
-            raise
+            return True
+    except Exception as e:
+        logger.warning(f"Failed to set parameter '{name}' to {value}: {e}")
+        return False
+
+
+def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
+    missing: list[str] = []
+    applied = 0
+    for k, v in params.items():
+        if _apply_param(plugin, k, v):
+            applied += 1
+        else:
+            missing.append(k)
+    if missing:
+        logger.warning(
+            f"{len(missing)} parameters not found on plugin (ignored): {missing[:25]}" + (" ..." if len(missing) > 25 else "")
+        )
+    logger.info(f"Applied {applied} parameters (incoming {len(params)})")
 
 
 def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -> None:
@@ -178,10 +220,68 @@ def render_params(
 
 
 def make_midi_events(pitch: int, velocity: int, note_start: float, note_end: float):
-    events = []
+    # Use a broad type to satisfy static analysis; Pedalboard accepts several MIDI tuple forms.
+    events: list[tuple[object, float]] = []
     note_on = mido.Message("note_on", note=pitch, velocity=velocity, time=0)
     events.append((note_on.bytes(), note_start))
     note_off = mido.Message("note_off", note=pitch, velocity=velocity, time=0)
     events.append((note_off.bytes(), note_end))
+    return events
 
-    return tuple(events)
+
+def dump_plugin_parameters(plugin: VST3Plugin, limit: int | None = None) -> list[dict[str, Any]]:
+    """Introspect plugin parameters and return structured info.
+
+    For each parameter we attempt to gather:
+      - name
+      - semantic value (attribute access)
+      - raw_value (always 0..1)
+      - units/label if present
+      - guessed min/max if discoverable in attribute dict (non‑public, heuristic)
+
+    This aids deciding whether to use setattr vs raw_value. If semantic value spans
+    a wider, meaningful domain (Hz, dB, ms) then prefer attribute assignment.
+    """
+    plugin_params = getattr(plugin, "parameters", {})
+    out: list[dict[str, Any]] = []
+    for i, name in enumerate(plugin_params.keys()):
+        if limit is not None and i >= limit:
+            break
+        info: dict[str, Any] = {"name": name}
+        param_obj = plugin_params[name]
+        # Raw normalized value
+        try:
+            info["raw_value"] = float(getattr(param_obj, "raw_value"))
+        except Exception:
+            info["raw_value"] = None
+        # Semantic value (may raise if attribute blocked)
+        try:
+            info["value"] = getattr(plugin, name)
+        except Exception:
+            info["value"] = None
+        # Units / label
+        units = getattr(param_obj, "units", None) or getattr(param_obj, "label", None)
+        info["units"] = units
+        # Try to discover min/max by probing edge raw values if semantic domain different
+        # Heuristic: attempt setting raw_value=0 and 1 temporarily and reading semantic value.
+        try:
+            current_raw = param_obj.raw_value
+            param_obj.raw_value = 0.0
+            min_sem = getattr(plugin, name)
+            param_obj.raw_value = 1.0
+            max_sem = getattr(plugin, name)
+            param_obj.raw_value = current_raw  # restore
+            info["semantic_min"] = min_sem
+            info["semantic_max"] = max_sem
+        except Exception:
+            info["semantic_min"] = None
+            info["semantic_max"] = None
+            # Best effort restore: ignore
+        out.append(info)
+    # Log a concise preview
+    preview = [
+        f"{d['name']}: raw={d['raw_value']}, val={d['value']}, units={d['units']}, min={d['semantic_min']}, max={d['semantic_max']}"
+        for d in out[: min(len(out), 10)]
+    ]
+    logger.info("Parameter introspection preview (first 10):\n" + "\n".join(preview))
+    return out

@@ -19,6 +19,7 @@ from src.data.vst.param_spec import (
     Parameter,
 )
 from src.data.vst.vital_param_spec import VITAL_PARAM_SPEC
+from src.data.vst.vital_details import get_min_max_for_plugin_name
 
 
 CORE_COMPONENT_MAP: Dict[str, str] = {
@@ -71,6 +72,22 @@ EXPLICIT_KEY_MAP: Dict[str, str] = {
     "macro_control_2": "macro_2",
     "macro_control_3": "macro_3",
     "macro_control_4": "macro_4",
+    # Missed chorus mappings from preset -> spec/pedalboard
+    "chorus_cutoff": "chorus_filter_cutoff",
+    "chorus_spread": "chorus_filter_spread",
+    # Compressor detailed thresholds/ratios (preset includes compressor_* prefixes)
+    "compressor_low_upper_threshold": "low_upper_threshold",
+    "compressor_low_lower_threshold": "low_lower_threshold",
+    "compressor_low_upper_ratio": "low_upper_ratio",
+    "compressor_low_lower_ratio": "low_lower_ratio",
+    "compressor_band_upper_threshold": "band_upper_threshold",
+    "compressor_band_lower_threshold": "band_lower_threshold",
+    "compressor_band_upper_ratio": "band_upper_ratio",
+    "compressor_band_lower_ratio": "band_lower_ratio",
+    "compressor_high_upper_threshold": "high_upper_threshold",
+    "compressor_high_lower_threshold": "high_lower_threshold",
+    "compressor_high_upper_ratio": "high_upper_ratio",
+    "compressor_high_lower_ratio": "high_lower_ratio",
 }
 
 _PARAM_REGISTRY: Dict[str, Parameter] = {
@@ -83,18 +100,27 @@ def _clamp(value: float, low: float, high: float) -> float:
 
 
 def _normalize_continuous(param: ContinuousParameter, value: Any) -> float:
-    """Conservatively normalize a raw preset numeric to [0,1] domain spec expects.
+    """Normalize internal Vital engine value to plugin raw_value.
 
-    Rules:
-    - If already in [0,1], keep.
-    - If 1 < v <= 100, treat as percentage.
-    - Otherwise clamp to [min,max] (currently [0,1]).
-    NOTE: Future improvement: use real Vital ranges & curve metadata.
+    Preferred path: use precise min/max from VITAL_PARAM_DETAILS (linear transform). This mirrors
+    ValueBridge::convertToPluginValue: (engine - min) / (max - min). Display skew is intentionally
+    ignored because the plugin expects unskewed 0..1.
+
+    Fallback path: if details missing, revert to legacy heuristics (simple clamping / percentage scaling).
     """
     try:
         numeric = float(value)
     except (TypeError, ValueError):
         numeric = param.min
+
+    min_max = get_min_max_for_plugin_name(param.name)
+    if min_max is not None:
+        lo, hi = min_max
+        span = hi - lo if hi != lo else 1.0
+        raw = (numeric - lo) / span
+        return _clamp(raw, 0.0, 1.0)
+
+    # Fallback heuristic (retain simple handling for parameters not yet in details map)
     if 0.0 <= numeric <= 1.0:
         return _clamp(numeric, param.min, param.max)
     if 1.0 < numeric <= 100.0:
@@ -282,12 +308,20 @@ def convert_vital_preset_to_params(preset_path, plugin):
             )
 
     result: Dict[str, Any] = {}
+    exact = 0
+    fallback = 0
     for k in intersect:
-        normalized = _normalize_value_from_spec(k, remapped[k])
+        before = remapped[k]
+        has_exact = get_min_max_for_plugin_name(k) is not None
+        normalized = _normalize_value_from_spec(k, before)
         result[k] = normalized
+        if has_exact:
+            exact += 1
+        else:
+            fallback += 1
 
     logger.info(
-        f"Converted .vital preset: mapped {len(settings)} keys -> {len(remapped)}; "
-        f"applying {len(result)} parameters recognized by the plugin."
+        f"Converted .vital preset: mapped {len(settings)} keys -> {len(remapped)}; applying {len(result)} parameters. "
+        f"Normalization coverage exact={exact} fallback={fallback} ({exact/(exact+fallback):.1%} exact)."
     )
     return result
