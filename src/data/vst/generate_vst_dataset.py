@@ -66,7 +66,7 @@ def generate_sample(
     channels: int,
     min_loudness: float,
     param_spec: ParamSpec,
-    preset_path: str,
+    preset_path: str | None,
 ) -> VSTDataSample:
     while True:
         logger.debug("sampling params")
@@ -162,8 +162,15 @@ def create_dataset_and_get_first_unwritten_idx(
 ) -> tuple[h5py.Dataset, int]:
     logger.info(f"Looking for dataset {name}...")
     if name in h5py_file:
-        logger.info(f"Found dataset {name}, looking for first unwritten row.")
+        logger.info(f"Found dataset {name}, checking shape...")
         dataset = h5py_file[name]
+        if dataset.shape != shape:
+            logger.warning(f"Dataset {name} has shape {dataset.shape}, expected {shape}. Recreating dataset.")
+            # remove and recreate with the expected shape
+            del h5py_file[name]
+            dataset = h5py_file.create_dataset(name, shape=shape, dtype=dtype, compression=compression)
+            return dataset, 0
+        logger.info(f"Dataset {name} shape OK, looking for first unwritten row.")
         return dataset, get_first_unwritten_idx(dataset)
 
     dataset = h5py_file.create_dataset(name, shape=shape, dtype=dtype, compression=compression)
@@ -178,17 +185,27 @@ def create_datasets_and_get_start_idx(
     signal_duration_seconds: float,
     num_params: int,
 ):
+    # compute integer-shaped dataset dimensions
+    n_samples = int(sample_rate * signal_duration_seconds)
+    # mel spectrogram framing should match make_spectrogram()
+    n_fft = int(0.025 * sample_rate)
+    hop_length = int(sample_rate / 100.0)
+    if n_samples > n_fft:
+        mel_frames = 1 + (n_samples - n_fft) // hop_length
+    else:
+        mel_frames = 1
+
     audio_dataset, audio_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "audio",
-        (num_samples, channels, sample_rate * signal_duration_seconds),
+        (num_samples, channels, n_samples),
         dtype=np.float16,
         compression=hdf5plugin.Blosc2(),
     )
     mel_dataset, mel_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "mel_spec",
-        (num_samples, 2, 128, 401),
+        (num_samples, 2, 128, mel_frames),
         dtype=np.float32,
         compression=hdf5plugin.Blosc2(),
     )
@@ -241,7 +258,7 @@ def worker_generate_samples(
         )
         mel_dataset = worker_file.create_dataset(
             "mel_spec",
-            shape=(num_samples, 2, 128, 401),
+            shape=(num_samples, 2, 128, (lambda: (1 + (int(sample_rate * signal_duration_seconds) - int(0.025 * sample_rate)) // int(sample_rate / 100.0)) if int(sample_rate * signal_duration_seconds) > int(0.025 * sample_rate) else 1)()),
             dtype=np.float32,
             compression=hdf5plugin.Blosc2(),
         )
@@ -272,7 +289,7 @@ def worker_generate_samples(
                 channels=channels,
                 min_loudness=min_loudness,
                 param_spec=param_spec,
-                preset_path=preset_path,
+                preset_path=None,  # preset already loaded once below
             )
 
             # Write directly to worker's file
@@ -355,6 +372,13 @@ def make_dataset(
     if num_workers == 1:
         # Single-threaded fallback (original behavior)
         plugin = load_plugin(plugin_path)
+        # Load preset once per dataset build for efficiency
+        if preset_path:
+            try:
+                from src.data.vst.core import load_preset
+                load_preset(plugin, preset_path)
+            except Exception as e:
+                logger.warning(f"Failed to pre-load preset '{preset_path}': {e}")
         sample_batch = []
         sample_batch_start = start_idx
 
