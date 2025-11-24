@@ -83,7 +83,7 @@ echo ""
 if [[ "$STATE" == "RUNNING" ]]; then
   echo -e "${BLUE}Recent logs:${NC}"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ovhai job logs "$JOB_ID" --tail 20
+  ovhai job logs "$JOB_ID" --tail=20
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo -e "${YELLOW}Commands:${NC}"
@@ -92,7 +92,7 @@ if [[ "$STATE" == "RUNNING" ]]; then
 elif [[ "$STATE" =~ ^(FAILED|ERROR)$ ]]; then
   echo -e "${RED}Job failed! Last logs:${NC}"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ovhai job logs "$JOB_ID" --tail 50
+  ovhai job logs "$JOB_ID" --tail=50
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 elif [[ "$STATE" == "DONE" ]]; then
   echo -e "${GREEN}✅ Job completed successfully!${NC}"

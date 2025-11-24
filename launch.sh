@@ -134,8 +134,13 @@ ovhai me &>/dev/null || { echo -e "${RED}Error: Not logged in. Run: ovhai login$
 
 # Configure S3 datastore
 DS_ALIAS="s3-${OVH_REGION:-gra}"
-if ! ovhai datastore list 2>/dev/null | grep -q "^${DS_ALIAS}"; then
-  REGION=$(echo "${OVH_REGION:-GRA}" | tr '[:upper:]' '[:lower:]')
+REGION=$(echo "${OVH_REGION:-GRA}" | tr '[:upper:]' '[:lower:]')
+if ovhai datastore list 2>/dev/null | grep -q "^${DS_ALIAS}"; then
+  # Update existing datastore to ensure credentials are fresh
+  ovhai datastore update s3 "${DS_ALIAS}" "${AWS_ENDPOINT_URL}" "${REGION}" \
+    "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}" --store-credentials-locally
+else
+  # Create new datastore
   ovhai datastore add s3 "${DS_ALIAS}" "${AWS_ENDPOINT_URL}" "${REGION}" \
     "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}" --store-credentials-locally
 fi

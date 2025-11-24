@@ -53,6 +53,7 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
         n_fft=n_fft,
         hop_length=hop_length,
         window=window,
+        center=False,
     )
     spec_db = librosa.power_to_db(spec, ref=np.max)
     return spec_db
@@ -529,7 +530,7 @@ def make_dataset(
 @click.argument("data_file", type=str, required=True)
 @click.argument("num_samples", type=int, required=True)
 @click.option("--plugin_path", "-p", type=str, default="vsts/Surge XT.vst3")
-@click.option("--preset_path", "-r", type=str, default="presets/surge-base.vstpreset")
+@click.option("--preset_path", "-r", type=str, default="presets/vital-base.vstpreset")
 @click.option("--sample_rate", "-s", type=float, default=44100.0)
 @click.option("--channels", "-c", type=int, default=2)
 @click.option("--velocity", "-v", type=int, default=100)

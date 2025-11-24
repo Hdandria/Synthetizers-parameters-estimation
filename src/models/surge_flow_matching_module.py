@@ -193,19 +193,13 @@ class SurgeFlowMatchingModule(LightningModule):
         return sample
 
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        conditioning = self._get_conditioning_from_batch(batch)
-        pred_params = self._sample(
-            conditioning,
-            torch.randn_like(batch["params"]),
-            self.hparams.validation_sample_steps,
-            self.hparams.validation_cfg_strength,
-        )
+        loss, penalty = self._train_step(batch)
+        self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        per_param_mse = (pred_params - batch["params"]).square().mean(dim=0)
-        param_mse = per_param_mse.mean()
-        self.log("val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
+        if penalty is not None:
+            self.log("val/penalty", penalty, on_step=False, on_epoch=True, prog_bar=True)
 
-        return {"param_mse": param_mse, "per_param_mse": per_param_mse}
+        return loss + (penalty if penalty is not None else 0.0)
 
     def on_validation_epoch_end(self):
         pass
