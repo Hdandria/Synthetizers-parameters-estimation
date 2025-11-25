@@ -272,7 +272,7 @@ class SurgeDataModule(LightningDataModule):
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
             batch_size=self.batch_size,
-            ot=False,
+            ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
             repeat_first_batch=self.repeat_first_batch,
@@ -282,7 +282,7 @@ class SurgeDataModule(LightningDataModule):
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
             batch_size=self.batch_size,
-            ot=False,
+            ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
             repeat_first_batch=self.repeat_first_batch,

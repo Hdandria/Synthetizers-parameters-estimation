@@ -6,14 +6,14 @@ defaults:
 
 # Experiment metadata
 experiment_name: flow_multi
-run_name: dataset_100k_280k
+run_name: dataset_20k_20k
 
 # Data configuration
 data:
-  dataset_root: ./datasets/surge-100k
+  dataset_root: ./datasets/surge-20k
 
 # Trainer configuration
 trainer:
-  min_steps: 280000
-  max_steps: 280000
-  val_check_interval: 2000
+  min_steps: 20000  
+  max_steps: 20000
+  val_check_interval: 1000
