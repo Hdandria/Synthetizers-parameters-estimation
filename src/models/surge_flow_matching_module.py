@@ -111,14 +111,17 @@ class SurgeFlowMatchingModule(LightningModule):
         else:
             raise ValueError(f"Unknown conditioning {self.hparams.conditioning}")
 
-    def _train_step(self, batch: tuple[torch.Tensor, torch.Tensor]):
+    def _train_step(self, batch: tuple[torch.Tensor, torch.Tensor], dropout_rate: float | None = None):
+        if dropout_rate is None:
+            dropout_rate = self.hparams.cfg_dropout_rate
+
         conditioning = self._get_conditioning_from_batch(batch)
         params = batch["params"]
         noise = batch["noise"]
 
         # Get conditioning vector
         conditioning = self.encoder(conditioning)
-        z = self.vector_field.apply_dropout(conditioning, self.hparams.cfg_dropout_rate)
+        z = self.vector_field.apply_dropout(conditioning, dropout_rate)
 
         with torch.no_grad():
             # Sample time-steps
@@ -193,7 +196,7 @@ class SurgeFlowMatchingModule(LightningModule):
         return sample
 
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        loss, penalty = self._train_step(batch)
+        loss, penalty = self._train_step(batch, dropout_rate=0.0)
         self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
         if penalty is not None:

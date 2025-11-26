@@ -14,5 +14,12 @@ data:
 
 # Trainer configuration
 trainer:
-  min_steps: 80000
-  max_steps: 80000
+  min_steps: 40000
+  max_steps: 40000
+  val_check_interval: 1000
+
+# Callbacks configuration
+callbacks:
+  model_checkpoint:
+    monitor: val/loss
+    mode: min

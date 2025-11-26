@@ -245,6 +245,7 @@ class SurgeDataModule(LightningDataModule):
         repeat_first_batch: bool = False,
         predict_file: str | None = None,
         conditioning: Literal["mel", "m2l"] = "mel",
+        val_ot: bool | None = None,
     ):
         super().__init__()
 
@@ -252,6 +253,7 @@ class SurgeDataModule(LightningDataModule):
         self.use_saved_mean_and_variance = use_saved_mean_and_variance
         self.batch_size = batch_size
         self.ot = ot
+        self.val_ot = val_ot if val_ot is not None else ot
         self.num_workers = num_workers
         self.fake = fake
         self.repeat_first_batch = repeat_first_batch
@@ -272,7 +274,7 @@ class SurgeDataModule(LightningDataModule):
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
             batch_size=self.batch_size,
-            ot=self.ot,
+            ot=self.val_ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
             repeat_first_batch=self.repeat_first_batch,
@@ -282,7 +284,7 @@ class SurgeDataModule(LightningDataModule):
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
             batch_size=self.batch_size,
-            ot=self.ot,
+            ot=self.val_ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
             repeat_first_batch=self.repeat_first_batch,
