@@ -88,6 +88,16 @@ EXPLICIT_KEY_MAP: Dict[str, str] = {
     "compressor_high_lower_threshold": "high_lower_threshold",
     "compressor_high_upper_ratio": "high_upper_ratio",
     "compressor_high_lower_ratio": "high_lower_ratio",
+    "delay_aux_frequency": "delay_frequency_2",
+    "delay_aux_sync": "delay_sync_2",
+    "delay_aux_tempo": "delay_tempo_2",
+    "filter_1_keytrack": "filter_1_key_track",
+    "filter_2_keytrack": "filter_2_key_track",
+    "filter_fx_keytrack": "filter_fx_key_track",
+    "sample_keytrack": "sample_keytrack",
+    "filter_1_blend_transpose": "filter_1_formant_transpose",
+    "filter_2_blend_transpose": "filter_2_formant_transpose",
+    "filter_fx_blend_transpose": "filter_fx_formant_transpose",
 }
 
 _PARAM_REGISTRY: Dict[str, Parameter] = {
@@ -197,6 +207,10 @@ def _remap_key(old_key: str) -> str:
         if len(parts) >= 3 and parts[1].isdigit():
             idx = parts[1]
             tail = "_".join(parts[2:])
+            if tail == "delay_time":
+                tail = "delay"
+            elif tail == "fade_time":
+                tail = "fade_in"
             return f"lfo_{idx}_{tail}"
 
     # Random LFOs
@@ -222,6 +236,12 @@ def _remap_key(old_key: str) -> str:
         return old_key.replace("_on", "_switch")
     if "spectral_morph_" in old_key:
         return old_key.replace("spectral_morph_", "frequency_morph_")
+
+    # Generic suffix replacements found during debugging
+    if old_key.endswith("keytrack"):
+        return old_key.replace("keytrack", "key_track")
+    if old_key.endswith("delay_time"):
+        return old_key.replace("delay_time", "delay")
 
     # Heuristic prefix replacement attempt
     for prefix, mapped_prefix in CORE_COMPONENT_MAP.items():
