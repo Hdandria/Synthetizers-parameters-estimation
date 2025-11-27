@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from src.data.vst.core import load_preset
 
 PLUGIN_PATH = "/home/benjamin/Documents/work/Synthetizers-parameters-estimation/plugins/Vital.vst3"
-PRESET_PATH = "/home/benjamin/Documents/work/Synthetizers-parameters-estimation/scripts/presets_dl/example_good.vital"
+PRESET_PATH = "/home/benjamin/Documents/work/Synthetizers-parameters-estimation/data/presets/vital/Psy Top 2.vital"
 
 def debug_preset():
     plugin = load_plugin(PLUGIN_PATH)
