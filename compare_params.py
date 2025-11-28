@@ -1,5 +1,7 @@
-from src.data.vst.vital_param_spec import VITAL_SIMPLE_PARAM_SPEC
 import rootutils
+
+from src.data.vst.vital_param_spec import VITAL_SIMPLE_PARAM_SPEC
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 with open("vital_params.txt", "r") as f:

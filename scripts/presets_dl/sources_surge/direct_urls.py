@@ -1,6 +1,7 @@
 """Direct download URLs for Surge presets."""
-import requests
 import os
+
+import requests
 
 URLS = [
     'https://demos.newloops.com/New_Loops-Surge_Presets.zip',
@@ -22,7 +23,7 @@ def download(save_path):
     }
 
     downloaded_files = []
-    
+
     print("Downloading from direct URLs...")
     for url in URLS:
         filename = os.path.join(save_path, url.split('/')[-1])
@@ -36,5 +37,5 @@ def download(save_path):
             downloaded_files.append(filename)
         except Exception as e:
             print(f'  Failed: {e}')
-    
+
     return downloaded_files

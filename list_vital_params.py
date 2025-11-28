@@ -1,5 +1,7 @@
-from src.data.vst import load_plugin
 import rootutils
+
+from src.data.vst import load_plugin
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 plugin = load_plugin("plugins/Vital.vst3")

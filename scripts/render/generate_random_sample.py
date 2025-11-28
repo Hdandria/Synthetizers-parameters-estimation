@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from pathlib import Path
 import time
+from pathlib import Path
 
 import click
 import numpy as np
@@ -8,7 +8,7 @@ import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, param_specs, render_params  # noqa: E402
-from src.data.vst.core import write_wav 
+from src.data.vst.core import write_wav
 
 
 @click.command()

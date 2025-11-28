@@ -1,7 +1,8 @@
-import os
 import json
+import os
 import shutil
 from pathlib import Path
+
 from tqdm import tqdm
 
 PRESETS_DIR = "data/presets/vital"
@@ -19,9 +20,9 @@ def get_category(p):
     try:
         with open(p, 'r', encoding='utf-8', errors='ignore') as f:
             data = json.load(f)
-        
+
         settings = data.get('settings', {})
-        
+
         # Check Oscillators
         oscs_ok = True
         for i in range(1, 4):
@@ -29,18 +30,18 @@ def get_category(p):
             level = settings.get(level_key, 0.0)
             wts = settings.get('wavetables', [])
             wt_data = wts[i-1] if i-1 < len(wts) else {}
-            
+
             if not is_osc_workable(wt_data, level):
                 oscs_ok = False
                 break
-        
+
         # Check Sample
         sample_level = settings.get('sample_level', 0.0)
         sample_data = settings.get('sample', {})
         sample_name = sample_data.get('name', '')
-        
+
         has_active_sample = sample_level > 0 and sample_name
-        
+
         # Check if ALL oscillators are silent (Level 0)
         # If so, and we don't have the sample, the result is silence -> Unusable
         all_oscs_silent = True
@@ -48,7 +49,7 @@ def get_category(p):
             if settings.get(f"osc_{i}_level", 0.0) > 0:
                 all_oscs_silent = False
                 break
-        
+
         if all_oscs_silent:
             return "Unusable" # Silent because no oscillators and sample is skipped
 
@@ -61,24 +62,24 @@ def get_category(p):
                 return "Unusable" # Oscs are Init, but Sample is custom/active
         else:
             return "Unusable" # Custom Wavetables
-            
+
     except Exception:
         return "Error"
 
 def filter_presets():
     os.makedirs(REJECTED_DIR, exist_ok=True)
     presets = list(Path(PRESETS_DIR).glob("*.vital"))
-    
+
     kept_count = 0
     rejected_count = 0
     error_count = 0
-    
+
     print(f"Filtering {len(presets)} presets...")
     print(f"Moving rejected presets to {REJECTED_DIR}")
-    
+
     for p in tqdm(presets):
         cat = get_category(p)
-        
+
         if cat == "Unusable" or cat == "Error":
             # Move to rejected
             dest = os.path.join(REJECTED_DIR, p.name)
@@ -90,7 +91,7 @@ def filter_presets():
         else:
             # Keep (Perfect or Good)
             kept_count += 1
-            
+
     print("\nResults:")
     print(f"Kept (Perfect/Good): {kept_count}")
     print(f"Rejected (Unusable): {rejected_count}")

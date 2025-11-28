@@ -18,9 +18,8 @@ from src.data.vst.param_spec import (
     DiscreteLiteralParameter,
     Parameter,
 )
-from src.data.vst.vital_param_spec import VITAL_PARAM_SPEC
 from src.data.vst.vital_details import get_min_max_for_plugin_name
-
+from src.data.vst.vital_param_spec import VITAL_PARAM_SPEC
 
 CORE_COMPONENT_MAP: Dict[str, str] = {
     # Support both legacy and canonical prefixes

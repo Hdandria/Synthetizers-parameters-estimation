@@ -3,8 +3,8 @@ import math
 import pytest
 
 from src.data.vst.vital_details import (
-    plugin_name_to_internal,
     get_min_max_for_plugin_name,
+    plugin_name_to_internal,
 )
 
 

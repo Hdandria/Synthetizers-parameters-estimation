@@ -1,6 +1,7 @@
 """Download Surge presets from multiple sources."""
 import os
 import shutil
+
 import patoolib
 import rootutils
 from sources_surge import direct_urls, kvraudio, presetshare
@@ -29,9 +30,9 @@ for archive in downloaded_archives:
         try:
             print(f'  Extracting {os.path.basename(archive)}...')
             patoolib.extract_archive(archive, outdir=save_path)
-            
+
             # Count .fxp files
-            count = sum(1 for root, dirs, files in os.walk(save_path) 
+            count = sum(1 for root, dirs, files in os.walk(save_path)
                        for file in files if file.endswith('.fxp'))
             extracted = count - total_fxp
             total_fxp = count

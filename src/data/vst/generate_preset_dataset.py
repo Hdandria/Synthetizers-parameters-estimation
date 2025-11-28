@@ -61,7 +61,7 @@ def perturb_params(
 ) -> dict[str, float]:
     """Apply Gaussian noise to continuous parameters."""
     new_params = params.copy()
-    
+
     # Identify continuous parameters from spec
     continuous_names = set()
     for p in param_spec.synth_params:
@@ -77,7 +77,7 @@ def perturb_params(
             # Clamp
             new_val = max(0.0, min(1.0, new_val))
             new_params[k] = new_val
-            
+
     return new_params
 
 
@@ -95,10 +95,10 @@ def generate_sample(
     while True:
         # 1. Pick a random base preset
         base_params = random.choice(base_presets)
-        
+
         # 2. Perturb it
         synth_params = perturb_params(base_params, perturbation_variance, param_spec)
-        
+
         # 3. Sample note params (pitch, duration) randomly as before
         _, note_params = param_spec.sample()
 
@@ -152,12 +152,12 @@ def worker_generate_samples(
     progress_queue: multiprocessing.Queue,
 ) -> None:
     logger.info(f"Worker {worker_id} starting with {len(sample_indices)} samples")
-    
+
     plugin = load_plugin(plugin_path)
 
     with h5py.File(worker_output_path, "w") as worker_file:
         num_samples = len(sample_indices)
-        
+
         # Calculate mel frames
         n_samples = int(sample_rate * signal_duration_seconds)
         n_fft = int(0.025 * sample_rate)
@@ -210,19 +210,21 @@ def worker_generate_samples(
 
 
 import pickle
-from src.data.vst.core import _enforce_minimal_audible_params, set_params
+
+from src.data.vst.core import set_params
 from src.data.vst.param_spec import ParamSpec
+
 
 def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param_spec: ParamSpec = None) -> list[dict[str, float]]:
     cache_path = Path(preset_dir) / "presets_cache.pkl"
     presets = []
-    
+
     if cache_path.exists():
         logger.info(f"Loading presets from cache: {cache_path}")
         with open(cache_path, "rb") as f:
             presets = pickle.load(f)
         logger.info(f"Loaded {len(presets)} presets from cache.")
-        
+
         if param_spec:
             logger.info("Validating cached presets against param_spec...")
             valid_cache = True
@@ -232,7 +234,7 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
                     logger.warning(f"Cached preset {i} missing keys: {missing[:5]}... Invalidating cache.")
                     valid_cache = False
                     break
-            
+
             if not valid_cache:
                 presets = []
             else:
@@ -247,52 +249,52 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
     if not presets:
         logger.info(f"Loading all presets from {preset_dir}...")
         plugin = load_plugin(plugin_path)
-        
+
         presets = []
         files = list(Path(preset_dir).glob("*.vital"))
-        
+
         files.sort()
 
         if limit:
             files = files[:limit]
-    
+
     for p in tqdm(files, desc="Loading presets"):
         try:
             params = convert_vital_preset_to_params(str(p), plugin)
-            
+
             if params:
                 set_params(plugin, params)
                 params = _enforce_minimal_audible_params(plugin, params)
                 set_params(plugin, params)
-                
+
                 full_params = {}
                 for name, param in plugin.parameters.items():
                     full_params[name] = param.raw_value
-                
+
                 if param_spec:
                     missing = [k for k in param_spec.synth_param_names if k not in full_params]
                     if missing:
                         logger.error(f"Preset {p} loaded but missing keys in plugin state: {missing}")
                         for k in missing:
                             full_params[k] = 0.5
-                        
+
                 presets.append(full_params)
         except Exception as e:
             logger.warning(f"Failed to load {p}: {e}")
-            
+
     logger.info(f"Loaded {len(presets)} usable presets.")
-    
+
     if not limit:
         logger.info(f"Saving cache to {cache_path}")
         with open(cache_path, "wb") as f:
             pickle.dump(presets, f)
-            
+
     return presets
 
 
 def merge_worker_files(worker_files: list[str], output_file: h5py.File) -> None:
     logger.info(f"Merging {len(worker_files)} worker files...")
-    
+
     all_audio = []
     all_mel = []
     all_params = []
@@ -300,7 +302,7 @@ def merge_worker_files(worker_files: list[str], output_file: h5py.File) -> None:
     for worker_file_path in worker_files:
         if not os.path.exists(worker_file_path):
             continue
-            
+
         with h5py.File(worker_file_path, "r") as wf:
             all_audio.append(wf["audio"][:])
             all_mel.append(wf["mel_spec"][:])
@@ -342,7 +344,7 @@ def main(
     limit_presets: int,
 ):
     spec = param_specs[param_spec]
-    
+
     # 1. Load Presets
     presets = load_all_presets(preset_dir, plugin_path, limit_presets, param_spec=spec)
     if not presets:
@@ -353,19 +355,19 @@ def main(
     # Ensure directory exists if path has one
     if os.path.dirname(data_file):
         os.makedirs(os.path.dirname(data_file), exist_ok=True)
-    
+
     with h5py.File(data_file, "a") as f:
         # Calculate dimensions
         n_samples = int(sample_rate * signal_duration_seconds)
         n_fft = int(0.025 * sample_rate)
         hop_length = int(sample_rate / 100.0)
         mel_frames = 1 + (n_samples - n_fft) // hop_length if n_samples > n_fft else 1
-        
+
         # Create datasets
         if "audio" in f: del f["audio"]
         if "mel_spec" in f: del f["mel_spec"]
         if "param_array" in f: del f["param_array"]
-        
+
         f.create_dataset("audio", (num_samples, channels, n_samples), dtype=np.float16, compression=hdf5plugin.Blosc2())
         f.create_dataset("mel_spec", (num_samples, 2, 128, mel_frames), dtype=np.float32, compression=hdf5plugin.Blosc2())
         f.create_dataset("param_array", (num_samples, len(spec)), dtype=np.float32, compression=hdf5plugin.Blosc2())
@@ -383,20 +385,20 @@ def main(
         progress_queue = multiprocessing.Queue()
         sample_indices = list(range(num_samples))
         indices_per_worker = len(sample_indices) // num_workers
-        
+
         worker_files = []
         processes = []
-        
+
         for i in range(num_workers):
             start = i * indices_per_worker
             end = (i + 1) * indices_per_worker if i < num_workers - 1 else len(sample_indices)
             indices = sample_indices[start:end]
-            
+
             if not indices: continue
-            
+
             w_file = f"{data_file}.worker_{i}.h5"
             worker_files.append(w_file)
-            
+
             p = multiprocessing.Process(
                 target=worker_generate_samples,
                 args=(
@@ -423,7 +425,7 @@ def main(
                             finished += 1
                 except:
                     pass
-                
+
                 import time
                 time.sleep(0.1)
 
@@ -432,7 +434,7 @@ def main(
 
         # 4. Merge
         merge_worker_files(worker_files, f)
-        
+
         # Cleanup
         for wf in worker_files:
             if os.path.exists(wf):

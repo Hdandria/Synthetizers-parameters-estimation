@@ -1,10 +1,12 @@
 """PresetShare preset downloads (requires cookies)."""
-from bs4 import BeautifulSoup as bs
-import urllib.parse as ur
-import os
 import http.cookiejar
-import cloudscraper
+import os
 import time
+import urllib.parse as ur
+
+import cloudscraper
+from bs4 import BeautifulSoup as bs
+
 
 def download(save_path, cookies_file):
     """Download .fxp files directly from PresetShare if cookies are available."""
