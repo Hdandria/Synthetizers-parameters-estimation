@@ -217,16 +217,12 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
     cache_path = Path(preset_dir) / "presets_cache.pkl"
     presets = []
     
-    # Invalidate cache if we are debugging or if spec changed (though cache stores full params)
-    # For now, let's trust cache if it exists, BUT we should validate it against spec if provided.
-    
     if cache_path.exists():
         logger.info(f"Loading presets from cache: {cache_path}")
         with open(cache_path, "rb") as f:
             presets = pickle.load(f)
         logger.info(f"Loaded {len(presets)} presets from cache.")
         
-        # Validate against spec if provided
         if param_spec:
             logger.info("Validating cached presets against param_spec...")
             valid_cache = True
@@ -238,8 +234,7 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
                     break
             
             if not valid_cache:
-                presets = [] # Clear presets to force reload
-                # We don't return here, we let it fall through to loading from files
+                presets = []
             else:
                 if limit:
                     return presets[:limit]
@@ -249,7 +244,6 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
                 return presets[:limit]
              return presets
 
-    # If we are here, either cache didn't exist or was invalid
     if not presets:
         logger.info(f"Loading all presets from {preset_dir}...")
         plugin = load_plugin(plugin_path)
@@ -257,16 +251,13 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
         presets = []
         files = list(Path(preset_dir).glob("*.vital"))
         
-        # Sort for determinism
         files.sort()
 
         if limit:
             files = files[:limit]
     
-    
     for p in tqdm(files, desc="Loading presets"):
         try:
-            # 1. Convert preset to params dict
             params = convert_vital_preset_to_params(str(p), plugin)
             
             if params:
@@ -274,20 +265,14 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
                 params = _enforce_minimal_audible_params(plugin, params)
                 set_params(plugin, params)
                 
-                # 4. Read back ALL parameters from plugin
                 full_params = {}
                 for name, param in plugin.parameters.items():
                     full_params[name] = param.raw_value
                 
-                # Validate against spec if provided
                 if param_spec:
                     missing = [k for k in param_spec.synth_param_names if k not in full_params]
                     if missing:
                         logger.error(f"Preset {p} loaded but missing keys in plugin state: {missing}")
-                        # If missing, try to fill with default 0.5 or skip?
-                        # If it's missing from plugin.parameters, it means the plugin doesn't expose it.
-                        # This is critical.
-                        # We can try to fill it with 0.5 to allow continuation, but warn.
                         for k in missing:
                             full_params[k] = 0.5
                         
@@ -297,7 +282,6 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
             
     logger.info(f"Loaded {len(presets)} usable presets.")
     
-    # Only cache if we loaded everything (no limit)
     if not limit:
         logger.info(f"Saving cache to {cache_path}")
         with open(cache_path, "wb") as f:
