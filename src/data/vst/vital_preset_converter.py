@@ -98,6 +98,10 @@ EXPLICIT_KEY_MAP: Dict[str, str] = {
     "filter_1_blend_transpose": "filter_1_formant_transpose",
     "filter_2_blend_transpose": "filter_2_formant_transpose",
     "filter_fx_blend_transpose": "filter_fx_formant_transpose",
+    "reverb_low_shelf_cutoff": "reverb_low_cutoff",
+    "reverb_low_shelf_gain": "reverb_low_gain",
+    "reverb_high_shelf_cutoff": "reverb_high_cutoff",
+    "reverb_high_shelf_gain": "reverb_high_gain",
 }
 
 _PARAM_REGISTRY: Dict[str, Parameter] = {

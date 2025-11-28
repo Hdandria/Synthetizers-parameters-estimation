@@ -210,6 +210,7 @@ def worker_generate_samples(
 
 
 import pickle
+from src.data.vst.core import _enforce_minimal_audible_params, set_params
 
 def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None) -> list[dict[str, float]]:
     cache_path = Path(preset_dir) / "presets_cache.pkl"
@@ -234,12 +235,22 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None) -> li
     if limit:
         files = files[:limit]
     
+    
+    
     for p in tqdm(files, desc="Loading presets"):
         try:
             params = convert_vital_preset_to_params(str(p), plugin)
+            
             if params:
+                set_params(plugin, params)
                 params = _enforce_minimal_audible_params(plugin, params)
-                presets.append(params)
+                set_params(plugin, params)
+                
+                full_params = {}
+                for name, param in plugin.parameters.items():
+                    full_params[name] = param.raw_value
+                                    
+                presets.append(full_params)
         except Exception as e:
             logger.warning(f"Failed to load {p}: {e}")
             
@@ -314,7 +325,9 @@ def main(
         return
 
     # 2. Prepare Output File
-    os.makedirs(os.path.dirname(data_file), exist_ok=True)
+    # Ensure directory exists if path has one
+    if os.path.dirname(data_file):
+        os.makedirs(os.path.dirname(data_file), exist_ok=True)
     
     with h5py.File(data_file, "a") as f:
         # Calculate dimensions
