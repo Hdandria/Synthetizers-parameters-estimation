@@ -1039,7 +1039,7 @@ VITAL_SIMPLE_PARAM_SPEC = ParamSpec(
 
         # Macros (1..4)
         *[
-            ContinuousParameter(name=f"macro_control_{i}", min=0.0, max=1.0)
+            ContinuousParameter(name=f"macro_{i}", min=0.0, max=1.0)
             for i in range(1, 5)
         ],
 

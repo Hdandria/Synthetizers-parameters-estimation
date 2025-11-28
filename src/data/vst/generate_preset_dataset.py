@@ -211,14 +211,31 @@ def worker_generate_samples(
 
 import pickle
 from src.data.vst.core import _enforce_minimal_audible_params, set_params
+from src.data.vst.param_spec import ParamSpec
 
-def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None) -> list[dict[str, float]]:
+def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param_spec: ParamSpec = None) -> list[dict[str, float]]:
     cache_path = Path(preset_dir) / "presets_cache.pkl"
+    # Invalidate cache if we are debugging or if spec changed (though cache stores full params)
+    # For now, let's trust cache if it exists, BUT we should validate it against spec if provided.
+    
     if cache_path.exists():
         logger.info(f"Loading presets from cache: {cache_path}")
         with open(cache_path, "rb") as f:
             presets = pickle.load(f)
         logger.info(f"Loaded {len(presets)} presets from cache.")
+        
+        # Validate against spec if provided
+        if param_spec:
+            logger.info("Validating cached presets against param_spec...")
+            for i, p in enumerate(presets):
+                missing = [k for k in param_spec.synth_param_names if k not in p]
+                if missing:
+                    logger.error(f"Cached preset {i} missing keys: {missing[:5]}...")
+                    # If cache is bad, we should probably ignore it and reload.
+                    # But for now, let's just warn or error.
+                    # actually, let's raise to stop bad generation.
+                    raise ValueError(f"Cached preset {i} missing keys: {missing}")
+        
         if limit:
             return presets[:limit]
         return presets
@@ -236,9 +253,9 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None) -> li
         files = files[:limit]
     
     
-    
     for p in tqdm(files, desc="Loading presets"):
         try:
+            # 1. Convert preset to params dict
             params = convert_vital_preset_to_params(str(p), plugin)
             
             if params:
@@ -246,10 +263,23 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None) -> li
                 params = _enforce_minimal_audible_params(plugin, params)
                 set_params(plugin, params)
                 
+                # 4. Read back ALL parameters from plugin
                 full_params = {}
                 for name, param in plugin.parameters.items():
                     full_params[name] = param.raw_value
-                                    
+                
+                # Validate against spec if provided
+                if param_spec:
+                    missing = [k for k in param_spec.synth_param_names if k not in full_params]
+                    if missing:
+                        logger.error(f"Preset {p} loaded but missing keys in plugin state: {missing}")
+                        # If missing, try to fill with default 0.5 or skip?
+                        # If it's missing from plugin.parameters, it means the plugin doesn't expose it.
+                        # This is critical.
+                        # We can try to fill it with 0.5 to allow continuation, but warn.
+                        for k in missing:
+                            full_params[k] = 0.5
+                        
                 presets.append(full_params)
         except Exception as e:
             logger.warning(f"Failed to load {p}: {e}")
@@ -318,10 +348,10 @@ def main(
 ):
     spec = param_specs[param_spec]
     
-    # 1. Load all presets into memory
-    base_presets = load_all_presets(preset_dir, plugin_path, limit=limit_presets)
-    if not base_presets:
-        logger.error("No presets loaded! Exiting.")
+    # 1. Load Presets
+    presets = load_all_presets(preset_dir, plugin_path, limit_presets, param_spec=spec)
+    if not presets:
+        logger.error("No presets found!")
         return
 
     # 2. Prepare Output File
@@ -375,7 +405,7 @@ def main(
             p = multiprocessing.Process(
                 target=worker_generate_samples,
                 args=(
-                    i, indices, plugin_path, base_presets, sample_rate, channels,
+                    i, indices, plugin_path, presets, sample_rate, channels,
                     velocity, signal_duration_seconds, min_loudness, spec,
                     perturbation_variance, w_file, progress_queue
                 )
