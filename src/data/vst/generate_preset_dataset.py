@@ -314,6 +314,8 @@ def main(
         return
 
     # 2. Prepare Output File
+    os.makedirs(os.path.dirname(data_file), exist_ok=True)
+    
     with h5py.File(data_file, "a") as f:
         # Calculate dimensions
         n_samples = int(sample_rate * signal_duration_seconds)
