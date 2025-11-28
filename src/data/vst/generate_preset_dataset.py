@@ -215,6 +215,8 @@ from src.data.vst.param_spec import ParamSpec
 
 def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param_spec: ParamSpec = None) -> list[dict[str, float]]:
     cache_path = Path(preset_dir) / "presets_cache.pkl"
+    presets = []
+    
     # Invalidate cache if we are debugging or if spec changed (though cache stores full params)
     # For now, let's trust cache if it exists, BUT we should validate it against spec if provided.
     
@@ -227,30 +229,39 @@ def load_all_presets(preset_dir: str, plugin_path: str, limit: int = None, param
         # Validate against spec if provided
         if param_spec:
             logger.info("Validating cached presets against param_spec...")
+            valid_cache = True
             for i, p in enumerate(presets):
                 missing = [k for k in param_spec.synth_param_names if k not in p]
                 if missing:
-                    logger.error(f"Cached preset {i} missing keys: {missing[:5]}...")
-                    # If cache is bad, we should probably ignore it and reload.
-                    # But for now, let's just warn or error.
-                    # actually, let's raise to stop bad generation.
-                    raise ValueError(f"Cached preset {i} missing keys: {missing}")
+                    logger.warning(f"Cached preset {i} missing keys: {missing[:5]}... Invalidating cache.")
+                    valid_cache = False
+                    break
+            
+            if not valid_cache:
+                presets = [] # Clear presets to force reload
+                # We don't return here, we let it fall through to loading from files
+            else:
+                if limit:
+                    return presets[:limit]
+                return presets
+        else:
+             if limit:
+                return presets[:limit]
+             return presets
+
+    # If we are here, either cache didn't exist or was invalid
+    if not presets:
+        logger.info(f"Loading all presets from {preset_dir}...")
+        plugin = load_plugin(plugin_path)
         
+        presets = []
+        files = list(Path(preset_dir).glob("*.vital"))
+        
+        # Sort for determinism
+        files.sort()
+
         if limit:
-            return presets[:limit]
-        return presets
-
-    logger.info(f"Loading all presets from {preset_dir}...")
-    plugin = load_plugin(plugin_path)
-    
-    presets = []
-    files = list(Path(preset_dir).glob("*.vital"))
-    
-    # Sort for determinism
-    files.sort()
-
-    if limit:
-        files = files[:limit]
+            files = files[:limit]
     
     
     for p in tqdm(files, desc="Loading presets"):
