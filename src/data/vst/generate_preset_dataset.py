@@ -171,19 +171,19 @@ def worker_generate_samples(
             "audio",
             shape=(num_samples, channels, n_samples),
             dtype=np.float16,
-            compression=hdf5plugin.Blosc2(),
+            **hdf5plugin.Blosc2(),
         )
         mel_dataset = worker_file.create_dataset(
             "mel_spec",
             shape=(num_samples, 2, 128, mel_frames),
             dtype=np.float32,
-            compression=hdf5plugin.Blosc2(),
+            **hdf5plugin.Blosc2(),
         )
         param_dataset = worker_file.create_dataset(
             "param_array",
             shape=(num_samples, len(param_spec)),
             dtype=np.float32,
-            compression=hdf5plugin.Blosc2(),
+            **hdf5plugin.Blosc2(),
         )
 
         for i, sample_idx in enumerate(sample_indices):
@@ -368,9 +368,9 @@ def main(
         if "mel_spec" in f: del f["mel_spec"]
         if "param_array" in f: del f["param_array"]
 
-        f.create_dataset("audio", (num_samples, channels, n_samples), dtype=np.float16, compression=hdf5plugin.Blosc2())
-        f.create_dataset("mel_spec", (num_samples, 2, 128, mel_frames), dtype=np.float32, compression=hdf5plugin.Blosc2())
-        f.create_dataset("param_array", (num_samples, len(spec)), dtype=np.float32, compression=hdf5plugin.Blosc2())
+        f.create_dataset("audio", (num_samples, channels, n_samples), dtype=np.float16, **hdf5plugin.Blosc2())
+        f.create_dataset("mel_spec", (num_samples, 2, 128, mel_frames), dtype=np.float32, **hdf5plugin.Blosc2())
+        f.create_dataset("param_array", (num_samples, len(spec)), dtype=np.float32, **hdf5plugin.Blosc2())
 
         # Attributes
         f["audio"].attrs.update({
