@@ -22,6 +22,13 @@ RUN apt-get update && apt-get install -y \
     libsndfile1-dev \
     libasound2-dev \
     portaudio19-dev \
+    libgl1 \
+    libx11-6 \
+    libxext6 \
+    libice6 \
+    libsm6 \
+    libfreetype6 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv awscli
