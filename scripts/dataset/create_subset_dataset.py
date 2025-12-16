@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import click
@@ -44,8 +45,17 @@ def main(
     val_indices = parse_shards(val_shards)
     test_indices = parse_shards(test_shards)
 
-    # Get all shard files
-    all_shard_files = sorted(list(source_root.glob("shard-*.h5")))
+    # Get all shard files (try both naming conventions)
+    all_shard_files = list(source_root.glob("shard_*.h5"))
+    if not all_shard_files:
+        all_shard_files = list(source_root.glob("shard-*.h5"))
+    
+    # Sort numerically by shard number (not alphabetically)
+    def extract_shard_number(path):
+        match = re.search(r'shard[_-](\d+)\.h5', path.name)
+        return int(match.group(1)) if match else 0
+    
+    all_shard_files = sorted(all_shard_files, key=extract_shard_number)
 
     splits = {
         "train": [all_shard_files[i] for i in train_indices],
