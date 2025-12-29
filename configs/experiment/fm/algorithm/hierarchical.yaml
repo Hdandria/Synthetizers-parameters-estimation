@@ -1,6 +1,0 @@
-# @package _global_
-
-data:
-  algorithm: hierarchical
-
-out_dim: 12

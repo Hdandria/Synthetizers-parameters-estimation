@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Tuple
 
 import hydra
 import rootutils
-import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
@@ -41,14 +40,38 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 @task_wrapper
-def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Evaluates given checkpoint on a datamodule testset.
+def evaluate(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Evaluate a trained model checkpoint on test/validation data.
 
-    This method is wrapped in optional @task_wrapper decorator, that controls the behavior during
-    failure. Useful for multiruns, saving info about the crash, etc.
+    This function loads a pre-trained model from a checkpoint and evaluates it on
+    the specified dataset. It supports different evaluation modes including testing,
+    validation, and prediction generation.
 
-    :param cfg: DictConfig configuration composed by Hydra.
-    :return: Tuple[dict, dict] with metrics and dict with all instantiated objects.
+    Args:
+        cfg: Hydra configuration dictionary containing:
+            - ckpt_path: Path to the model checkpoint file
+            - data: Data module configuration
+            - model: Model architecture configuration
+            - trainer: Trainer configuration
+            - mode: Evaluation mode ('test', 'val', or 'predict')
+
+    Returns:
+        Tuple containing:
+            - Dictionary of evaluation metrics
+            - Dictionary of all instantiated objects
+
+    Raises:
+        AssertionError: If ckpt_path is not provided in the configuration.
+
+    Example:
+        ```python
+        # Evaluate on test set
+        metrics, objects = evaluate(cfg)
+
+        # Access evaluation results
+        test_metrics = metrics
+        model = objects['model']
+        ```
     """
     assert cfg.ckpt_path
 
@@ -59,15 +82,13 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
     log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = instantiate_callbacks(cfg.get("callbacks"))
+    callbacks: list[Callback] = instantiate_callbacks(cfg.get("callbacks"))
 
     log.info("Instantiating loggers...")
-    logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
+    logger: list[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(
-        cfg.trainer, logger=logger, callbacks=callbacks
-    )
+    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger, callbacks=callbacks)
 
     object_dict = {
         "cfg": cfg,
@@ -108,9 +129,28 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
 def main(cfg: DictConfig) -> None:
-    """Main entry point for evaluation.
+    """Main entry point for model evaluation.
 
-    :param cfg: DictConfig configuration composed by Hydra.
+    This function serves as the primary entry point for evaluating trained models.
+    It uses Hydra for configuration management and supports different evaluation
+    modes including testing, validation, and prediction generation.
+
+    Args:
+        cfg: Hydra configuration dictionary. The configuration is automatically
+            composed from files in the configs/ directory. Must include ckpt_path
+            pointing to a valid model checkpoint.
+
+    Example:
+        ```bash
+        # Evaluate on test set
+        python src/eval.py ckpt_path=path/to/checkpoint.ckpt
+
+        # Evaluate on validation set
+        python src/eval.py ckpt_path=path/to/checkpoint.ckpt mode=val
+
+        # Generate predictions
+        python src/eval.py ckpt_path=path/to/checkpoint.ckpt mode=predict
+        ```
     """
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)

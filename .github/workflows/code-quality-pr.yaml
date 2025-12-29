@@ -4,11 +4,11 @@
 # Inspired by the sktime library:
 # https://github.com/alan-turing-institute/sktime/blob/main/.github/workflows/test.yml
 
-name: Code Quality PR
+name: Code Quality
 
 on:
   pull_request:
-    branches: [main, "release/*", "dev"]
+    branches: [main, "release/*", "dev", "dev/docker"]
 
 jobs:
   code-quality:
@@ -16,14 +16,22 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
 
       - name: Find modified files
         id: file_changes
-        uses: trilom/file-changes-action@v1.2.4
+        uses: trilom/file-changes-action@v1.2.3
         with:
           output: " "
 
@@ -31,6 +39,4 @@ jobs:
         run: echo '${{ steps.file_changes.outputs.files}}'
 
       - name: Run pre-commits
-        uses: pre-commit/action@v2.0.3
-        with:
-          extra_args: --files ${{ steps.file_changes.outputs.files}}
+        run: uv run pre-commit run --files ${{ steps.file_changes.outputs.files}}

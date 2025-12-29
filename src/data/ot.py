@@ -31,7 +31,7 @@ def _hungarian_match(noise: torch.Tensor, params: torch.Tensor, *args):
     return tuple(return_values)
 
 
-def concatenate(list_of_arrays: Union[torch.Tensor, np.ndarray]):
+def concatenate(list_of_arrays: torch.Tensor | np.ndarray):
     if isinstance(list_of_arrays[0], torch.Tensor):
         return torch.cat(list_of_arrays, dim=0)
     else:
@@ -39,7 +39,7 @@ def concatenate(list_of_arrays: Union[torch.Tensor, np.ndarray]):
         return torch.from_numpy(x)
 
 
-def stack(list_of_arrays: Union[torch.Tensor, np.ndarray]):
+def stack(list_of_arrays: torch.Tensor | np.ndarray):
     if isinstance(list_of_arrays[0], torch.Tensor):
         return torch.stack(list_of_arrays, dim=0)
     else:
@@ -48,7 +48,7 @@ def stack(list_of_arrays: Union[torch.Tensor, np.ndarray]):
 
 
 def _collate_tuple(batch):
-    sins, params, sin_fn = zip(*batch)
+    sins, params, sin_fn = zip(*batch, strict=False)
     sins = concatenate(sins)
     params = concatenate(params)
     noise = torch.randn_like(params)
@@ -86,9 +86,7 @@ def regular_collate_fn(batch):
     elif isinstance(item, dict):
         fn = _collate_dict
     else:
-        raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(item)}"
-        )
+        raise NotImplementedError(f"Expected tuple or dict for batch type, got {type(item)}")
 
     return fn(batch)
 
@@ -124,8 +122,6 @@ def ot_collate_fn(batch):
     elif isinstance(item, dict):
         fn = _ot_collate_dict
     else:
-        raise NotImplementedError(
-            f"Expected tuple or dict for batch type, got {type(item)}"
-        )
+        raise NotImplementedError(f"Expected tuple or dict for batch type, got {type(item)}")
 
     return fn(batch)

@@ -1,0 +1,20 @@
+# @package _global_
+
+defaults:
+  - flow_multi/base_full
+  - _self_
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: model_reduced_50
+
+# Model configuration
+model:
+  encoder:
+    d_model: 256
+    n_heads: 4
+    n_layers: 4
+  vector_field:
+    d_model: 256
+    num_heads: 4
+    num_layers: 4

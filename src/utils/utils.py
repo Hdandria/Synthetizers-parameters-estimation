@@ -1,6 +1,7 @@
 import warnings
+from collections.abc import Callable
 from importlib.util import find_spec
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from lightning import LightningModule
@@ -13,8 +14,11 @@ log = pylogger.RankedLogger(__name__, rank_zero_only=True)
 
 
 def register_resolvers() -> None:
-    OmegaConf.register_new_resolver("mul", lambda x, y: x * y)
-    OmegaConf.register_new_resolver("div", lambda x, y: int(x) // int(y))
+    """Register OmegaConf resolvers, avoiding duplicates."""
+    if not OmegaConf.has_resolver("mul"):
+        OmegaConf.register_new_resolver("mul", lambda x, y: x * y)
+    if not OmegaConf.has_resolver("div"):
+        OmegaConf.register_new_resolver("div", lambda x, y: int(x) // int(y))
 
 
 def extras(cfg: DictConfig) -> None:
@@ -48,9 +52,7 @@ def extras(cfg: DictConfig) -> None:
         rich_utils.print_config_tree(cfg, resolve=True, save_to_file=True)
 
     if precision := cfg.extras.get("float32_matmul_precision", False):
-        log.info(
-            "Enabling float32 matmul precision! <cfg.extras.float32_matmul_precision=True>"
-        )
+        log.info("Enabling float32 matmul precision! <cfg.extras.float32_matmul_precision=True>")
         torch.set_float32_matmul_precision(precision)
 
 
@@ -76,7 +78,7 @@ def task_wrapper(task_func: Callable) -> Callable:
     :return: The wrapped task function.
     """
 
-    def wrap(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def wrap(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
         # execute the task
         try:
             metric_dict, object_dict = task_func(cfg=cfg)
@@ -109,9 +111,7 @@ def task_wrapper(task_func: Callable) -> Callable:
     return wrap
 
 
-def get_metric_value(
-    metric_dict: Dict[str, Any], metric_name: Optional[str]
-) -> Optional[float]:
+def get_metric_value(metric_dict: dict[str, Any], metric_name: str | None) -> float | None:
     """Safely retrieves value of the metric logged in LightningModule.
 
     :param metric_dict: A dict containing metric values.
@@ -135,7 +135,7 @@ def get_metric_value(
     return metric_value
 
 
-def watch_gradients(model: LightningModule, loggers: List[Logger]) -> None:
+def watch_gradients(model: LightningModule, loggers: list[Logger]) -> None:
     """Watches gradients during training.
 
     :param model: The model to watch gradients for.

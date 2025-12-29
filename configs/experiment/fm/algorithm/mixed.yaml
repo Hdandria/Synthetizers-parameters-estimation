@@ -1,6 +1,0 @@
-# @package _global_
-
-data:
-  algorithm: mixed
-
-out_dim: 8

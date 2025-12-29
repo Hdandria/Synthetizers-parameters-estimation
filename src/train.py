@@ -4,7 +4,6 @@ import hydra
 import lightning as L
 import rootutils
 import torch
-import torch.multiprocessing as mp
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
@@ -45,15 +44,32 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 @task_wrapper
-def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Trains the model. Can additionally evaluate on a testset, using best weights obtained during
-    training.
+def train(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Train a model using PyTorch Lightning with Hydra configuration.
 
-    This method is wrapped in optional @task_wrapper decorator, that controls the behavior during
-    failure. Useful for multiruns, saving info about the crash, etc.
+    This function instantiates and trains a model based on the provided configuration.
+    It supports training, validation, and testing phases, with comprehensive logging
+    and checkpointing. The function is wrapped with a task wrapper for error handling
+    and crash recovery.
 
-    :param cfg: A DictConfig configuration composed by Hydra.
-    :return: A tuple with metrics and dict with all instantiated objects.
+    Args:
+        cfg: Hydra configuration dictionary containing all training parameters
+            including model, data, trainer, callbacks, and logger configurations.
+
+    Returns:
+        Tuple containing:
+            - Dictionary of training and test metrics
+            - Dictionary of all instantiated objects (model, datamodule, trainer, etc.)
+
+    Example:
+        ```python
+        # Basic training
+        metrics, objects = train(cfg)
+
+        # Access trained model
+        model = objects['model']
+        trainer = objects['trainer']
+        ```
     """
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
@@ -66,15 +82,13 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
     log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = instantiate_callbacks(cfg.get("callbacks"))
+    callbacks: list[Callback] = instantiate_callbacks(cfg.get("callbacks"))
 
     log.info("Instantiating loggers...")
-    logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
+    logger: list[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(
-        cfg.trainer, callbacks=callbacks, logger=logger
-    )
+    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
 
     object_dict = {
         "cfg": cfg,
@@ -94,6 +108,33 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         watch_gradients(model, logger)
 
     if cfg.get("train"):
+        # Early visibility on dataset sizes and expected batches
+        try:
+            datamodule.setup("fit")
+            try:
+                train_samples = datamodule.train_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                train_samples = None
+            try:
+                val_samples = datamodule.val_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                val_samples = None
+            try:
+                test_samples = datamodule.test_dataset.dataset_file["audio"].shape[0]
+            except Exception:
+                test_samples = None
+            try:
+                train_batches = len(datamodule.train_dataset)
+            except Exception:
+                train_batches = None
+            log.info(
+                f"Data summary -> train_samples={train_samples} val_samples={val_samples} "
+                f"test_samples={test_samples} train_batches_per_epoch={train_batches} "
+                f"batch_size={datamodule.batch_size}"
+            )
+        except Exception as e:
+            log.warning(f"Could not pre-inspect datamodule: {e}")
+
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
 
@@ -117,11 +158,34 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="train.yaml")
-def main(cfg: DictConfig) -> Optional[float]:
-    """Main entry point for training.
+def main(cfg: DictConfig) -> float | None:
+    """Main entry point for model training.
 
-    :param cfg: DictConfig configuration composed by Hydra.
-    :return: Optional[float] with optimized metric value.
+    This function serves as the primary entry point for training models in this project.
+    It uses Hydra for configuration management and supports hyperparameter optimization
+    through the returned metric value.
+
+    Args:
+        cfg: Hydra configuration dictionary. The configuration is automatically
+            composed from files in the configs/ directory based on command-line
+            arguments and defaults.
+
+    Returns:
+        Optional float representing the optimized metric value. This is used by
+        Hydra's hyperparameter optimization features (e.g., Optuna integration).
+        Returns None if no optimized metric is specified in the configuration.
+
+    Example:
+        ```bash
+        # Train with default configuration
+        python src/train.py
+
+        # Override specific parameters
+        python src/train.py data=ksin model=ksin_flow_matching data.k=4
+
+        # Use specific experiment configuration
+        python src/train.py experiment=ksin/baseline
+        ```
     """
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)

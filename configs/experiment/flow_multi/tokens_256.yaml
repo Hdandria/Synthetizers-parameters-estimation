@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - flow_multi/base_full
+  - _self_
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: tokens_256
+
+# Model configuration
+model:
+  vector_field:
+    projection:
+      num_tokens: 256

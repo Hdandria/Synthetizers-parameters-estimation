@@ -18,7 +18,6 @@ def cfg_train_global() -> DictConfig:
     with initialize(version_base="1.3", config_path="../configs"):
         cfg = compose(config_name="train.yaml", return_hydra_config=True, overrides=[])
 
-        # set defaults for all tests
         with open_dict(cfg):
             cfg.paths.root_dir = str(rootutils.find_root(indicator=".project-root"))
             cfg.trainer.max_epochs = 1
@@ -28,10 +27,16 @@ def cfg_train_global() -> DictConfig:
             cfg.trainer.accelerator = "cpu"
             cfg.trainer.devices = 1
             cfg.data.num_workers = 0
-            cfg.data.pin_memory = False
+            if "pin_memory" in cfg.data:
+                del cfg.data["pin_memory"]
+            cfg.data.fake = True
+            cfg.data.use_saved_mean_and_variance = False
+            cfg.model.num_params = 189
+            cfg.model.vector_field.projection.num_params = 189
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None
+            cfg.callbacks = {}
 
     return cfg
 
@@ -45,7 +50,6 @@ def cfg_eval_global() -> DictConfig:
     with initialize(version_base="1.3", config_path="../configs"):
         cfg = compose(config_name="eval.yaml", return_hydra_config=True, overrides=["ckpt_path=."])
 
-        # set defaults for all tests
         with open_dict(cfg):
             cfg.paths.root_dir = str(rootutils.find_root(indicator=".project-root"))
             cfg.trainer.max_epochs = 1
@@ -53,10 +57,16 @@ def cfg_eval_global() -> DictConfig:
             cfg.trainer.accelerator = "cpu"
             cfg.trainer.devices = 1
             cfg.data.num_workers = 0
-            cfg.data.pin_memory = False
+            if "pin_memory" in cfg.data:
+                del cfg.data["pin_memory"]
+            cfg.data.fake = True
+            cfg.data.use_saved_mean_and_variance = False
+            cfg.model.num_params = 189
+            cfg.model.vector_field.projection.num_params = 189
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None
+            cfg.callbacks = {}
 
     return cfg
 

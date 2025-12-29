@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - flow_multi/base_full
+  - _self_
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: dataset_100k
+
+# Data configuration
+data:
+  dataset_root: /workspace/datasets/surge-100k
+
+# Trainer configuration
+trainer:
+  min_steps: 50000
+  max_steps: 50000

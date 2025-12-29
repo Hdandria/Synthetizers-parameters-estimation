@@ -1,7 +1,8 @@
 import _thread
 import threading
 import time
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
+from typing import Optional, Tuple
 
 import mido
 import numpy as np
@@ -11,10 +12,8 @@ from pedalboard.io import AudioFile
 
 
 def _call_with_interrupt(fn: Callable, sleep_time: float = 2.0):
-    """
-    Calls the function fn on the main thread, while another thread
-    sends a KeyboardInterrupt (SIGINT) to the main thread.
-    """
+    """Calls the function fn on the main thread, while another thread sends a KeyboardInterrupt
+    (SIGINT) to the main thread."""
 
     def send_interrupt():
         # Brief sleep so that fn starts before we send the interrupt
@@ -42,7 +41,7 @@ def load_plugin(plugin_path: str) -> VST3Plugin:
     p = VST3Plugin(plugin_path)
     logger.info(f"Plugin {plugin_path} loaded")
     logger.info("Preparing plugin for preset load...")
-    _prepare_plugin(p)
+    # _prepare_plugin(p) # NOTE: commented out to avoid GUI
     logger.info("Plugin ready")
     return p
 
@@ -55,7 +54,13 @@ def load_preset(plugin: VST3Plugin, preset_path: str) -> None:
 
 def set_params(plugin: VST3Plugin, params: dict[str, float]) -> None:
     for k, v in params.items():
-        plugin.parameters[k].raw_value = v
+        try:
+            plugin.parameters[k].raw_value = v
+        except KeyError:
+            logger.warning(
+                f"Parameter '{k}' not found in plugin. Available parameters: {list(plugin.parameters.keys())}"
+            )
+            raise
 
 
 def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -> None:
@@ -68,11 +73,11 @@ def render_params(
     params: dict[str, float],
     midi_note: int,
     velocity: int,
-    note_start_and_end: Tuple[float, float],
+    note_start_and_end: tuple[float, float],
     signal_duration_seconds: float,
     sample_rate: float,
     channels: int,
-    preset_path: Optional[str] = None,
+    preset_path: str | None = None,
 ) -> np.ndarray:
     if preset_path is not None:
         load_preset(plugin, preset_path)

@@ -1,5 +1,4 @@
 import random
-from itertools import chain
 from typing import Any, List, Literal, Optional, Tuple
 
 import numpy as np
@@ -25,9 +24,9 @@ class CategoricalParameter(Parameter):
     def __init__(
         self,
         name: str,
-        values: List[Any],
-        raw_values: Optional[List[Any]] = None,
-        weights: Optional[List[float]] = None,
+        values: list[Any],
+        raw_values: list[Any] | None = None,
+        weights: list[float] | None = None,
         encoding: Literal["scalar", "onehot"] = "scalar",
     ):
         super().__init__(name)
@@ -42,9 +41,7 @@ class CategoricalParameter(Parameter):
             raw_values = [i / (n - 1) for i in range(n)]
 
         if weights is not None:
-            assert len(values) == len(
-                weights
-            ), "values and weights must have the same length"
+            assert len(values) == len(weights), "values and weights must have the same length"
 
         else:
             weights = [1.0] * len(values)
@@ -193,13 +190,11 @@ class ContinuousParameter(Parameter):
         return self.min + encoded.item() * (self.max - self.min)
 
     def __repr__(self):
-        return (
-            f'ContinuousParameter(name="{self.name}", min={self.min}, max={self.max})'
-        )
+        return f'ContinuousParameter(name="{self.name}", min={self.min}, max={self.max})'
 
 
 class NoteDurationParameter(Parameter):
-    """A special parameter for sampling note durations"""
+    """A special parameter for sampling note durations."""
 
     def __init__(self, name: str, max_note_duration_seconds: float):
         super().__init__(name)
@@ -208,25 +203,25 @@ class NoteDurationParameter(Parameter):
     def __len__(self):
         return 2
 
-    def sample(self) -> Tuple[float, float]:
+    def sample(self) -> tuple[float, float]:
         start, end = np.sort(
             np.random.uniform(0.0, self.max_note_duration_seconds, size=2)
         ).tolist()
 
         return start, end
 
-    def encode(self, raw_value: Tuple[float, float]) -> np.ndarray:
+    def encode(self, raw_value: tuple[float, float]) -> np.ndarray:
         return np.array(raw_value) / self.max_note_duration_seconds
 
-    def decode(self, encoded: np.ndarray) -> Tuple[float, float]:
+    def decode(self, encoded: np.ndarray) -> tuple[float, float]:
         return tuple(encoded * self.max_note_duration_seconds)
 
 
 class ParamSpec:
     def __init__(
         self,
-        synth_params: List[Parameter],
-        note_params: List[Parameter],
+        synth_params: list[Parameter],
+        note_params: list[Parameter],
     ):
         self.synth_params = synth_params
         self.note_params = note_params
@@ -242,7 +237,7 @@ class ParamSpec:
     def __len__(self):
         return self.synth_param_length + self.note_param_length
 
-    def sample(self) -> Tuple[dict[str, float], dict[str, float]]:
+    def sample(self) -> tuple[dict[str, float], dict[str, float]]:
         synth_param_dict = {p.name: p.sample() for p in self.synth_params}
         note_param_dict = {p.name: p.sample() for p in self.note_params}
 
@@ -259,7 +254,7 @@ class ParamSpec:
 
         return np.concatenate((synth_params, note_params))
 
-    def decode(self, params: np.ndarray) -> Tuple[dict[str, float], dict[str, float]]:
+    def decode(self, params: np.ndarray) -> tuple[dict[str, float], dict[str, float]]:
         synth_params_to_process = [(p, len(p)) for p in self.synth_params]
         note_params_to_process = [(p, len(p)) for p in self.note_params]
 
@@ -280,13 +275,13 @@ class ParamSpec:
         return synth_params, note_params
 
     @property
-    def synth_param_names(self) -> List[str]:
+    def synth_param_names(self) -> list[str]:
         return [p.name for p in self.synth_params]
 
     @property
-    def note_param_names(self) -> List[str]:
+    def note_param_names(self) -> list[str]:
         return [p.name for p in self.note_params]
 
     @property
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         return self.synth_param_names + self.note_param_names

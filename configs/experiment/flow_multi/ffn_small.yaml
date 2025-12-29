@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - flow_multi/base_full
+  - _self_
+
+# Experiment metadata
+experiment_name: flow_multi
+run_name: ffn_small
+
+# Model configuration
+model:
+  vector_field:
+    d_ff: 256
