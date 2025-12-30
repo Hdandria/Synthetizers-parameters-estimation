@@ -7,11 +7,12 @@
 #
 # Example:
 #   ./scripts/eval/evaluate_locally.sh \
-#     ./outputs/evaluations/dataset_50k_80k-2025-11-04_12-01-54/checkpoints/last.ckpt \
-#     flow_multi/dataset_50k_80k \
+#     ./outputs/vital_100k_last.ckpt \
+#     flow_multi/vital_100k_200k \
 #     test \
 #     ./datasets/surge-50k
 ################################################################################
+
 set -euo pipefail
 
 # Arguments

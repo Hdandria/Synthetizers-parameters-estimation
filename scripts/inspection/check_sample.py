@@ -12,15 +12,15 @@ def check():
     with h5py.File(FILE_PATH, "r") as f:
         audio_ds = f["audio"]
         print(f"Audio shape: {audio_ds.shape}")
-        
+
         audio = audio_ds[IDX]
         print(f"Sample {IDX} shape: {audio.shape}")
         print(f"Sample {IDX} min: {np.min(audio)}, max: {np.max(audio)}")
         print(f"Sample {IDX} mean: {np.mean(audio)}")
-        
+
         if audio.size == 0:
             print("Audio array is empty!")
-        
+
         # Check if it's all zeros
         if np.all(audio == 0):
             print("Audio is all zeros.")

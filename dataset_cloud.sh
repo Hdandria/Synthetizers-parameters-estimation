@@ -16,13 +16,13 @@ SKIP_BUILD=false
 STREAM_LOGS=false
 
 # Dataset Generation Defaults
-START_SHARD=0
-NUM_SHARDS=13
+START_SHARD=12
+NUM_SHARDS=10
 SAMPLES_PER_SHARD=10000
-DATASET_NAME="vital_20k"
+DATASET_NAME="vital_100k"
 PRESET_DIR="/workspace/datasets-mount/presets/vital"
 PLUGIN_PATH="plugins/Vital.vst3"
-WORKERS=11
+WORKERS=10
 VARIANCE=0.1
 PARAM_SPEC="vital_simple"
 
