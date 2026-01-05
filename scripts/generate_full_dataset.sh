@@ -8,7 +8,7 @@ ENV_FILE="$PROJECT_ROOT/.env"
 
 # Load environment variables for AWS CLI commands
 if [ -f "$ENV_FILE" ]; then
-    echo "Loading environment variables from $ENV_F    uv run --env-file .env src/data/vst/generate_preset_dataset.py datasets/vital_1k/test.h5 10 --preset_dir data/presets/vital --num_workers 3 --plugin_path plugins/Vital.vst3 --perturbation_variance 0.1 --param_spec vital_simpleILE"
+    echo "Loading environment variables from $ENV_FILE"
     set -a
     source <(grep -v '^#' "$ENV_FILE" | grep -v '^$' | sed 's/#.*$//')
     set +a
@@ -19,19 +19,19 @@ fi
 
 # Configuration
 FIRST_SHARD=0
-LAST_SHARD=3
-SAMPLES_PER_SHARD=10
-OUTPUT_DIR="datasets/vital_1k"
-PRESET_DIR="data/presets/vital"
+LAST_SHARD=5
+SAMPLES_PER_SHARD=10000
+OUTPUT_DIR="datasets/vital_single_20k"
+PRESET_DIR="data/presets/vital_single"
 PLUGIN_PATH="plugins/Vital.vst3"
-WORKERS=3
+WORKERS=20
 VARIANCE=0.1
 PARAM_SPEC="vital_simple"
 
 # S3 Configuration (from .env)
 S3_ENDPOINT="${AWS_ENDPOINT_URL}"
 S3_REGION="${AWS_DEFAULT_REGION}"
-S3_PREFIX="datasets/test_upload"  # Prefix for organizing files in the bucket
+S3_PREFIX="datasets/vital_single_20k"  # Prefix for organizing files in the bucket
 
 # Function to upload file to S3 and delete locally
 upload_to_s3() {
@@ -40,7 +40,7 @@ upload_to_s3() {
     local s3_path="s3://${S3_BUCKET}/${S3_PREFIX}/${file_name}"
     
     echo "Uploading $file_name to S3..."
-    if aws s3 cp "$file_path" "$s3_path" \
+    if uv run aws s3 cp "$file_path" "$s3_path" \
         --endpoint-url "$S3_ENDPOINT" \
         --region "$S3_REGION"; then
         echo "✓ Upload successful: $file_name"
@@ -75,7 +75,7 @@ for i in $(seq $FIRST_SHARD $LAST_SHARD); do
     
     # Check if file already exists on S3
     S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/shard_$i.h5"
-    if aws s3 ls "$S3_PATH" --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" > /dev/null 2>&1; then
+    if uv run aws s3 ls "$S3_PATH" --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" > /dev/null 2>&1; then
         echo "Shard $i already exists on S3. Skipping..."
         continue
     fi
