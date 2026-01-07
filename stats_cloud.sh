@@ -113,7 +113,7 @@ NUM_WORKERS="${DATA_NUM_WORKERS:-8}"
 
 ovhai job run \
   --name "${JOB_NAME}" \
-  --flavor "${FLAVOR:-ai1-1-cpu}" \
+  --flavor "ai1-1-cpu" \
   --cpu "${NUM_WORKERS}" \
   --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw" \
   --env PROJECT_ROOT=/workspace \

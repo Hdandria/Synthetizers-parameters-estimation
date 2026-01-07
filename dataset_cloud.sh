@@ -117,8 +117,8 @@ echo -e "${BLUE}[*] Submitting job: ${JOB_NAME}${RESET}"
 # Note: Mounting datasets bucket as RW to save the new dataset
 ovhai job run \
   --name "${JOB_NAME}" \
-  --flavor "${FLAVOR:-ai1-1-cpu}" \
-  --cpu 12 \
+  --flavor "ai1-1-cpu" \
+  --cpu 4 \
   --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
