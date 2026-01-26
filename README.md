@@ -109,6 +109,17 @@ ovhai bucket object upload uniform-100k@s3-GRA \
 
 Builds Docker image, submits job to OVH, and streams logs.
 
+### Resuming Training
+
+To resume a training session from a checkpoint (e.g., if it reached `max_steps` or was interrupted), pass the `ckpt_path` and a higher `trainer.max_steps` as overrides:
+
+```bash
+./launch.sh <experiment> \
+  ckpt_path=/workspace/outputs/train/.../checkpoints/last.ckpt \
+  trainer.max_steps=1600000
+```
+
+*Note: In the cloud, `/workspace/outputs` is persistent, so checkpoints from previous runs are available to new jobs.*
 
 ### Monitoring
 
@@ -214,6 +225,9 @@ python scripts/dataset/test_readability.py <path>
 ./launch.sh flow_multi/<experiment>           # Cloud
 ./launch.sh flow_multi/<experiment> --local   # Local Docker
 python src/train.py experiment=flow_multi/<experiment>
+
+# Resuming Training
+./launch.sh <exp> trainer.max_steps=<new_steps> ckpt_path=<path_to_ckpt>
 
 # Monitoring
 ./scripts/ovh/list-jobs.sh

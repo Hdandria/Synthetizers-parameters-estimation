@@ -27,6 +27,6 @@ echo "Moving $number random files from $source to $destination"
 mkdir -p "$destination"
 
 # Move random files from source to destination
-find "$source" -maxdepth 1 -type f | shuf | head -n "$number" | xargs -I {} mv {} "$destination"
+find "$source" -maxdepth 1 -type f -print0 | shuf | head -n "$number" | xargs -0 -I {} mv {} "$destination"
 
 echo "Moved $number files to $destination"

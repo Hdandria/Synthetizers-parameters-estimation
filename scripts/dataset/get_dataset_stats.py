@@ -39,6 +39,42 @@ def get_shard_files(dataset_dir):
     return sorted(shard_files, key=extract_shard_number)
 
 
+def get_vds_source_files(vds_file):
+    """Extract source shard files from a virtual dataset."""
+    vds_path = Path(vds_file)
+    source_files = []
+    
+    with h5py.File(vds_file, "r") as f:
+        # Get the virtual dataset
+        vds = f["mel_spec"]
+        
+        # Get virtual sources
+        sources = vds.virtual_sources()
+        
+        for vs in sources:
+            # vs.file_name contains the path (relative or absolute)
+            source_path = vs.file_name
+            
+            # If relative, resolve from VDS file location
+            if not os.path.isabs(source_path):
+                source_path = vds_path.parent / source_path
+            else:
+                source_path = Path(source_path)
+            
+            # Resolve to absolute path
+            source_path = source_path.resolve()
+            
+            if source_path not in source_files:
+                source_files.append(source_path)
+    
+    # Sort numerically by shard number
+    def extract_shard_number(path):
+        match = re.search(r'shard[_-](\d+)\.h5', path.name)
+        return int(match.group(1)) if match else 0
+    
+    return sorted(source_files, key=extract_shard_number)
+
+
 def get_stats_hdf5(filename):
     dataset_name = "mel_spec"
 
@@ -47,13 +83,16 @@ def get_stats_hdf5(filename):
     # Check if this is a VDS file
     if is_virtual_dataset(filename):
         print("Detected virtual dataset - computing from source shards instead")
-        dataset_dir = Path(filename).parent
-        shard_files = get_shard_files(dataset_dir)
+        
+        # Extract source shard files from VDS
+        shard_files = get_vds_source_files(filename)
 
         if not shard_files:
-            raise ValueError(f"No shard files found in {dataset_dir}")
+            raise ValueError(f"No source shard files found in virtual dataset {filename}")
 
-        print(f"Found {len(shard_files)} shard files")
+        print(f"Found {len(shard_files)} source shard files:")
+        for sf in shard_files:
+            print(f"  {sf}")
 
         # Compute stats across all shards
         count = 0

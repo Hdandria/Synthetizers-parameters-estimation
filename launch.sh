@@ -12,6 +12,7 @@ readonly RESET='\033[0m'
 
 # Configuration
 EXPERIMENT_CONFIG=""
+EXTRA_OVERRIDES=()
 ENV_FILE=".env"
 LOCAL_MODE=false
 STREAM_LOGS=false
@@ -25,7 +26,8 @@ while [[ $# -gt 0 ]]; do
     --stream) STREAM_LOGS=true; shift ;;
     --skip-build) SKIP_BUILD=true; shift ;;
     --help)
-      echo "Usage: ./launch.sh <experiment> [OPTIONS]"
+      echo "Usage: ./launch.sh <experiment> [OVERRIDES] [OPTIONS]"
+      echo "Example: ./launch.sh vital/vital_1M_800k trainer.max_steps=1200000"
       echo "Options:"
       echo "  --local       Run locally with Docker"
       echo "  --stream      Stream logs (cloud only)"
@@ -34,7 +36,11 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *) 
-      [[ -z "$EXPERIMENT_CONFIG" ]] && EXPERIMENT_CONFIG="$1" || { echo -e "${RED}Error: Unknown argument '$1'${RESET}"; exit 1; }
+      if [[ -z "$EXPERIMENT_CONFIG" ]]; then
+        EXPERIMENT_CONFIG="$1"
+      else
+        EXTRA_OVERRIDES+=("$1")
+      fi
       shift
       ;;
   esac
@@ -63,6 +69,7 @@ DATA_NUM_WORKERS="${DATA_NUM_WORKERS:-}"
 DATASET_CHECK_VERBOSE="${DATASET_CHECK_VERBOSE:-false}"
 
 HYDRA_OVERRIDES=("experiment=${EXPERIMENT_CONFIG}" "trainer.accelerator=gpu" "trainer.devices=${NUM_GPUS}")
+HYDRA_OVERRIDES+=("${EXTRA_OVERRIDES[@]}")
 [[ -n "${DATA_NUM_WORKERS}" ]] && HYDRA_OVERRIDES+=("data.num_workers=${DATA_NUM_WORKERS}")
 
 # Helper: Extract dataset root from config
