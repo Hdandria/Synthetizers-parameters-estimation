@@ -82,7 +82,7 @@ EVAL_CMD="uv run python src/eval.py \
     model.compile=false \
     trainer.accelerator=gpu \
     trainer.precision=16-mixed \
-    +trainer.limit_predict_batches=6 \
+    +trainer.limit_predict_batches=10 \
     data.num_workers=6"
 echo "Running: $EVAL_CMD"
 eval "$EVAL_CMD"

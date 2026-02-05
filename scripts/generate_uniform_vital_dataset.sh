@@ -89,7 +89,8 @@ for i in $(seq $FIRST_SHARD $LAST_SHARD); do
         --preset_path "$BASE_PRESET" \
         --num_workers $WORKERS \
         --plugin_path "$PLUGIN_PATH" \
-        --param_spec "$PARAM_SPEC"
+        --param_spec "$PARAM_SPEC" \
+        --audible_bias
         
     echo "Shard $i completed."
     

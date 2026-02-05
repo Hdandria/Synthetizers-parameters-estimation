@@ -15,16 +15,12 @@ ENV_FILE=".env"
 SKIP_BUILD=false
 STREAM_LOGS=false
 
-# Dataset Generation Defaults
-START_SHARD=12
-NUM_SHARDS=10
-SAMPLES_PER_SHARD=10000
-DATASET_NAME="vital_100k"
-PRESET_DIR="/workspace/datasets-mount/presets/vital"
-PLUGIN_PATH="plugins/Vital.vst3"
-WORKERS=10
-VARIANCE=0.1
-PARAM_SPEC="vital_simple"
+# Split Creation Defaults
+SOURCE_DATASET=""
+TARGET_DATASET=""
+TRAIN_SHARDS=""
+VAL_SHARDS=""
+TEST_SHARDS=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -32,22 +28,32 @@ while [[ $# -gt 0 ]]; do
     --env) ENV_FILE="$2"; shift 2 ;;
     --skip-build) SKIP_BUILD=true; shift ;;
     --stream) STREAM_LOGS=true; shift ;;
-    --name) DATASET_NAME="$2"; shift 2 ;;
+    --source) SOURCE_DATASET="$2"; shift 2 ;;
+    --target) TARGET_DATASET="$2"; shift 2 ;;
     --tag) IMAGE_TAG="$2"; shift 2 ;;
-    --start-shard) START_SHARD="$2"; shift 2 ;;
-    --num-shards) NUM_SHARDS="$2"; shift 2 ;;
-    --samples) SAMPLES_PER_SHARD="$2"; shift 2 ;;
+    --train-shards) TRAIN_SHARDS="$2"; shift 2 ;;
+    --val-shards) VAL_SHARDS="$2"; shift 2 ;;
+    --test-shards) TEST_SHARDS="$2"; shift 2 ;;
     --help)
-      echo "Usage: ./dataset_cloud.sh [OPTIONS]"
+      echo "Usage: scripts/dataset/create_splits_cloud.sh [OPTIONS]"
       echo "Options:"
-      echo "  --name NAME       Dataset name (default: vital_20k)"
-      echo "  --tag TAG         Docker image tag (default: dataset-gen-latest)"
-      echo "  --start-shard N   Starting shard index (default: 0)"
-      echo "  --num-shards N    Number of shards to generate in this job (default: 13)"
-      echo "  --samples N       Samples per shard (default: 10000)"
-      echo "  --env FILE        Custom env file (default: .env)"
-      echo "  --skip-build      Skip Docker build"
-      echo "  --stream          Stream logs"
+      echo "  --source PATH         Source dataset path (relative to datasets/)"
+      echo "  --target PATH         Target dataset path (relative to datasets/)"
+      echo "  --train-shards LIST   Comma-separated shard indices for training (e.g., '0,1,2,3,4')"
+      echo "  --val-shards LIST     Comma-separated shard indices for validation (e.g., '5')"
+      echo "  --test-shards LIST    Comma-separated shard indices for testing (e.g., '6')"
+      echo "  --tag TAG             Docker image tag (default: splits-gen-latest)"
+      echo "  --env FILE            Custom env file (default: .env)"
+      echo "  --skip-build          Skip Docker build"
+      echo "  --stream              Stream logs"
+      echo ""
+      echo "Example:"
+      echo "  scripts/dataset/create_splits_cloud.sh \\"
+      echo "    --source vital_100k \\"
+      echo "    --target vital_20k \\"
+      echo "    --train-shards 0,1 \\"
+      echo "    --val-shards 10 \\"
+      echo "    --test-shards 11"
       exit 0
       ;;
     *) 
@@ -55,6 +61,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Validate required arguments
+[[ -z "$SOURCE_DATASET" ]] && { echo -e "${RED}Error: --source required${RESET}"; exit 1; }
+[[ -z "$TARGET_DATASET" ]] && { echo -e "${RED}Error: --target required${RESET}"; exit 1; }
+[[ -z "$TRAIN_SHARDS" && -z "$VAL_SHARDS" && -z "$TEST_SHARDS" ]] && { 
+  echo -e "${RED}Error: At least one of --train-shards, --val-shards, or --test-shards required${RESET}"; 
+  exit 1; 
+}
 
 # Load environment
 if [[ -f "$ENV_FILE" ]]; then
@@ -69,7 +83,7 @@ for var in WANDB_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_UR
   [[ -z "${!var:-}" ]] && { echo -e "${RED}Error: $var not set${RESET}"; exit 1; }
 done
 
-echo -e "${CYAN}${BOLD}>>> Launching Dataset Generation: ${DATASET_NAME}${RESET}"
+echo -e "${CYAN}${BOLD}>>> Creating Dataset Splits: ${SOURCE_DATASET} → ${TARGET_DATASET}${RESET}"
 
 # OVH Setup
 command -v ovhai &>/dev/null || { echo -e "${RED}Error: ovhai CLI not found${RESET}"; exit 1; }
@@ -98,7 +112,7 @@ else
 fi
 
 # Build & push image
-IMAGE_TAG="${IMAGE_TAG:-dataset-gen-latest}"
+IMAGE_TAG="${IMAGE_TAG:-splits-gen-latest}"
 FULL_IMAGE="${REGISTRY_URL}/synth-param-estimation:${IMAGE_TAG}"
 
 [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]] && \
@@ -111,10 +125,15 @@ if [[ "$SKIP_BUILD" == false ]]; then
 fi
 
 # Submit job
-JOB_NAME="gen-${DATASET_NAME}-$(date +%s)"
+JOB_NAME="splits-$(echo "$TARGET_DATASET" | tr '/' '-')-$(date +%s)"
 echo -e "${BLUE}[*] Submitting job: ${JOB_NAME}${RESET}"
 
-# Note: Mounting datasets bucket as RW to save the new dataset
+# Build shard arguments for the Python script
+SHARD_ARGS=""
+[[ -n "$TRAIN_SHARDS" ]] && SHARD_ARGS+=" --train-shards '$TRAIN_SHARDS'"
+[[ -n "$VAL_SHARDS" ]] && SHARD_ARGS+=" --val-shards '$VAL_SHARDS'"
+[[ -n "$TEST_SHARDS" ]] && SHARD_ARGS+=" --test-shards '$TEST_SHARDS'"
+
 ovhai job run \
   --name "${JOB_NAME}" \
   --flavor "ai1-1-cpu" \
@@ -127,43 +146,44 @@ ovhai job run \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
     
-    OUTPUT_DIR="/workspace/datasets-mount/'"${DATASET_NAME}"'"
-    mkdir -p "$OUTPUT_DIR"
+    MOUNT_BASE=/workspace/datasets-mount/datasets
+    [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
+    [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
     
-    START_SHARD='"$START_SHARD"'
-    NUM_SHARDS='"$NUM_SHARDS"'
-    END_SHARD=$((START_SHARD + NUM_SHARDS - 1))
-
-    echo "Starting dataset generation..."
-    echo "Range: Shards $START_SHARD to $END_SHARD"
-    echo "Samples per shard: '"$SAMPLES_PER_SHARD"'"
-    echo "Output directory: $OUTPUT_DIR"
+    SOURCE_PATH="${MOUNT_BASE}/'"${SOURCE_DATASET}"'"
+    TARGET_PATH="${MOUNT_BASE}/'"${TARGET_DATASET}"'"
     
-    for i in $(seq $START_SHARD $END_SHARD); do
-        SHARD_FILE="$OUTPUT_DIR/shard_$i.h5"
-        
-        if [ -f "$SHARD_FILE" ]; then
-            echo "Shard $i already exists at $SHARD_FILE. Skipping..."
-            continue
-        fi
-
-        echo "--------------------------------------------------"
-        echo "Generating shard $i ($SHARD_FILE)..."
-        echo "--------------------------------------------------"
-        
-        python src/data/vst/generate_preset_dataset.py \
-            "$SHARD_FILE" \
-            '"$SAMPLES_PER_SHARD"' \
-            --preset_dir "'"$PRESET_DIR"'" \
-            --num_workers '"$WORKERS"' \
-            --plugin_path "'"$PLUGIN_PATH"'" \
-            --perturbation_variance '"$VARIANCE"' \
-            --param_spec "'"$PARAM_SPEC"'"
-            
-        echo "Shard $i completed."
-    done
+    echo "==> Source dataset: $SOURCE_PATH"
+    echo "==> Target dataset: $TARGET_PATH"
     
-    echo "All shards processed."
+    # Verify source exists
+    if [ ! -d "$SOURCE_PATH" ]; then
+      echo "ERROR: Source dataset not found at $SOURCE_PATH"
+      exit 1
+    fi
+    
+    # List source shards
+    echo "==> Available shards in source:"
+    ls -lh "$SOURCE_PATH"/shard*.h5 || ls -lh "$SOURCE_PATH"/shard-*.h5 || true
+    
+    # Create target directory
+    mkdir -p "$TARGET_PATH"
+    
+    echo "==> Creating splits"
+    echo "Train shards: '"${TRAIN_SHARDS}"'"
+    echo "Val shards:   '"${VAL_SHARDS}"'"
+    echo "Test shards:  '"${TEST_SHARDS}"'"
+    
+    cd /workspace
+    python scripts/dataset/create_subset_dataset.py \
+      "$SOURCE_PATH" \
+      "$TARGET_PATH" \
+      '"${SHARD_ARGS}"'
+    
+    echo "==> Created splits:"
+    ls -lh "$TARGET_PATH"/*.h5
+    
+    echo "==> Done!"
   ' \
   | tee /tmp/job_output.json
 

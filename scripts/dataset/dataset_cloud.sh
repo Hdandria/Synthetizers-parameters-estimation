@@ -15,9 +15,16 @@ ENV_FILE=".env"
 SKIP_BUILD=false
 STREAM_LOGS=false
 
-# Stats Generation Defaults
-DATASET=""
-SPLIT="train"
+# Dataset Generation Defaults
+START_SHARD=12
+NUM_SHARDS=10
+SAMPLES_PER_SHARD=10000
+DATASET_NAME="vital_100k"
+PRESET_DIR="/workspace/datasets-mount/presets/vital"
+PLUGIN_PATH="plugins/Vital.vst3"
+WORKERS=10
+VARIANCE=0.1
+PARAM_SPEC="vital_simple"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -25,21 +32,22 @@ while [[ $# -gt 0 ]]; do
     --env) ENV_FILE="$2"; shift 2 ;;
     --skip-build) SKIP_BUILD=true; shift ;;
     --stream) STREAM_LOGS=true; shift ;;
-    --dataset) DATASET="$2"; shift 2 ;;
-    --split) SPLIT="$2"; shift 2 ;;
+    --name) DATASET_NAME="$2"; shift 2 ;;
     --tag) IMAGE_TAG="$2"; shift 2 ;;
+    --start-shard) START_SHARD="$2"; shift 2 ;;
+    --num-shards) NUM_SHARDS="$2"; shift 2 ;;
+    --samples) SAMPLES_PER_SHARD="$2"; shift 2 ;;
     --help)
-      echo "Usage: ./stats_cloud.sh [OPTIONS]"
+      echo "Usage: scripts/dataset/dataset_cloud.sh [OPTIONS]"
       echo "Options:"
-      echo "  --dataset PATH    Dataset path relative to datasets/ (e.g., 'vital_100k')"
-      echo "  --split NAME      Split file to compute stats from (default: 'train')"
-      echo "  --tag TAG         Docker image tag (default: stats-gen-latest)"
+      echo "  --name NAME       Dataset name (default: vital_20k)"
+      echo "  --tag TAG         Docker image tag (default: dataset-gen-latest)"
+      echo "  --start-shard N   Starting shard index (default: 0)"
+      echo "  --num-shards N    Number of shards to generate in this job (default: 13)"
+      echo "  --samples N       Samples per shard (default: 10000)"
       echo "  --env FILE        Custom env file (default: .env)"
       echo "  --skip-build      Skip Docker build"
       echo "  --stream          Stream logs"
-      echo ""
-      echo "Example:"
-      echo "  ./stats_cloud.sh --dataset vital_100k"
       exit 0
       ;;
     *) 
@@ -47,9 +55,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-# Validate required arguments
-[[ -z "$DATASET" ]] && { echo -e "${RED}Error: --dataset required${RESET}"; exit 1; }
 
 # Load environment
 if [[ -f "$ENV_FILE" ]]; then
@@ -64,7 +69,7 @@ for var in WANDB_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_UR
   [[ -z "${!var:-}" ]] && { echo -e "${RED}Error: $var not set${RESET}"; exit 1; }
 done
 
-echo -e "${CYAN}${BOLD}>>> Computing Dataset Stats: ${DATASET}/${SPLIT}.h5${RESET}"
+echo -e "${CYAN}${BOLD}>>> Launching Dataset Generation: ${DATASET_NAME}${RESET}"
 
 # OVH Setup
 command -v ovhai &>/dev/null || { echo -e "${RED}Error: ovhai CLI not found${RESET}"; exit 1; }
@@ -93,7 +98,7 @@ else
 fi
 
 # Build & push image
-IMAGE_TAG="${IMAGE_TAG:-stats-gen-latest}"
+IMAGE_TAG="${IMAGE_TAG:-dataset-gen-latest}"
 FULL_IMAGE="${REGISTRY_URL}/synth-param-estimation:${IMAGE_TAG}"
 
 [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]] && \
@@ -106,57 +111,59 @@ if [[ "$SKIP_BUILD" == false ]]; then
 fi
 
 # Submit job
-JOB_NAME="stats-$(echo "$DATASET" | tr '/' '-')-$(date +%s)"
+JOB_NAME="gen-${DATASET_NAME}-$(date +%s)"
 echo -e "${BLUE}[*] Submitting job: ${JOB_NAME}${RESET}"
 
-NUM_WORKERS="${DATA_NUM_WORKERS:-8}"
-
+# Note: Mounting datasets bucket as RW to save the new dataset
 ovhai job run \
   --name "${JOB_NAME}" \
   --flavor "ai1-1-cpu" \
-  --cpu "${NUM_WORKERS}" \
+  --cpu 4 \
   --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
-  --env HDF5_VDS_PREFIX=/workspace/datasets-mount/datasets \
   --unsecure-http \
   --output json \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
     
-    MOUNT_BASE=/workspace/datasets-mount/datasets
-    [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
-    [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
+    OUTPUT_DIR="/workspace/datasets-mount/'"${DATASET_NAME}"'"
+    mkdir -p "$OUTPUT_DIR"
     
-    DATASET_PATH="${MOUNT_BASE}/'"${DATASET}"'"
-    SPLIT_FILE="${DATASET_PATH}/'"${SPLIT}"'.h5"
+    START_SHARD='"$START_SHARD"'
+    NUM_SHARDS='"$NUM_SHARDS"'
+    END_SHARD=$((START_SHARD + NUM_SHARDS - 1))
+
+    echo "Starting dataset generation..."
+    echo "Range: Shards $START_SHARD to $END_SHARD"
+    echo "Samples per shard: '"$SAMPLES_PER_SHARD"'"
+    echo "Output directory: $OUTPUT_DIR"
     
-    echo "==> Dataset path: $DATASET_PATH"
-    echo "==> Split file: $SPLIT_FILE"
+    for i in $(seq $START_SHARD $END_SHARD); do
+        SHARD_FILE="$OUTPUT_DIR/shard_$i.h5"
+        
+        if [ -f "$SHARD_FILE" ]; then
+            echo "Shard $i already exists at $SHARD_FILE. Skipping..."
+            continue
+        fi
+
+        echo "--------------------------------------------------"
+        echo "Generating shard $i ($SHARD_FILE)..."
+        echo "--------------------------------------------------"
+        
+        python src/data/vst/generate_preset_dataset.py \
+            "$SHARD_FILE" \
+            '"$SAMPLES_PER_SHARD"' \
+            --preset_dir "'"$PRESET_DIR"'" \
+            --num_workers '"$WORKERS"' \
+            --plugin_path "'"$PLUGIN_PATH"'" \
+            --perturbation_variance '"$VARIANCE"' \
+            --param_spec "'"$PARAM_SPEC"'"
+            
+        echo "Shard $i completed."
+    done
     
-    # Verify dataset exists
-    if [ ! -d "$DATASET_PATH" ]; then
-      echo "ERROR: Dataset not found at $DATASET_PATH"
-      exit 1
-    fi
-    
-    # List files
-    echo "==> Files in dataset:"
-    ls -lh "$DATASET_PATH"/*.h5 || true
-    
-    # Verify split file exists
-    if [ ! -f "$SPLIT_FILE" ]; then
-      echo "ERROR: Split file not found at $SPLIT_FILE"
-      exit 1
-    fi
-    
-    cd /workspace
-    python scripts/dataset/get_dataset_stats.py "$SPLIT_FILE"
-    
-    echo "==> Stats file created:"
-    ls -lh "$DATASET_PATH"/stats.npz
-    
-    echo "==> Done!"
+    echo "All shards processed."
   ' \
   | tee /tmp/job_output.json
 
