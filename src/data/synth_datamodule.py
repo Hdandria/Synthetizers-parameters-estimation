@@ -80,7 +80,7 @@ class SynthDataset(torch.utils.data.Dataset):
         return self.dataset_file["audio"].shape[0] // self.batch_size
 
     def _get_fake_item(self):
-        audio = torch.randn(self.batch_size, 2, 44100 * 4) if not self.read_audio else None
+        audio = torch.randn(self.batch_size, 2, 44100 * 4) if self.read_audio else None
         mel_spec = torch.randn(self.batch_size, 2, 128, 401) if self.read_mel else None
         m2l = torch.randn(self.batch_size, 128, 42) if self.read_m2l else None
         param_array = torch.rand(self.batch_size, 189)
@@ -246,6 +246,7 @@ class SynthDataModule(LightningDataModule):
         predict_file: str | None = None,
         conditioning: Literal["mel", "m2l"] = "mel",
         val_ot: bool | None = None,
+        distill: bool = False,
     ):
         super().__init__()
 
@@ -259,6 +260,7 @@ class SynthDataModule(LightningDataModule):
         self.repeat_first_batch = repeat_first_batch
         self.predict_file = predict_file
         self.conditioning = conditioning
+        self.distill = distill
 
     def setup(self, stage: str | None = None):
         self.train_dataset = SynthDataset(
@@ -270,6 +272,7 @@ class SynthDataModule(LightningDataModule):
             repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
+            read_audio=self.distill,
         )
         self.val_dataset = SynthDataset(
             self.dataset_root / "val.h5",
@@ -280,6 +283,7 @@ class SynthDataModule(LightningDataModule):
             repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
+            read_audio=self.distill,
         )
         self.test_dataset = SynthDataset(
             self.dataset_root / "test.h5",
@@ -290,6 +294,7 @@ class SynthDataModule(LightningDataModule):
             repeat_first_batch=self.repeat_first_batch,
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
+            read_audio=self.distill,
         )
         if self.predict_file is not None:
             self.predict_dataset = SynthDataset(
