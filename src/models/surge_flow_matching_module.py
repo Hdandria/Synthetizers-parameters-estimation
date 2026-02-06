@@ -5,6 +5,8 @@ from typing import Any, Dict, Literal, Optional, Tuple
 import torch
 from lightning import LightningModule
 from lightning.pytorch.utilities import grad_norm
+from transformers import ClapModel, ClapProcessor
+import torchaudio
 
 
 def call_with_cfg(
@@ -54,6 +56,8 @@ class SurgeFlowMatchingModule(LightningModule):
         test_cfg_strength: float = 4.0,
         compile: bool = False,
         num_params: int = 90,
+        distill: bool = False,
+        distill_weight: float = 10.0,
     ):
         super().__init__()
 
@@ -61,6 +65,24 @@ class SurgeFlowMatchingModule(LightningModule):
 
         self.encoder = encoder
         self.vector_field = vector_field
+
+        if distill:
+            self.clap = ClapModel.from_pretrained("laion/clap-htsat-fused")
+            self.clap.eval()
+            self.clap.requires_grad_(False)
+            # Remove text model to save memory
+            if hasattr(self.clap, "text_model"):
+                del self.clap.text_model
+            if hasattr(self.clap, "text_projection"):
+                del self.clap.text_projection
+            self.clap_processor = ClapProcessor.from_pretrained("laion/clap-htsat-fused")
+            self.resampler = torchaudio.transforms.Resample(44100, 48000)
+
+            # Project from encoder dim to CLAP dim (512)
+            # Assuming encoder.d_model is available. If not, we might need to pass it explicitly.
+            # Using 512 as CLAP embedding size.
+            encoder_dim = getattr(encoder, "d_model", 512)
+            self.projection = torch.nn.Linear(encoder_dim, 512)
 
     def on_train_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -111,7 +133,9 @@ class SurgeFlowMatchingModule(LightningModule):
         else:
             raise ValueError(f"Unknown conditioning {self.hparams.conditioning}")
 
-    def _train_step(self, batch: tuple[torch.Tensor, torch.Tensor], dropout_rate: float | None = None):
+    def _train_step(
+        self, batch: tuple[torch.Tensor, torch.Tensor], dropout_rate: float | None = None
+    ):
         if dropout_rate is None:
             dropout_rate = self.hparams.cfg_dropout_rate
 
@@ -142,11 +166,59 @@ class SurgeFlowMatchingModule(LightningModule):
         loss = loss * w
         loss = loss.mean()
 
+        if self.hparams.distill:
+            clap_loss = self._compute_clap_loss(batch, conditioning)
+            loss = loss + self.hparams.distill_weight * clap_loss
+            self.log("train/clap_loss", clap_loss, on_step=True, on_epoch=True, prog_bar=True)
+
         penalty = None
         if hasattr(self.vector_field, "penalty"):
             penalty = self.vector_field.penalty()
 
         return loss, penalty
+
+    def _compute_clap_loss(
+        self, batch: dict[str, torch.Tensor], conditioning_embedding: torch.Tensor
+    ) -> torch.Tensor:
+        audio = batch["audio"]  # (B, 2, L)
+
+        # 1. Resample and Preprocess Audio for CLAP
+        # Mix to mono
+        audio_mono = audio.mean(dim=1)  # (B, L)
+
+        # Resample to 48k
+        audio_48k = self.resampler(audio_mono)
+
+        # Process with CLAP processor (requires CPU numpy)
+        # Note: This CPU-GPU sync is creating a bottleneck but is safest for correctness with HF Processor
+        audio_np = audio_48k.detach().cpu().numpy()
+        inputs = self.clap_processor(
+            audio=list(audio_np), sampling_rate=48000, return_tensors="pt", padding=True
+        )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # 2. Get Teacher Embedding (CLAP)
+        with torch.no_grad():
+            outputs = self.clap.audio_model(**inputs)
+            teacher_embedding = self.clap.audio_projection(outputs.pooler_output)  # (B, 512)
+
+        # 3. Get Student Embedding (Projected Encoder Output)
+        # conditioning_embedding is (B, n_tokens, d_model) or (B, d_model)?
+        # The encoder (AudioSpectrogramTransformer) returns (B, n_tokens, d_model) usually?
+        # Let's check: vector_field takes conditioning as input.
+        # If it's a sequence, we might need to average or take the first token (CLS).
+        # AST usually has a CLS token or we can average pool.
+        # For now, let's assume we pool over time/tokens if it's 3D.
+
+        student_embedding = conditioning_embedding
+        if student_embedding.dim() == 3:
+            student_embedding = student_embedding.mean(dim=1)  # Global Average Pooling
+
+        student_projected = self.projection(student_embedding)  # (B, 512)
+
+        # 4. Compute Loss
+        loss = torch.nn.functional.mse_loss(student_projected, teacher_embedding)
+        return loss
 
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, penalty = self._train_step(batch)
