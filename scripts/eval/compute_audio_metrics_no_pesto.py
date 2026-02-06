@@ -7,7 +7,12 @@ and writes aggregated metrics to an output folder.
 import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Process, Queue
 from pathlib import Path
+
+import rootutils
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 import click
 import librosa
@@ -147,8 +152,12 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
 def compute_rms(target: np.ndarray, pred: np.ndarray) -> float:
     win_length = int(0.05 * 44100)
     hop_length = int(0.025 * 44100)
-    target_rms = librosa.feature.rms(y=target.mean(axis=0), frame_length=win_length, hop_length=hop_length)
-    pred_rms = librosa.feature.rms(y=pred.mean(axis=0), frame_length=win_length, hop_length=hop_length)
+    target_rms = librosa.feature.rms(
+        y=target.mean(axis=0), frame_length=win_length, hop_length=hop_length
+    )
+    pred_rms = librosa.feature.rms(
+        y=pred.mean(axis=0), frame_length=win_length, hop_length=hop_length
+    )
 
     target_rms = target_rms.squeeze()
     pred_rms = pred_rms.squeeze()
@@ -221,7 +230,9 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
     output_dir = Path(output_dir)
 
     sublist_length = max(1, len(audio_dirs) // num_workers)
-    sublists = [audio_dirs[i * sublist_length : (i + 1) * sublist_length] for i in range(num_workers)]
+    sublists = [
+        audio_dirs[i * sublist_length : (i + 1) * sublist_length] for i in range(num_workers)
+    ]
 
     metric_dfs = []
     with ProcessPoolExecutor(max_workers=num_workers) as executor:

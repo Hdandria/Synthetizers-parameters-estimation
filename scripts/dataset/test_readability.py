@@ -6,6 +6,9 @@ from pathlib import Path
 import h5py
 import hdf5plugin
 import numpy as np
+import rootutils
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def check_file(path: Path, max_samples: int = 5, quiet: bool = False) -> bool:
@@ -20,6 +23,7 @@ def check_file(path: Path, max_samples: int = 5, quiet: bool = False) -> bool:
         max_samples: Maximum number of samples to check
         quiet: If True, only print errors and critical info
     """
+
     def log(msg: str, force: bool = False):
         if not quiet or force:
             print(msg)

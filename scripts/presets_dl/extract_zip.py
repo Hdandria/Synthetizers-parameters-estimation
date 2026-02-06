@@ -1,4 +1,5 @@
 """extract vital presets from .zip .rar .7z .vitalbank archives"""
+
 import os
 import shutil
 import tempfile
@@ -8,7 +9,7 @@ import patoolib
 import rootutils
 from tqdm import tqdm
 
-root = rootutils.find_root(search_from=os.path.dirname(os.path.abspath(__file__)), indicator=".project-root")
+root = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def handle_folder(folder_path, save_path):
@@ -17,7 +18,7 @@ def handle_folder(folder_path, save_path):
     save_path.mkdir(parents=True, exist_ok=True)
 
     # Gather all files first to show a progress bar
-    files_to_process = list(folder_path.rglob('*'))
+    files_to_process = list(folder_path.rglob("*"))
     print(f"Found {len(files_to_process)} files in {folder_path}")
 
     for file_path in tqdm(files_to_process, desc="Processing files"):
@@ -33,7 +34,7 @@ def process_file(file_path: Path, save_path: Path):
     suffix = file_path.suffix.lower()
 
     # Direct .vital files
-    if suffix == '.vital':
+    if suffix == ".vital":
         try:
             dest = save_path / file_path.name
             if not dest.exists():
@@ -42,7 +43,7 @@ def process_file(file_path: Path, save_path: Path):
             pass
 
     # Archives
-    elif suffix in ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.vitalbank']:
+    elif suffix in [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".vitalbank"]:
         extract_archive(file_path, save_path)
 
 
@@ -52,7 +53,7 @@ def extract_archive(archive_path: Path, save_path: Path):
         try:
             # Handle .vitalbank by treating it as a zip
             target_path = archive_path
-            if archive_path.suffix.lower() == '.vitalbank':
+            if archive_path.suffix.lower() == ".vitalbank":
                 temp_zip = Path(temp_dir) / (archive_path.stem + ".zip")
                 shutil.copy2(archive_path, temp_zip)
                 target_path = temp_zip
@@ -60,7 +61,7 @@ def extract_archive(archive_path: Path, save_path: Path):
             patoolib.extract_archive(str(target_path), outdir=temp_dir, verbosity=-1)
 
             temp_path = Path(temp_dir)
-            for extracted_file in temp_path.rglob('*'):
+            for extracted_file in temp_path.rglob("*"):
                 if extracted_file.is_file():
                     process_file(extracted_file, save_path)
 
@@ -68,9 +69,9 @@ def extract_archive(archive_path: Path, save_path: Path):
             print(f"  Failed to extract {archive_path.name}: {e}")
 
 
-if __name__ == '__main__':
-    vital_sources_folder = root / 'data' / 'presets' / 'vital_raw'
-    vital_out_folder = root / 'data' / 'presets' / 'vital'
+if __name__ == "__main__":
+    vital_sources_folder = root / "data" / "presets" / "vital_raw"
+    vital_out_folder = root / "data" / "presets" / "vital"
 
     print(f"Source: {vital_sources_folder}")
     print(f"Dest: {vital_out_folder}")

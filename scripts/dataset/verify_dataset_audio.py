@@ -3,7 +3,10 @@ import os
 import h5py
 import hdf5plugin
 import numpy as np
+import rootutils
 import scipy.io.wavfile as wavfile
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def verify_and_export_audio(h5_path, output_dir, num_samples=10):
@@ -12,12 +15,12 @@ def verify_and_export_audio(h5_path, output_dir, num_samples=10):
         return
 
     try:
-        with h5py.File(h5_path, 'r') as f:
-            if 'audio' not in f:
+        with h5py.File(h5_path, "r") as f:
+            if "audio" not in f:
                 print("Error: 'audio' dataset not found in HDF5 file.")
                 return
 
-            audio_ds = f['audio']
+            audio_ds = f["audio"]
             print(f"Audio dataset shape: {audio_ds.shape}")
 
             num_to_read = min(num_samples, audio_ds.shape[0])
@@ -48,6 +51,7 @@ def verify_and_export_audio(h5_path, output_dir, num_samples=10):
 
     except Exception as e:
         print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     verify_and_export_audio("datasets/vital-presets-test/shard-0.h5", "debug_audio")

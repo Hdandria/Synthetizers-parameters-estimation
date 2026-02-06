@@ -18,23 +18,24 @@ import h5py
 import hdf5plugin  # Must be imported before reading compressed HDF5 files
 import matplotlib.pyplot as plt
 import numpy as np
+import rootutils
 import umap
 from loguru import logger
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from tqdm import tqdm
 
 
 def load_params_from_dataset(
-    dataset_path: str,
-    max_samples: Optional[int] = None,
-    shards: Optional[List[str]] = None
+    dataset_path: str, max_samples: Optional[int] = None, shards: Optional[List[str]] = None
 ) -> np.ndarray:
     """Load parameter arrays from HDF5 dataset.
-    
+
     Args:
         dataset_path: Path to HDF5 file or directory containing shards
         max_samples: Maximum number of samples to load (None = all)
         shards: List of shard filenames to load (for multi-shard datasets)
-        
+
     Returns:
         Array of shape (n_samples, n_params)
     """
@@ -94,17 +95,17 @@ def compute_umap(
     n_neighbors: int = 15,
     min_dist: float = 0.1,
     metric: str = "euclidean",
-    random_state: int = 42
+    random_state: int = 42,
 ) -> np.ndarray:
     """Compute UMAP embedding.
-    
+
     Args:
         params: Parameter array of shape (n_samples, n_params)
         n_neighbors: UMAP n_neighbors parameter (balance local/global structure)
         min_dist: Minimum distance between points in embedding
         metric: Distance metric to use
         random_state: Random seed
-        
+
     Returns:
         2D embedding of shape (n_samples, 2)
     """
@@ -115,7 +116,7 @@ def compute_umap(
         min_dist=min_dist,
         metric=metric,
         random_state=random_state,
-        verbose=True
+        verbose=True,
     )
     embedding = reducer.fit_transform(params)
     logger.info("UMAP computation complete")
@@ -127,10 +128,10 @@ def plot_umap_single(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot a single UMAP embedding.
-    
+
     Args:
         embedding: 2D embedding of shape (n_samples, 2)
         title: Plot title
@@ -159,10 +160,10 @@ def plot_umap_comparison(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot multiple UMAP embeddings for comparison.
-    
+
     Args:
         embeddings: Dict of {label: embedding} pairs
         title: Plot title
@@ -198,10 +199,10 @@ def plot_umap_overlay(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot multiple UMAP embeddings overlaid on the same axes.
-    
+
     Args:
         embeddings: Dict of {label: embedding} pairs
         title: Plot title
@@ -212,13 +213,7 @@ def plot_umap_overlay(
     plt.figure(figsize=(10, 8))
 
     for label, embedding in embeddings.items():
-        plt.scatter(
-            embedding[:, 0],
-            embedding[:, 1],
-            alpha=alpha,
-            s=s,
-            label=label
-        )
+        plt.scatter(embedding[:, 0], embedding[:, 1], alpha=alpha, s=s, label=label)
 
     plt.title(title)
     plt.xlabel("UMAP dimension 1")
@@ -236,72 +231,51 @@ def plot_umap_overlay(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Visualize parameter space with UMAP"
+    parser = argparse.ArgumentParser(description="Visualize parameter space with UMAP")
+    parser.add_argument(
+        "datasets", nargs="+", help="Paths to HDF5 datasets (files or directories)"
     )
     parser.add_argument(
-        "datasets",
-        nargs="+",
-        help="Paths to HDF5 datasets (files or directories)"
-    )
-    parser.add_argument(
-        "--labels",
-        nargs="+",
-        help="Labels for each dataset (default: dataset names)"
+        "--labels", nargs="+", help="Labels for each dataset (default: dataset names)"
     )
     parser.add_argument(
         "--max-samples",
         type=int,
         default=10000,
-        help="Maximum samples per dataset (default: 10000, 0=all)"
+        help="Maximum samples per dataset (default: 10000, 0=all)",
     )
     parser.add_argument(
         "--n-neighbors",
         type=int,
         default=15,
-        help="UMAP n_neighbors (default: 15, higher=more global)"
+        help="UMAP n_neighbors (default: 15, higher=more global)",
     )
     parser.add_argument(
         "--min-dist",
         type=float,
         default=0.1,
-        help="UMAP min_dist (default: 0.1, lower=tighter clusters)"
+        help="UMAP min_dist (default: 0.1, lower=tighter clusters)",
     )
     parser.add_argument(
         "--metric",
         type=str,
         default="euclidean",
         choices=["euclidean", "manhattan", "cosine", "correlation"],
-        help="Distance metric (default: euclidean)"
+        help="Distance metric (default: euclidean)",
     )
     parser.add_argument(
-        "--output-dir",
-        type=str,
-        default="outputs/umap",
-        help="Output directory for plots"
+        "--output-dir", type=str, default="outputs/umap", help="Output directory for plots"
     )
     parser.add_argument(
-        "--comparison",
-        action="store_true",
-        help="Create side-by-side comparison plot"
+        "--comparison", action="store_true", help="Create side-by-side comparison plot"
     )
     parser.add_argument(
-        "--overlay",
-        action="store_true",
-        help="Create overlay plot with all datasets"
+        "--overlay", action="store_true", help="Create overlay plot with all datasets"
     )
     parser.add_argument(
-        "--alpha",
-        type=float,
-        default=0.3,
-        help="Point transparency (default: 0.3)"
+        "--alpha", type=float, default=0.3, help="Point transparency (default: 0.3)"
     )
-    parser.add_argument(
-        "--point-size",
-        type=float,
-        default=1.0,
-        help="Point size (default: 1.0)"
-    )
+    parser.add_argument("--point-size", type=float, default=1.0, help="Point size (default: 1.0)")
 
     args = parser.parse_args()
 
@@ -329,10 +303,7 @@ def main():
     embeddings = {}
     for label, params in all_params.items():
         embedding = compute_umap(
-            params,
-            n_neighbors=args.n_neighbors,
-            min_dist=args.min_dist,
-            metric=args.metric
+            params, n_neighbors=args.n_neighbors, min_dist=args.min_dist, metric=args.metric
         )
         embeddings[label] = embedding
 
@@ -342,7 +313,7 @@ def main():
             title=f"UMAP: {label}",
             output_path=output_dir / f"umap_{label}.png",
             alpha=args.alpha,
-            s=args.point_size
+            s=args.point_size,
         )
 
     # Create comparison plot if multiple datasets
@@ -353,7 +324,7 @@ def main():
                 title="UMAP Comparison: Parameter Space Distribution",
                 output_path=output_dir / "umap_comparison.png",
                 alpha=args.alpha,
-                s=args.point_size
+                s=args.point_size,
             )
 
         if args.overlay:
@@ -362,7 +333,7 @@ def main():
                 title="UMAP Overlay: Parameter Space Distribution",
                 output_path=output_dir / "umap_overlay.png",
                 alpha=args.alpha,
-                s=args.point_size
+                s=args.point_size,
             )
 
     logger.info(f"All plots saved to {output_dir}")

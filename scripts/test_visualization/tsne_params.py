@@ -16,23 +16,24 @@ import h5py
 import hdf5plugin
 import matplotlib.pyplot as plt
 import numpy as np
+import rootutils
 from loguru import logger
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from sklearn.manifold import TSNE
 from tqdm import tqdm
 
 
 def load_params_from_dataset(
-    dataset_path: str,
-    max_samples: Optional[int] = None,
-    shards: Optional[List[str]] = None
+    dataset_path: str, max_samples: Optional[int] = None, shards: Optional[List[str]] = None
 ) -> np.ndarray:
     """Load parameter arrays from HDF5 dataset.
-    
+
     Args:
         dataset_path: Path to HDF5 file or directory containing shards
         max_samples: Maximum number of samples to load (None = all)
         shards: List of shard filenames to load (for multi-shard datasets)
-        
+
     Returns:
         Array of shape (n_samples, n_params)
     """
@@ -88,19 +89,16 @@ def load_params_from_dataset(
 
 
 def compute_tsne(
-    params: np.ndarray,
-    perplexity: int = 30,
-    n_iter: int = 1000,
-    random_state: int = 42
+    params: np.ndarray, perplexity: int = 30, n_iter: int = 1000, random_state: int = 42
 ) -> np.ndarray:
     """Compute t-SNE embedding.
-    
+
     Args:
         params: Parameter array of shape (n_samples, n_params)
         perplexity: t-SNE perplexity parameter
         n_iter: Number of iterations
         random_state: Random seed
-        
+
     Returns:
         2D embedding of shape (n_samples, 2)
     """
@@ -110,7 +108,7 @@ def compute_tsne(
         perplexity=perplexity,
         max_iter=n_iter,
         random_state=random_state,
-        verbose=1
+        verbose=1,
     )
     embedding = tsne.fit_transform(params)
     logger.info("t-SNE computation complete")
@@ -122,10 +120,10 @@ def plot_tsne_single(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot a single t-SNE embedding.
-    
+
     Args:
         embedding: 2D embedding of shape (n_samples, 2)
         title: Plot title
@@ -154,10 +152,10 @@ def plot_tsne_comparison(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot multiple t-SNE embeddings for comparison.
-    
+
     Args:
         embeddings: Dict of {label: embedding} pairs
         title: Plot title
@@ -193,10 +191,10 @@ def plot_tsne_overlay(
     title: str,
     output_path: Optional[str] = None,
     alpha: float = 0.3,
-    s: float = 1
+    s: float = 1,
 ):
     """Plot multiple t-SNE embeddings overlaid on the same axes.
-    
+
     Args:
         embeddings: Dict of {label: embedding} pairs
         title: Plot title
@@ -207,13 +205,7 @@ def plot_tsne_overlay(
     plt.figure(figsize=(10, 8))
 
     for label, embedding in embeddings.items():
-        plt.scatter(
-            embedding[:, 0],
-            embedding[:, 1],
-            alpha=alpha,
-            s=s,
-            label=label
-        )
+        plt.scatter(embedding[:, 0], embedding[:, 1], alpha=alpha, s=s, label=label)
 
     plt.title(title)
     plt.xlabel("t-SNE dimension 1")
@@ -231,65 +223,38 @@ def plot_tsne_overlay(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Visualize parameter space with t-SNE"
+    parser = argparse.ArgumentParser(description="Visualize parameter space with t-SNE")
+    parser.add_argument(
+        "datasets", nargs="+", help="Paths to HDF5 datasets (files or directories)"
     )
     parser.add_argument(
-        "datasets",
-        nargs="+",
-        help="Paths to HDF5 datasets (files or directories)"
-    )
-    parser.add_argument(
-        "--labels",
-        nargs="+",
-        help="Labels for each dataset (default: dataset names)"
+        "--labels", nargs="+", help="Labels for each dataset (default: dataset names)"
     )
     parser.add_argument(
         "--max-samples",
         type=int,
         default=10000,
-        help="Maximum samples per dataset (default: 10000)"
+        help="Maximum samples per dataset (default: 10000)",
     )
     parser.add_argument(
-        "--perplexity",
-        type=int,
-        default=30,
-        help="t-SNE perplexity (default: 30)"
+        "--perplexity", type=int, default=30, help="t-SNE perplexity (default: 30)"
     )
     parser.add_argument(
-        "--n-iter",
-        type=int,
-        default=1000,
-        help="t-SNE iterations (default: 1000)"
+        "--n-iter", type=int, default=1000, help="t-SNE iterations (default: 1000)"
     )
     parser.add_argument(
-        "--output-dir",
-        type=str,
-        default="outputs/tsne",
-        help="Output directory for plots"
+        "--output-dir", type=str, default="outputs/tsne", help="Output directory for plots"
     )
     parser.add_argument(
-        "--comparison",
-        action="store_true",
-        help="Create side-by-side comparison plot"
+        "--comparison", action="store_true", help="Create side-by-side comparison plot"
     )
     parser.add_argument(
-        "--overlay",
-        action="store_true",
-        help="Create overlay plot with all datasets"
+        "--overlay", action="store_true", help="Create overlay plot with all datasets"
     )
     parser.add_argument(
-        "--alpha",
-        type=float,
-        default=0.3,
-        help="Point transparency (default: 0.3)"
+        "--alpha", type=float, default=0.3, help="Point transparency (default: 0.3)"
     )
-    parser.add_argument(
-        "--point-size",
-        type=float,
-        default=1.0,
-        help="Point size (default: 1.0)"
-    )
+    parser.add_argument("--point-size", type=float, default=1.0, help="Point size (default: 1.0)")
 
     args = parser.parse_args()
 
@@ -315,11 +280,7 @@ def main():
     # Compute t-SNE for each dataset
     embeddings = {}
     for label, params in all_params.items():
-        embedding = compute_tsne(
-            params,
-            perplexity=args.perplexity,
-            n_iter=args.n_iter
-        )
+        embedding = compute_tsne(params, perplexity=args.perplexity, n_iter=args.n_iter)
         embeddings[label] = embedding
 
         # Plot individual
@@ -328,7 +289,7 @@ def main():
             title=f"t-SNE: {label}",
             output_path=output_dir / f"tsne_{label}.png",
             alpha=args.alpha,
-            s=args.point_size
+            s=args.point_size,
         )
 
     # Create comparison plot if multiple datasets
@@ -339,7 +300,7 @@ def main():
                 title="t-SNE Comparison: Parameter Space Distribution",
                 output_path=output_dir / "tsne_comparison.png",
                 alpha=args.alpha,
-                s=args.point_size
+                s=args.point_size,
             )
 
         if args.overlay:
@@ -348,7 +309,7 @@ def main():
                 title="t-SNE Overlay: Parameter Space Distribution",
                 output_path=output_dir / "tsne_overlay.png",
                 alpha=args.alpha,
-                s=args.point_size
+                s=args.point_size,
             )
 
     logger.info(f"All plots saved to {output_dir}")
