@@ -57,10 +57,23 @@ def main(
 
     all_shard_files = sorted(all_shard_files, key=extract_shard_number)
 
+    # Map actual shard number (ID) to file path
+    # e.g. 100 -> .../shard_100.h5
+    id_to_file = {extract_shard_number(f): f for f in all_shard_files}
+
+    def get_shards_by_id(indices):
+        files = []
+        for idx in indices:
+            if idx in id_to_file:
+                files.append(id_to_file[idx])
+            else:
+                print(f"Warning: Shard {idx} found in request but missing in source dataset. Skipping.")
+        return files
+
     splits = {
-        "train": [all_shard_files[i] for i in train_indices],
-        "val": [all_shard_files[i] for i in val_indices],
-        "test": [all_shard_files[i] for i in test_indices],
+        "train": get_shards_by_id(train_indices),
+        "val": get_shards_by_id(val_indices),
+        "test": get_shards_by_id(test_indices),
     }
 
     for split, files in splits.items():

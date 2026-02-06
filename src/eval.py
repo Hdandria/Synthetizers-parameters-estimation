@@ -2,11 +2,21 @@ from typing import Any, Dict, List, Tuple
 
 import hydra
 import rootutils
+import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+from src.models.components.transformer import AudioSpectrogramTransformer
+
+try:
+    torch.serialization.add_safe_globals([AudioSpectrogramTransformer])
+except AttributeError:
+    pass  # Old pytorch version
+
+
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH

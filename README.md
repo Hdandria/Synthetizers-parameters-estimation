@@ -119,7 +119,7 @@ To resume a training session from a checkpoint (e.g., if it reached `max_steps` 
   trainer.max_steps=1600000
 ```
 
-*Note: In the cloud, `/workspace/outputs` is persistent, so checkpoints from previous runs are available to new jobs.*
+_Note: In the cloud, `/workspace/outputs` is persistent, so checkpoints from previous runs are available to new jobs._
 
 ### Monitoring
 
@@ -173,7 +173,6 @@ python scripts/dataset/test_readability.py datasets/surge-20k
 python scripts/dataset/get_dataset_stats.py datasets/surge-20k
 ```
 
-
 ## Project Structure
 
 ```
@@ -181,7 +180,7 @@ configs/
 ├── experiment/flow_multi/  # All experiments (only these are used)
 ├── model/surge_flow.yaml   # Main model config
 ├── model/encoder/          # Audio encoder configs
-├── data/surge.yaml         # Dataset config
+├── data/synth.yaml         # Dataset config
 ├── callbacks/              # Training callbacks
 └── trainer/                # PyTorch Lightning configs
 
@@ -190,7 +189,7 @@ src/
 │   ├── surge_flow_matching_module.py
 │   └── components/transformer.py
 ├── data/
-│   ├── surge_datamodule.py
+│   ├── synth_datamodule.py
 │   └── vst/                # VST rendering
 ├── train.py                # Training entry point
 └── eval.py                 # Evaluation entry point

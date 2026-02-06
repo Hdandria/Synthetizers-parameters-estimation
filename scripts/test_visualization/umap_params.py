@@ -18,9 +18,9 @@ import h5py
 import hdf5plugin  # Must be imported before reading compressed HDF5 files
 import matplotlib.pyplot as plt
 import numpy as np
+import umap
 from loguru import logger
 from tqdm import tqdm
-import umap
 
 
 def load_params_from_dataset(
@@ -39,52 +39,52 @@ def load_params_from_dataset(
         Array of shape (n_samples, n_params)
     """
     path = Path(dataset_path)
-    
+
     if path.is_file():
         # Single HDF5 file (may be a VDS pointing to shards)
         logger.info(f"Loading parameters from {path}")
         with h5py.File(path, "r") as f:
             dataset = f["param_array"]
-            
+
             # Check if it's a Virtual Dataset
             if dataset.is_virtual:
                 logger.info("Detected Virtual Dataset, loading from virtual sources")
-            
+
             # Load data (handles both regular and virtual datasets)
             if max_samples:
                 params = dataset[:max_samples]
             else:
                 params = dataset[:]
         return params
-    
+
     elif path.is_dir():
         # Directory with shards
         if shards:
             shard_files = [path / shard for shard in shards]
         else:
             shard_files = sorted(path.glob("shard*.h5"))
-        
+
         logger.info(f"Loading parameters from {len(shard_files)} shards")
         params_list = []
         total_loaded = 0
-        
+
         for shard_file in tqdm(shard_files, desc="Loading shards"):
             with h5py.File(shard_file, "r") as f:
                 shard_params = f["param_array"][:]
-                
+
                 if max_samples and total_loaded + len(shard_params) > max_samples:
                     # Load partial shard to reach max_samples
                     remaining = max_samples - total_loaded
                     shard_params = shard_params[:remaining]
-                
+
                 params_list.append(shard_params)
                 total_loaded += len(shard_params)
-                
+
                 if max_samples and total_loaded >= max_samples:
                     break
-        
+
         return np.vstack(params_list)
-    
+
     else:
         raise ValueError(f"Path {path} is neither a file nor a directory")
 
@@ -144,13 +144,13 @@ def plot_umap_single(
     plt.xlabel("UMAP dimension 1")
     plt.ylabel("UMAP dimension 2")
     plt.tight_layout()
-    
+
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved plot to {output_path}")
     else:
         plt.show()
-    
+
     plt.close()
 
 
@@ -171,25 +171,25 @@ def plot_umap_comparison(
         s: Point size
     """
     fig, axes = plt.subplots(1, len(embeddings), figsize=(6 * len(embeddings), 5))
-    
+
     if len(embeddings) == 1:
         axes = [axes]
-    
+
     for ax, (label, embedding) in zip(axes, embeddings.items()):
         ax.scatter(embedding[:, 0], embedding[:, 1], alpha=alpha, s=s)
         ax.set_title(label)
         ax.set_xlabel("UMAP dimension 1")
         ax.set_ylabel("UMAP dimension 2")
-    
+
     fig.suptitle(title, fontsize=14)
     plt.tight_layout()
-    
+
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved comparison plot to {output_path}")
     else:
         plt.show()
-    
+
     plt.close()
 
 
@@ -210,7 +210,7 @@ def plot_umap_overlay(
         s: Point size
     """
     plt.figure(figsize=(10, 8))
-    
+
     for label, embedding in embeddings.items():
         plt.scatter(
             embedding[:, 0],
@@ -219,19 +219,19 @@ def plot_umap_overlay(
             s=s,
             label=label
         )
-    
+
     plt.title(title)
     plt.xlabel("UMAP dimension 1")
     plt.ylabel("UMAP dimension 2")
     plt.legend()
     plt.tight_layout()
-    
+
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved overlay plot to {output_path}")
     else:
         plt.show()
-    
+
     plt.close()
 
 
@@ -302,13 +302,13 @@ def main():
         default=1.0,
         help="Point size (default: 1.0)"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Create output directory
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Generate labels if not provided
     if args.labels:
         if len(args.labels) != len(args.datasets):
@@ -316,7 +316,7 @@ def main():
         labels = args.labels
     else:
         labels = [Path(d).stem for d in args.datasets]
-    
+
     # Load parameters from all datasets
     all_params = {}
     max_samples = args.max_samples if args.max_samples > 0 else None
@@ -324,7 +324,7 @@ def main():
         params = load_params_from_dataset(dataset_path, max_samples=max_samples)
         all_params[label] = params
         logger.info(f"{label}: {params.shape[0]} samples, {params.shape[1]} parameters")
-    
+
     # Compute UMAP for each dataset
     embeddings = {}
     for label, params in all_params.items():
@@ -335,7 +335,7 @@ def main():
             metric=args.metric
         )
         embeddings[label] = embedding
-        
+
         # Plot individual
         plot_umap_single(
             embedding,
@@ -344,7 +344,7 @@ def main():
             alpha=args.alpha,
             s=args.point_size
         )
-    
+
     # Create comparison plot if multiple datasets
     if len(embeddings) > 1:
         if args.comparison:
@@ -355,7 +355,7 @@ def main():
                 alpha=args.alpha,
                 s=args.point_size
             )
-        
+
         if args.overlay:
             plot_umap_overlay(
                 embeddings,
@@ -364,7 +364,7 @@ def main():
                 alpha=args.alpha,
                 s=args.point_size
             )
-    
+
     logger.info(f"All plots saved to {output_dir}")
 
 

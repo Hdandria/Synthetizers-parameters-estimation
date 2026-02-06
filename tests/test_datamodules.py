@@ -3,17 +3,17 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.data.surge_datamodule import SurgeDataModule
+from src.data.synth_datamodule import SynthDataModule
 
 
 @pytest.mark.parametrize("batch_size", [8, 32])
-def test_surge_datamodule_fake(batch_size: int) -> None:
-    """Tests `SurgeDataModule` using `fake=True` so it doesn't require on-disk HDF5 files.
+def test_synth_datamodule_fake(batch_size: int) -> None:
+    """Tests `SynthDataModule` using `fake=True` so it doesn't require on-disk HDF5 files.
 
-    The Surge datamodule supports a `fake` flag that creates synthetic data. This test
+    The Synth datamodule supports a `fake` flag that creates synthetic data. This test
     verifies setup, dataloaders, and that batched tensors have expected dtypes and shapes.
     """
-    dm = SurgeDataModule(dataset_root="/tmp/not_used", batch_size=batch_size, fake=True)
+    dm = SynthDataModule(dataset_root="/tmp/not_used", batch_size=batch_size, fake=True)
 
     # call setup to create fake datasets
     dm.setup()

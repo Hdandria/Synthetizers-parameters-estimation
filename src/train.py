@@ -9,6 +9,29 @@ from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+# PyTorch 2.6+ security fix for loading custom model components in checkpoints
+if hasattr(torch.serialization, "add_safe_globals"):
+    from src.models.components.transformer import (
+        ApproxEquivTransformer,
+        AudioSpectrogramTransformer,
+        LearntProjection,
+        PatchEmbed,
+        PositionalEncoding,
+    )
+    from src.models.surge_flow_matching_module import SurgeFlowMatchingModule
+
+    torch.serialization.add_safe_globals(
+        [
+            AudioSpectrogramTransformer,
+            ApproxEquivTransformer,
+            LearntProjection,
+            PatchEmbed,
+            PositionalEncoding,
+            SurgeFlowMatchingModule,
+        ]
+    )
+
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH

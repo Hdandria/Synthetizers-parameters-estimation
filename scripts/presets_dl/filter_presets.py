@@ -8,7 +8,15 @@ from tqdm import tqdm
 PRESETS_DIR = "data/presets/vital"
 REJECTED_DIR = "data/presets/vital_rejected"
 
-SAFE_WT_NAMES = {"Init", "Basic Shapes"}
+# Expanded to all 6 default Vital shapes
+SAFE_WT_NAMES = {
+    "Sin",
+    "Saturated Sin",
+    "Triangle",
+    "Square",
+    "Pulse",
+    "Saw",
+}
 
 def is_osc_workable(wt_data, osc_level):
     if osc_level == 0:

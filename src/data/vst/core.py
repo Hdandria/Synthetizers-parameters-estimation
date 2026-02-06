@@ -18,7 +18,7 @@ from pedalboard.io import AudioFile
 root = rootutils.find_root(search_from=os.path.dirname(os.path.abspath(__file__)), indicator=".project-root")
 from src.data.vst.vital_preset_converter import convert_vital_preset_to_params
 
-FLUSH_DURATION_SECONDS = 0.5
+FLUSH_DURATION_SECONDS = 0.0
 
 
 def _enforce_minimal_audible_params(plugin: VST3Plugin, params: dict[str, float]) -> dict[str, float]:

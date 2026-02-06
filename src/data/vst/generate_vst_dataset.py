@@ -59,6 +59,140 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
     return spec_db
 
 
+def _apply_vital_audible_bias(
+    synth_params: dict[str, float],
+    rng: np.random.Generator,
+) -> dict[str, float]:
+    """Bias Vital parameters toward audible patches.
+
+    Ensures that randomly sampled parameters are likely to produce audible sound
+    by enforcing minimum levels for critical parameters that gate audio output.
+    
+    Key strategies:
+    - Guarantee at least one oscillator is on with audible level
+    - Prevent envelope from blocking audio (fast attack, high sustain)
+    - Keep master volume and voice amplitude above minimum
+    - Disable or limit destructive filters and effects
+    - Prevent sample player from being the sole (silent) source
+    """
+    out = dict(synth_params)
+
+    def uniform_min(name: str, min_value: float) -> None:
+        """Set parameter to random value between min_value and 1.0"""
+        if name in out:
+            out[name] = float(rng.uniform(min_value, 1.0))
+
+    def uniform_max(name: str, max_value: float) -> None:
+        """Set parameter to random value between 0.0 and max_value"""
+        if name in out:
+            out[name] = float(rng.uniform(0.0, max_value))
+
+    def set_value(name: str, value: float) -> None:
+        """Set parameter to exact value"""
+        if name in out:
+            out[name] = float(value)
+
+
+    # =============================================================================
+    # 1. OSCILLATORS: Assign default shape and ensure at least one is on with audible level
+    # =============================================================================
+    # Default Vital shapes (guaranteed safe)
+    DEFAULT_SHAPES = [
+        "Sin",
+        "Saturated Sin",
+        "Triangle",
+        "Square",
+        "Pulse",
+        "Saw",
+    ]
+
+    # For each oscillator, assign a random default shape (by setting the wavetable index)
+    # The mapping from shape name to wavetable index is assumed to be 0-5 in order of DEFAULT_SHAPES
+    for i in range(1, 4):
+        # Only assign if the wavetable index param exists
+        wave_frame_key = f"oscillator_{i}_wave_frame"
+        if wave_frame_key in out:
+            # Pick a random shape index (0-5) mapped to 0.0-1.0
+            # 0=Sin, 5=Saw (assuming Basic Shapes order)
+            out[wave_frame_key] = float(rng.integers(0, 6)) / 5.0
+
+    osc_switches = [
+        name
+        for name in (
+            "oscillator_1_switch",
+            "oscillator_2_switch",
+            "oscillator_3_switch",
+        )
+        if name in out
+    ]
+
+    # Force at least one oscillator on
+    if osc_switches and all(out.get(k, 0.0) == 0.0 for k in osc_switches):
+        chosen = rng.choice(osc_switches)
+        out[chosen] = 1.0
+
+    # Ensure active oscillators have audible levels
+    for i in range(1, 4):
+        switch_key = f"oscillator_{i}_switch"
+        level_key = f"oscillator_{i}_level"
+        if out.get(switch_key, 0.0) > 0.0:
+            uniform_min(level_key, 0.25)
+
+    # =============================================================================
+    # 2. SAMPLE PLAYER: Prevent it from being the sole source (no sample loaded)
+    # =============================================================================
+    # If sample is on but all oscillators are off, force an oscillator on
+    sample_on = out.get("sample_switch", 0.0) > 0.0
+    all_oscs_off = all(out.get(f"oscillator_{i}_switch", 0.0) == 0.0 for i in range(1, 4))
+
+    if sample_on and all_oscs_off and osc_switches:
+        # Force at least oscillator 1 on to guarantee sound
+        set_value("oscillator_1_switch", 1.0)
+        uniform_min("oscillator_1_level", 0.25)
+
+    # =============================================================================
+    # 3. ENVELOPES: Prevent amp envelope from blocking audio
+    # =============================================================================
+    # Fast attack (max 0.1 = very fast)
+    uniform_max("envelope_1_attack", 0.1)
+    # High sustain level to maintain sound
+    uniform_min("envelope_1_sustain", 0.4)
+    # Don't let decay go to zero too fast
+    uniform_min("envelope_1_decay", 0.05)
+    # Keep release reasonable
+    uniform_min("envelope_1_release", 0.05)
+
+    # =============================================================================
+    # 4. MASTER VOLUME & VOICE: Keep output level audible
+    # =============================================================================
+    uniform_min("volume", 0.35)
+    uniform_min("voice_amplitude", 0.5)
+
+    # =============================================================================
+    # 5. FILTERS: DISABLE COMPLETELY to prevent signal blocking
+    # =============================================================================
+    # Filters are a major source of silence - just turn them all off
+    for filter_name in ["filter_1", "filter_2", "filter_fx"]:
+        switch_key = f"{filter_name}_switch"
+        set_value(switch_key, 0.0)  # Force OFF
+
+    # =============================================================================
+    # 6. EFFECTS: DISABLE OR SEVERELY LIMIT
+    # =============================================================================
+    # Turn off distortion completely (major source of digital silence)
+    set_value("distortion_switch", 0.0)
+
+    # Turn off compressor (can crush dynamics to silence)
+    set_value("compressor_switch", 0.0)
+
+    # Keep time-based effects minimal (0% wet = bypass)
+    for effect in ["chorus", "flanger", "phaser", "delay", "reverb"]:
+        switch_key = f"{effect}_switch"
+        set_value(switch_key, 0.0)  # Turn off completely
+
+    return out
+
+
 def generate_sample(
     plugin: VST3Plugin,
     velocity: int,
@@ -68,10 +202,15 @@ def generate_sample(
     min_loudness: float,
     param_spec: ParamSpec,
     preset_path: str | None,
+    audible_bias: bool,
+    rng: np.random.Generator,
 ) -> VSTDataSample:
     while True:
         logger.debug("sampling params")
         synth_params, note_params = param_spec.sample()
+
+        if audible_bias:
+            synth_params = _apply_vital_audible_bias(synth_params, rng)
 
         logger.debug("sampling note")
 
@@ -237,6 +376,7 @@ def worker_generate_samples(
     signal_duration_seconds: float,
     min_loudness: float,
     param_spec: ParamSpec,
+    audible_bias: bool,
     worker_output_path: str,
     progress_queue: multiprocessing.Queue,
 ) -> None:
@@ -245,6 +385,7 @@ def worker_generate_samples(
 
     # Each worker loads its own plugin instance
     plugin = load_plugin(plugin_path)
+    rng = np.random.default_rng()
 
     # Create worker's own HDF5 file
     logger.info(f"Worker {worker_id} creating file: {worker_output_path}")
@@ -291,6 +432,8 @@ def worker_generate_samples(
                 min_loudness=min_loudness,
                 param_spec=param_spec,
                 preset_path=None,  # preset already loaded once below
+                audible_bias=audible_bias,
+                rng=rng,
             )
 
             # Write directly to worker's file
@@ -354,6 +497,7 @@ def make_dataset(
     param_spec: ParamSpec,
     sample_batch_size: int,
     num_workers: int = 1,
+    audible_bias: bool = False,
 ) -> None:
     audio_dataset, mel_dataset, param_dataset, start_idx = create_datasets_and_get_start_idx(
         hdf5_file=hdf5_file,
@@ -373,6 +517,7 @@ def make_dataset(
     if num_workers == 1:
         # Single-threaded fallback (original behavior)
         plugin = load_plugin(plugin_path)
+        rng = np.random.default_rng()
         # Load preset once per dataset build for efficiency
         if preset_path:
             try:
@@ -394,6 +539,8 @@ def make_dataset(
                 min_loudness=min_loudness,
                 param_spec=param_spec,
                 preset_path=preset_path,
+                audible_bias=audible_bias,
+                rng=rng,
             )
 
             sample_batch.append(sample)
@@ -465,6 +612,7 @@ def make_dataset(
                     signal_duration_seconds,
                     min_loudness,
                     param_spec,
+                    audible_bias,
                     worker_files[i],
                     progress_queue,
                 ),
@@ -539,6 +687,11 @@ def make_dataset(
 @click.option("--param_spec", "-t", type=str, default="surge_xt")
 @click.option("--sample_batch_size", "-b", type=int, default=32)
 @click.option(
+    "--audible_bias/--no-audible_bias",
+    default=False,
+    help="Bias Vital parameter sampling toward audible patches (reduces silent rejections).",
+)
+@click.option(
     "--num_workers",
     "-w",
     type=int,
@@ -558,6 +711,7 @@ def main(
     param_spec: str = "surge_xt",
     sample_batch_size: int = 32,
     num_workers: int = 1,
+    audible_bias: bool = False,
 ):
     param_spec = param_specs[param_spec]
     with h5py.File(data_file, "a") as f:
@@ -574,6 +728,7 @@ def main(
             param_spec,
             sample_batch_size,
             num_workers,
+            audible_bias,
         )
 
 

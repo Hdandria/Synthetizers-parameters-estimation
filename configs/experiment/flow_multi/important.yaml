@@ -11,7 +11,7 @@ run_name: important
 
 # Data configuration
 data:
-  _target_: src.data.surge_datamodule.SurgeDataModule
+  _target_: src.data.synth_datamodule.SynthDataModule
   dataset_root: ./datasets/surge-20k
   use_saved_mean_and_variance: true
   batch_size: 128

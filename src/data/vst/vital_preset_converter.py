@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any, Dict
 
 from loguru import logger
@@ -151,12 +150,12 @@ def _normalize_categorical(param: CategoricalParameter, value: Any) -> float:
         except (TypeError, ValueError):
             candidate = None
 
-    if candidate is not None and raw_values:
-        return min(raw_values, key=lambda rv: abs(rv - candidate))
-
     if value in param.values:
         idx = param.values.index(value)
         return raw_values[idx]
+
+    if candidate is not None and raw_values:
+        return min(raw_values, key=lambda rv: abs(rv - candidate))
 
     return raw_values[0] if raw_values else 0.0
 
@@ -326,9 +325,7 @@ def convert_vital_preset_to_params(preset_path, plugin):
                 f"Vital preset coverage: applying {len(intersect)}/{len(remapped)}. Sample skipped: {sample_skipped}"
             )
         if unmapped_original:
-            logger.debug(
-                f"Original keys unmapped (first 10): {unmapped_original[:10]}"
-            )
+            logger.debug(f"Original keys unmapped (first 10): {unmapped_original[:10]}")
 
     result: Dict[str, Any] = {}
     exact = 0
@@ -345,6 +342,6 @@ def convert_vital_preset_to_params(preset_path, plugin):
 
     logger.info(
         f"Converted .vital preset: mapped {len(settings)} keys -> {len(remapped)}; applying {len(result)} parameters. "
-        f"Normalization coverage exact={exact} fallback={fallback} ({exact/(exact+fallback):.1%} exact)."
+        f"Normalization coverage exact={exact} fallback={fallback} ({exact / (exact + fallback):.1%} exact)."
     )
     return result

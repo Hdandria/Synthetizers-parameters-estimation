@@ -59,6 +59,7 @@ dependencies = [
     "patool>=4.0.1",
     "cloudscraper>=1.2.71",
     "umap-learn>=0.5.9.post2",
+    "pyright>=1.1.408",
 ]
 
 # Dépendances optionnelles

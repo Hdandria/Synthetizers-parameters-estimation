@@ -13,7 +13,7 @@ from loguru import logger
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 # Only needed for HDF5 files
-from src.data.surge_datamodule import SurgeXTDataset
+from src.data.synth_datamodule import SynthDataset
 
 
 def is_virtual_dataset(filename):
@@ -33,7 +33,7 @@ def get_shard_files(dataset_dir):
 
     # Sort numerically by shard number
     def extract_shard_number(path):
-        match = re.search(r'shard[_-](\d+)\.h5', path.name)
+        match = re.search(r"shard[_-](\d+)\.h5", path.name)
         return int(match.group(1)) if match else 0
 
     return sorted(shard_files, key=extract_shard_number)
@@ -43,35 +43,35 @@ def get_vds_source_files(vds_file):
     """Extract source shard files from a virtual dataset."""
     vds_path = Path(vds_file)
     source_files = []
-    
+
     with h5py.File(vds_file, "r") as f:
         # Get the virtual dataset
         vds = f["mel_spec"]
-        
+
         # Get virtual sources
         sources = vds.virtual_sources()
-        
+
         for vs in sources:
             # vs.file_name contains the path (relative or absolute)
             source_path = vs.file_name
-            
+
             # If relative, resolve from VDS file location
             if not os.path.isabs(source_path):
                 source_path = vds_path.parent / source_path
             else:
                 source_path = Path(source_path)
-            
+
             # Resolve to absolute path
             source_path = source_path.resolve()
-            
+
             if source_path not in source_files:
                 source_files.append(source_path)
-    
+
     # Sort numerically by shard number
     def extract_shard_number(path):
-        match = re.search(r'shard[_-](\d+)\.h5', path.name)
+        match = re.search(r"shard[_-](\d+)\.h5", path.name)
         return int(match.group(1)) if match else 0
-    
+
     return sorted(source_files, key=extract_shard_number)
 
 
@@ -83,7 +83,7 @@ def get_stats_hdf5(filename):
     # Check if this is a VDS file
     if is_virtual_dataset(filename):
         print("Detected virtual dataset - computing from source shards instead")
-        
+
         # Extract source shard files from VDS
         shard_files = get_vds_source_files(filename)
 
@@ -186,7 +186,7 @@ def get_stats_hdf5(filename):
 
     # Save stats
     print("Saving to file...")
-    out_file = SurgeXTDataset.get_stats_file_path(filename)
+    out_file = SynthDataset.get_stats_file_path(filename)
     np.savez(out_file, mean=mean.astype(np.float32), std=std.astype(np.float32))
     print(f"Saved to {out_file}")
 
@@ -235,4 +235,6 @@ if __name__ == "__main__":
     if os.path.splitext(filename)[-1] == ".h5":
         get_stats_hdf5(filename)
     else:
-        raise NotImplementedError("Only .h5 files are supported. Directory-based datasets are not implemented.")
+        raise NotImplementedError(
+            "Only .h5 files are supported. Directory-based datasets are not implemented."
+        )

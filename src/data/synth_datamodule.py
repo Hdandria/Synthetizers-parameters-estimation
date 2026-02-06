@@ -12,7 +12,7 @@ from lightning import LightningDataModule
 from src.data.ot import _hungarian_match
 
 
-class SurgeXTDataset(torch.utils.data.Dataset):
+class SynthDataset(torch.utils.data.Dataset):
     mean: np.ndarray | None = None
     std: np.ndarray | None = None
 
@@ -54,7 +54,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
     def _load_dataset_statistics(self, dataset_file: str | Path):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
         # if not, we throw an error
-        stats_file = SurgeXTDataset.get_stats_file_path(dataset_file)
+        stats_file = SynthDataset.get_stats_file_path(dataset_file)
 
         # Local file check
         if not Path(stats_file).exists():
@@ -233,7 +233,7 @@ class ShiftedBatchSampler(torch.utils.data.BatchSampler):
             yield (i * self.batch_size + offset, (i + 1) * self.batch_size + offset)
 
 
-class SurgeDataModule(LightningDataModule):
+class SynthDataModule(LightningDataModule):
     def __init__(
         self,
         dataset_root: str | Path,
@@ -261,7 +261,7 @@ class SurgeDataModule(LightningDataModule):
         self.conditioning = conditioning
 
     def setup(self, stage: str | None = None):
-        self.train_dataset = SurgeXTDataset(
+        self.train_dataset = SynthDataset(
             self.dataset_root / "train.h5",
             batch_size=self.batch_size,
             ot=self.ot,
@@ -271,7 +271,7 @@ class SurgeDataModule(LightningDataModule):
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
         )
-        self.val_dataset = SurgeXTDataset(
+        self.val_dataset = SynthDataset(
             self.dataset_root / "val.h5",
             batch_size=self.batch_size,
             ot=self.val_ot,
@@ -281,7 +281,7 @@ class SurgeDataModule(LightningDataModule):
             read_mel=self.conditioning == "mel",
             read_m2l=self.conditioning == "m2l",
         )
-        self.test_dataset = SurgeXTDataset(
+        self.test_dataset = SynthDataset(
             self.dataset_root / "test.h5",
             batch_size=self.batch_size,
             ot=self.val_ot,
@@ -292,7 +292,7 @@ class SurgeDataModule(LightningDataModule):
             read_m2l=self.conditioning == "m2l",
         )
         if self.predict_file is not None:
-            self.predict_dataset = SurgeXTDataset(
+            self.predict_dataset = SynthDataset(
                 self.predict_file,
                 batch_size=self.batch_size,
                 ot=False,
