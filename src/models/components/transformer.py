@@ -411,7 +411,7 @@ class ApproxEquivTransformer(nn.Module):
         self.projection = projection
 
         if not learn_projection:
-            self.projection.proj.requires_grad = False
+            self.projection.requires_grad_(False)
 
         self.pe_penalty = pe_penalty
         self.projection_penalty = projection_penalty
@@ -566,6 +566,8 @@ class AudioSpectrogramTransformer(nn.Module):
             d_model=d_model,
             spec_shape=spec_shape,
         )
+
+        self.d_model = d_model
 
         self.positional_encoding = PositionalEncoding(
             d_model,

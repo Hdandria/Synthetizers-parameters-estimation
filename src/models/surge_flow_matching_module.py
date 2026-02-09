@@ -75,8 +75,28 @@ class SurgeFlowMatchingModule(LightningModule):
                 del self.clap.text_model
             if hasattr(self.clap, "text_projection"):
                 del self.clap.text_projection
-            self.clap_processor = ClapProcessor.from_pretrained("laion/clap-htsat-fused")
+
+            # Use torchaudio for GPU acceleration instead of ClapProcessor
+            # CLAP expects 48kHz audio.
             self.resampler = torchaudio.transforms.Resample(44100, 48000)
+
+            # CLAP Mel Spectrogram parameters (from laion/clap-htsat-fused config)
+            # n_fft=1024, hop_length=480, n_mels=64
+            self.mel_transform = torchaudio.transforms.MelSpectrogram(
+                sample_rate=48000,
+                n_fft=1024,
+                win_length=1024,
+                hop_length=480,
+                f_min=0,
+                f_max=None,  # Default for torchaudio, check if CLAP sets this
+                n_mels=64,
+                center=True,
+                pad_mode="reflect",
+                power=2.0,
+                norm=None,  # Verified to match CLAP better than "slaney"
+                mel_scale="htk",  # Check if this is correct for CLAP
+            )
+            # self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB() # Uses top_db shifting, mismatching CLAP
 
             # Project from encoder dim to CLAP dim (512)
             # Assuming encoder.d_model is available. If not, we might need to pass it explicitly.
@@ -184,18 +204,50 @@ class SurgeFlowMatchingModule(LightningModule):
 
         # 1. Resample and Preprocess Audio for CLAP
         # Mix to mono
-        audio_mono = audio.mean(dim=1)  # (B, L)
+        # audio: (B, 2, L) -> (B, L)
+        audio_mono = audio.mean(dim=1)
 
         # Resample to 48k
+        # (B, L_48k)
         audio_48k = self.resampler(audio_mono)
 
-        # Process with CLAP processor (requires CPU numpy)
-        # Note: This CPU-GPU sync is creating a bottleneck but is safest for correctness with HF Processor
-        audio_np = audio_48k.detach().cpu().numpy()
-        inputs = self.clap_processor(
-            audio=list(audio_np), sampling_rate=48000, return_tensors="pt", padding=True
-        )
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        # Compute Mel Spectrogram
+        # CLAP HTSAT expects (B, 1, T, F) or similar.
+        # Let's check CLAP source or processor output.
+        # Processor usually pads to max length (10s = 480000 samples).
+
+        # Pad or truncate to 480,000 samples (10 seconds)
+        target_length = 480000
+        current_length = audio_48k.shape[-1]
+
+        if current_length < target_length:
+            audio_48k = torch.nn.functional.pad(audio_48k, (0, target_length - current_length))
+        elif current_length > target_length:
+            # Random crop or center crop? let's take first 10s for consistency with dataloader
+            audio_48k = audio_48k[..., :target_length]
+
+        # Transform to Mel
+        mels = self.mel_transform(audio_48k)  # (B, n_mels, T)
+        # mels_db = self.amplitude_to_db(mels)
+        # Match CLAP/Librosa log10 scaling (ref=1.0)
+        mels_db = 10 * torch.log10(mels + 1e-10)
+
+        # Transpose to (B, 1, T, n_mels) as per HTSAT expectation often?
+        # Checking CLAP source:
+        # The input to the audio_model forward is `input_features`.
+        # Hugging Face `ClapModel` expects `input_features` of shape (batch, 1, time, freq) ?
+        # Actually `ClapAudioModel` forward doc says `input_features` (torch.FloatTensor of shape (batch_size, num_channels, height, width))
+        # height=T, width=F (n_mels)? Or vice versa?
+        # HTSAT uses (B, 1, T, F).
+        # MelSpectrogram returns (B, n_mels, T).
+        # So we transpose: (B, T, n_mels) -> unsqueeze -> (B, 1, T, n_mels)
+
+        input_features = mels_db.transpose(1, 2).unsqueeze(1)  # (B, 1, T, 64)
+
+        inputs = {
+            "input_features": input_features,
+            "is_longer": torch.tensor([False] * audio.shape[0], device=self.device),
+        }
 
         # 2. Get Teacher Embedding (CLAP)
         with torch.no_grad():
