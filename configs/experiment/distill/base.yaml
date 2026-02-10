@@ -1,0 +1,23 @@
+# @package _global_
+
+# Source of truth:
+defaults:
+  - override /experiment/distill: base_full
+  - _self_
+
+# Experiment Metadata
+run_name: vital_distill_base
+
+# Evaluation & Testing configuration
+data:
+  distill: True
+  batch_size: 64
+
+model:
+  distill: True
+  distill_weight: 10.0
+  compile: false
+
+trainer:
+  max_steps: 100
+  val_check_interval: 1000
