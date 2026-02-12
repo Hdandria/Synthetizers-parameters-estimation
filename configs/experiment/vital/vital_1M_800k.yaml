@@ -16,7 +16,7 @@ data:
 trainer:
   min_steps: 800000
   max_steps: 800000
-  val_check_interval:  5000
+  val_check_interval: 5000
 
 # Callbacks configuration
 callbacks:
@@ -25,4 +25,4 @@ callbacks:
     mode: min
 
 model:
-  num_params: 597  # Vital's parameter count
+  num_params: 597 # Vital's parameter count
