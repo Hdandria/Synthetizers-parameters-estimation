@@ -186,8 +186,8 @@ ovhai job run \
   --name "${JOB_NAME}" \
   --flavor "${FLAVOR:-ai1-1-gpu}" \
   --gpu "${NUM_GPUS}" \
-  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:ro" \
-  --volume "${S3_BUCKET_OUTPUTS}@${DS_ALIAS}:/workspace/outputs:rw" \
+  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:ro:cache" \
+  --volume "${S3_BUCKET_OUTPUTS}@${DS_ALIAS}:/workspace/outputs:rw:cache" \
   --env WANDB_API_KEY="${WANDB_API_KEY}" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
