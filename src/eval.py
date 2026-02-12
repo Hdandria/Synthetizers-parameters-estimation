@@ -9,13 +9,6 @@ from omegaconf import DictConfig
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
-from src.models.components.transformer import AudioSpectrogramTransformer
-
-try:
-    torch.serialization.add_safe_globals([AudioSpectrogramTransformer])
-except AttributeError:
-    pass  # Old pytorch version
-
 
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
@@ -117,16 +110,21 @@ def evaluate(cfg: DictConfig) -> tuple[dict[str, Any], dict[str, Any]]:
 
     if mode == "test":
         log.info("Starting testing!")
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+        trainer.test(
+            model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path, weights_only=False
+        )
     elif mode == "val" or mode == "validate":
         log.info("Starting validating!")
-        trainer.validate(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+        trainer.validate(
+            model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path, weights_only=False
+        )
     elif mode == "predict":
         predictions = trainer.predict(
             model=model,
             dataloaders=datamodule,
             ckpt_path=cfg.ckpt_path,
             return_predictions=False,
+            weights_only=False,
         )
 
     # for predictions use trainer.predict(...)
