@@ -2,22 +2,33 @@
 
 # Source of truth:
 defaults:
-  - override /experiment/distill: base_full
+  - distill/base_full
   - _self_
 
 # Experiment Metadata
-run_name: vital_distill_base
+experiment_name: vital_distill
+run_name: base
 
 # Evaluation & Testing configuration
 data:
   distill: True
   batch_size: 64
+  dataset_root: ./datasets/vital_30k
 
 model:
   distill: True
-  distill_weight: 10.0
+  distill_weight: 0.1
   compile: false
+  num_params: 597 # Vital's parameter count
 
+# Trainer configuration
 trainer:
-  max_steps: 100
+  min_steps: 10000
+  max_steps: 10000
   val_check_interval: 1000
+
+# Callbacks configuration
+callbacks:
+  model_checkpoint:
+    monitor: val/loss
+    mode: min
