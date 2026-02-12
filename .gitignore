@@ -189,3 +189,6 @@ terraform.tfvars
 reference/
 
 *cookies*.txt
+# Temporary files
+temp.py
+run_metrics.csv
