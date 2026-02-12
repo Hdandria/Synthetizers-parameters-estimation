@@ -202,74 +202,51 @@ class SurgeFlowMatchingModule(LightningModule):
     ) -> torch.Tensor:
         audio = batch["audio"]  # (B, 2, L)
 
-        # 1. Resample and Preprocess Audio for CLAP
-        # Mix to mono
-        # audio: (B, 2, L) -> (B, L)
-        audio_mono = audio.mean(dim=1)
+        # Force fp32 for the entire mel preprocessing + CLAP forward pass.
+        # Under fp16 autocast, 1e-10 underflows to 0 → log10(0) = -inf → NaN.
+        with torch.amp.autocast(device_type=self.device.type, enabled=False):
+            audio = audio.float()
 
-        # Resample to 48k
-        # (B, L_48k)
-        audio_48k = self.resampler(audio_mono)
+            # 1. Resample and Preprocess Audio for CLAP
+            audio_mono = audio.mean(dim=1)  # (B, 2, L) -> (B, L)
+            audio_48k = self.resampler(audio_mono)  # Resample to 48k
 
-        # Compute Mel Spectrogram
-        # CLAP HTSAT expects (B, 1, T, F) or similar.
-        # Let's check CLAP source or processor output.
-        # Processor usually pads to max length (10s = 480000 samples).
+            # Pad or truncate to 480,000 samples (10 seconds at 48kHz)
+            target_length = 480000
+            current_length = audio_48k.shape[-1]
+            if current_length < target_length:
+                audio_48k = torch.nn.functional.pad(audio_48k, (0, target_length - current_length))
+            elif current_length > target_length:
+                audio_48k = audio_48k[..., :target_length]
 
-        # Pad or truncate to 480,000 samples (10 seconds)
-        target_length = 480000
-        current_length = audio_48k.shape[-1]
+            # Mel spectrogram + log scale
+            mels = self.mel_transform(audio_48k)  # (B, n_mels, T)
+            mels_db = 10 * torch.log10(mels + 1e-10)
 
-        if current_length < target_length:
-            audio_48k = torch.nn.functional.pad(audio_48k, (0, target_length - current_length))
-        elif current_length > target_length:
-            # Random crop or center crop? let's take first 10s for consistency with dataloader
-            audio_48k = audio_48k[..., :target_length]
+            # ClapFeatureExtractor stacks 4 copies for non-fused input: (B, 4, T, n_mels)
+            mels_2d = mels_db.transpose(1, 2)  # (B, T, n_mels)
+            input_features = torch.stack([mels_2d, mels_2d, mels_2d, mels_2d], dim=1)
 
-        # Transform to Mel
-        mels = self.mel_transform(audio_48k)  # (B, n_mels, T)
-        # mels_db = self.amplitude_to_db(mels)
-        # Match CLAP/Librosa log10 scaling (ref=1.0)
-        mels_db = 10 * torch.log10(mels + 1e-10)
+            inputs = {
+                "input_features": input_features,
+                "is_longer": torch.tensor([False] * audio.shape[0], device=self.device),
+            }
 
-        # Transpose to (B, 1, T, n_mels) as per HTSAT expectation often?
-        # Checking CLAP source:
-        # The input to the audio_model forward is `input_features`.
-        # Hugging Face `ClapModel` expects `input_features` of shape (batch, 1, time, freq) ?
-        # Actually `ClapAudioModel` forward doc says `input_features` (torch.FloatTensor of shape (batch_size, num_channels, height, width))
-        # height=T, width=F (n_mels)? Or vice versa?
-        # HTSAT uses (B, 1, T, F).
-        # MelSpectrogram returns (B, n_mels, T).
-        # So we transpose: (B, T, n_mels) -> unsqueeze -> (B, 1, T, n_mels)
+            # 2. Get Teacher Embedding (CLAP) — no grad, fp32
+            with torch.no_grad():
+                outputs = self.clap.audio_model(**inputs)
+                teacher_embedding = self.clap.audio_projection(outputs.pooler_output)
 
-        input_features = mels_db.transpose(1, 2).unsqueeze(1)  # (B, 1, T, 64)
+            # 3. Get Student Embedding (Projected Encoder Output)
+            student_embedding = conditioning_embedding.float()
+            if student_embedding.dim() == 3:
+                student_embedding = student_embedding.mean(dim=1)  # Global Average Pooling
 
-        inputs = {
-            "input_features": input_features,
-            "is_longer": torch.tensor([False] * audio.shape[0], device=self.device),
-        }
+            student_projected = self.projection(student_embedding)  # (B, 512)
 
-        # 2. Get Teacher Embedding (CLAP)
-        with torch.no_grad():
-            outputs = self.clap.audio_model(**inputs)
-            teacher_embedding = self.clap.audio_projection(outputs.pooler_output)  # (B, 512)
+            # 4. Compute Loss (fp32 for numerical stability)
+            loss = torch.nn.functional.mse_loss(student_projected, teacher_embedding)
 
-        # 3. Get Student Embedding (Projected Encoder Output)
-        # conditioning_embedding is (B, n_tokens, d_model) or (B, d_model)?
-        # The encoder (AudioSpectrogramTransformer) returns (B, n_tokens, d_model) usually?
-        # Let's check: vector_field takes conditioning as input.
-        # If it's a sequence, we might need to average or take the first token (CLS).
-        # AST usually has a CLS token or we can average pool.
-        # For now, let's assume we pool over time/tokens if it's 3D.
-
-        student_embedding = conditioning_embedding
-        if student_embedding.dim() == 3:
-            student_embedding = student_embedding.mean(dim=1)  # Global Average Pooling
-
-        student_projected = self.projection(student_embedding)  # (B, 512)
-
-        # 4. Compute Loss
-        loss = torch.nn.functional.mse_loss(student_projected, teacher_embedding)
         return loss
 
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
@@ -279,7 +256,7 @@ class SurgeFlowMatchingModule(LightningModule):
         if penalty is not None:
             self.log("train/penalty", penalty, on_step=True, on_epoch=True, prog_bar=True)
 
-        return loss + penalty
+        return loss + (penalty if penalty is not None else 0.0)
 
     def on_train_epoch_end(self) -> None:
         pass
@@ -382,7 +359,8 @@ class SurgeFlowMatchingModule(LightningModule):
         self.log_dict(encoder_norms, on_step=True, on_epoch=False)
 
     def configure_optimizers(self) -> dict[str, Any]:
-        optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
+        trainable_params = [p for p in self.trainer.model.parameters() if p.requires_grad]
+        optimizer = self.hparams.optimizer(params=trainable_params)
 
         if self.hparams.warmup_steps > 0:
             warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
