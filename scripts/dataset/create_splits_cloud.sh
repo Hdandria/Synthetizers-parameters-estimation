@@ -138,7 +138,7 @@ ovhai job run \
   --name "${JOB_NAME}" \
   --flavor "ai1-1-cpu" \
   --cpu 4 \
-  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw" \
+  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw:cache" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
   --unsecure-http \

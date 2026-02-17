@@ -7,7 +7,7 @@ defaults:
 
 # Experiment Metadata
 experiment_name: vital_distill
-run_name: base
+run_name: base_100
 
 # Evaluation & Testing configuration
 data:
@@ -17,7 +17,7 @@ data:
 
 model:
   distill: True
-  distill_weight: 10.0
+  distill_weight: 100.0
   compile: false
   num_params: 597 # Vital's parameter count
 

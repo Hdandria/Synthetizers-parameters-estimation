@@ -17,7 +17,7 @@ data:
 
 model:
   distill: True
-  distill_weight: 10.0
+  distill_weight: 0.1
   compile: false
   num_params: 597 # Vital's parameter count
 
