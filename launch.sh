@@ -186,26 +186,36 @@ ovhai job run \
   --name "${JOB_NAME}" \
   --flavor "${FLAVOR:-ai1-1-gpu}" \
   --gpu "${NUM_GPUS}" \
-  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:ro:cache" \
-  --volume "${S3_BUCKET_OUTPUTS}@${DS_ALIAS}:/workspace/outputs:rw:cache" \
   --env WANDB_API_KEY="${WANDB_API_KEY}" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
-  --env HDF5_VDS_PREFIX=/workspace/datasets-mount \
+  --env HDF5_VDS_PREFIX=/workspace/datasets \
   --env AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
   --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
   --env AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
   --env AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-gra}" \
+  --env S3_BUCKET_DATASETS="${S3_BUCKET_DATASETS}" \
+  --env S3_BUCKET_OUTPUTS="${S3_BUCKET_OUTPUTS}" \
   --env DATASET_CHECK_VERBOSE="${DATASET_CHECK_VERBOSE}" \
   $([ -n "$GPU_IDS" ] && echo "--env CUDA_VISIBLE_DEVICES=${GPU_IDS}") \
   --unsecure-http \
   --output json \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
+    # 1. Download dataset (Acting as a mount)
+    echo "==> Downloading dataset from ${S3_BUCKET_DATASETS}..."
+    mkdir -p /workspace/datasets-mount
+    aws s3 sync "s3://${S3_BUCKET_DATASETS}" /workspace/datasets-mount \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}" \
+      --no-progress \
+      --only-show-errors
+    
+    # Restore original mount logic
     MOUNT_BASE=/workspace/datasets-mount/datasets
     [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
     [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
-    
+
     CFG=configs/experiment/'"${EXPERIMENT_CONFIG}"'.yaml
     DS_REL=$(grep -oP "dataset_root:\s*\K.*" "$CFG" | tr -d "'\''\" " | head -1)
     
@@ -221,6 +231,10 @@ ovhai job run \
     DS_NAME=$(basename "$DS_REL")
     DS_PATH="${MOUNT_BASE}/${DS_NAME}"
     
+    # IMPORTANT: Set VDS prefix to the specific dataset directory
+    export HDF5_VDS_PREFIX="${DS_PATH}"
+    echo "==> HDF5_VDS_PREFIX: $HDF5_VDS_PREFIX"
+    
     echo "==> Dataset: $DS_PATH"
     ls -lah "$DS_PATH/" || true
     
@@ -231,7 +245,18 @@ ovhai job run \
     
     echo "==> Starting training"
     cd /workspace
-    python src/train.py '"${HYDRA_OVERRIDES[*]}"' data.dataset_root="$DS_PATH"
+    # Ensure outputs dir exists
+    mkdir -p /workspace/outputs
+    
+    python src/train.py '"${HYDRA_OVERRIDES[*]}"' data.dataset_root="$DS_PATH" hydra.run.dir="/workspace/outputs/\${now:%Y-%m-%d}/\${now:%H-%M-%S}"
+
+    # 2. Upload outputs
+    echo "==> Uploading outputs to ${S3_BUCKET_OUTPUTS}..."
+    aws s3 sync /workspace/outputs "s3://${S3_BUCKET_OUTPUTS}" \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}" \
+      --no-progress \
+      --only-show-errors
   ' \
   | tee /tmp/job_output.json
 

@@ -1,0 +1,34 @@
+# @package _global_
+
+# Source of truth:
+defaults:
+  - distill/base_full
+  - _self_
+
+# Experiment Metadata
+experiment_name: vital_distill
+run_name: 1M_1M
+
+# Evaluation & Testing configuration
+data:
+  distill: True
+  batch_size: 128
+  dataset_root: ./datasets/vital_1M
+
+model:
+  distill: True
+  distill_weight: 100.0
+  compile: false
+  num_params: 597 # Vital's parameter count
+
+# Trainer configuration
+trainer:
+  min_steps: 1000000
+  max_steps: 1000000
+  val_check_interval: 5000
+
+# Callbacks configuration
+callbacks:
+  model_checkpoint:
+    monitor: val/loss
+    mode: min

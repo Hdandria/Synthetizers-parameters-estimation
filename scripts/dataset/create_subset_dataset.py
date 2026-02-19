@@ -52,7 +52,7 @@ def main(
 
     # Sort numerically by shard number (not alphabetically)
     def extract_shard_number(path):
-        match = re.search(r'shard[_-](\d+)\.h5', path.name)
+        match = re.search(r"shard[_-](\d+)\.h5", path.name)
         return int(match.group(1)) if match else 0
 
     all_shard_files = sorted(all_shard_files, key=extract_shard_number)
@@ -67,7 +67,9 @@ def main(
             if idx in id_to_file:
                 files.append(id_to_file[idx])
             else:
-                print(f"Warning: Shard {idx} found in request but missing in source dataset. Skipping.")
+                print(
+                    f"Warning: Shard {idx} found in request but missing in source dataset. Skipping."
+                )
         return files
 
     splits = {
@@ -81,13 +83,15 @@ def main(
             continue
 
         print(f"Creating {split} split with {len(files)} shards")
-        split_len = len(files) * 10_000
-
         # Get shapes from first file
         with h5py.File(files[0], "r") as f:
+            shard_len = f["audio"].shape[0]  # Dynamically get shard length
             audio_shape = f["audio"].shape[1:]
             mel_shape = f["mel_spec"].shape[1:]
             param_shape = f["param_array"].shape[1:]
+
+        print(f"Detected shard length: {shard_len}")
+        split_len = len(files) * shard_len
 
         # Create virtual layouts
         vl_audio = h5py.VirtualLayout(shape=(split_len, *audio_shape), dtype=np.float32)
@@ -111,17 +115,17 @@ def main(
 
             # Use the VDS path (relative) when creating VirtualSource
             vs_audio = h5py.VirtualSource(
-                vds_path, "audio", dtype=np.float32, shape=(10_000, *audio_shape)
+                vds_path, "audio", dtype=np.float32, shape=(shard_len, *audio_shape)
             )
             vs_mel = h5py.VirtualSource(
-                vds_path, "mel_spec", dtype=np.float32, shape=(10_000, *mel_shape)
+                vds_path, "mel_spec", dtype=np.float32, shape=(shard_len, *mel_shape)
             )
             vs_param = h5py.VirtualSource(
-                vds_path, "param_array", dtype=np.float32, shape=(10_000, *param_shape)
+                vds_path, "param_array", dtype=np.float32, shape=(shard_len, *param_shape)
             )
 
-            range_start = i * 10_000
-            range_end = (i + 1) * 10_000
+            range_start = i * shard_len
+            range_end = (i + 1) * shard_len
 
             print(f"  Mapping {vds_path} (-> {shard_abs}) to indices {range_start}:{range_end}")
             vl_audio[range_start:range_end, :, :] = vs_audio

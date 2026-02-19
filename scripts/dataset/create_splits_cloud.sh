@@ -136,19 +136,39 @@ SHARD_ARGS=""
 
 ovhai job run \
   --name "${JOB_NAME}" \
-  --flavor "ai1-1-cpu" \
-  --cpu 4 \
-  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw:cache" \
+  --flavor "l40s-1-gpu" \
+  --gpu 1 \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
+  --env AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+  --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+  --env AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
+  --env AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-gra}" \
+  --env S3_BUCKET_DATASETS="${S3_BUCKET_DATASETS}" \
   --unsecure-http \
   --output json \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
     
-    MOUNT_BASE=/workspace/datasets-mount/datasets
-    [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
-    [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
+    # 1. Download full dataset bucket (mirroring volume mount behavior)
+    MOUNT_BASE=/workspace/datasets-mount
+    echo "==> Downloading full dataset bucket from ${S3_BUCKET_DATASETS} to ${MOUNT_BASE}..."
+    
+    # Optimize S3 transfer settings
+    aws configure set default.s3.max_concurrent_requests 20
+    aws configure set default.s3.max_queue_size 10000
+    aws configure set default.s3.multipart_threshold 64MB
+    aws configure set default.s3.multipart_chunksize 16MB
+    
+    mkdir -p "$MOUNT_BASE"
+    aws s3 sync "s3://${S3_BUCKET_DATASETS}" "$MOUNT_BASE" \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}" \
+      --no-progress \
+      --only-show-errors
+
+    # Adjust MOUNT_BASE if datasets subdir exists (standard logic)
+    [ -d "$MOUNT_BASE/datasets" ] && MOUNT_BASE="$MOUNT_BASE/datasets"
     
     SOURCE_PATH="${MOUNT_BASE}/'"${SOURCE_DATASET}"'"
     TARGET_PATH="${MOUNT_BASE}/'"${TARGET_DATASET}"'"
@@ -182,6 +202,24 @@ ovhai job run \
     
     echo "==> Created splits:"
     ls -lh "$TARGET_PATH"/*.h5
+    
+    # 2. Upload target dataset
+    # We need to calculate the S3 destination path relative to the bucket root
+    # If MOUNT_BASE is /workspace/datasets-mount/datasets, and TARGET_PATH is inside...
+    # We want to sync TARGET_PATH to s3://BUCKET/.../TARGET_DATASET
+    
+    # Simplified approach: We know TARGET_DATASET is relative to "datasets/" or root
+    # And we know we downloaded BUCKET to /workspace/datasets-mount
+    
+    # Let find the relative path of TARGET_PATH from /workspace/datasets-mount
+    REL_PATH=$(realpath --relative-to="/workspace/datasets-mount" "$TARGET_PATH")
+    
+    echo "==> Uploading target dataset to s3://${S3_BUCKET_DATASETS}/${REL_PATH}..."
+    aws s3 sync "$TARGET_PATH" "s3://${S3_BUCKET_DATASETS}/${REL_PATH}" \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}" \
+      --no-progress \
+      --only-show-errors
     
     echo "==> Done!"
   ' \

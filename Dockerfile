@@ -29,9 +29,14 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libfreetype6 \
     libglib2.0-0 \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir uv awscli
+RUN pip install --no-cache-dir uv && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
 
 # Set working directory and give ownership to ovhcloud user
 WORKDIR /workspace
