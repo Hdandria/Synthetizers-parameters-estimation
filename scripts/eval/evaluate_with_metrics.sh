@@ -27,7 +27,7 @@ echo "Evaluation complete. Results in $OUTDIR"
 # 2. Renders predictions to audio using VST plugin
 # 3. Computes audio metrics
 #
-# Usage (when called from launch.sh):
+# Usage (when called from scripts/train/launch.sh):
 #   Auto-detects checkpoint from training output
 # Usage (manual):
 #   ./scripts/evaluate_with_metrics.sh <checkpoint_path> <experiment_config> <dataset_split> <dataset_root>

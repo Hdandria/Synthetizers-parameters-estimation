@@ -1,10 +1,56 @@
 #!/bin/bash
 set -e
 
-# Locate .env file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Default Configuration
+FIRST_SHARD=0
+LAST_SHARD=5
+SAMPLES_PER_SHARD=10000
+OUTPUT_DIR="datasets/vital_single_20k"
+PRESET_DIR="data/presets/vital_single"
+PLUGIN_PATH="plugins/Vital.vst3"
+WORKERS=20
+VARIANCE=0.1
+PARAM_SPEC="vital_simple"
 ENV_FILE="$PROJECT_ROOT/.env"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --first-shard) FIRST_SHARD="$2"; shift 2 ;;
+    --last-shard) LAST_SHARD="$2"; shift 2 ;;
+    --samples) SAMPLES_PER_SHARD="$2"; shift 2 ;;
+    --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
+    --preset-dir) PRESET_DIR="$2"; shift 2 ;;
+    --plugin-path) PLUGIN_PATH="$2"; shift 2 ;;
+    --workers) WORKERS="$2"; shift 2 ;;
+    --variance) VARIANCE="$2"; shift 2 ;;
+    --param-spec) PARAM_SPEC="$2"; shift 2 ;;
+    --env) ENV_FILE="$2"; shift 2 ;;
+    --help)
+      echo "Usage: ./scripts/dataset/generate.sh [OPTIONS]"
+      echo "Options:"
+      echo "  --first-shard INT     (default: 0)"
+      echo "  --last-shard INT      (default: 5)"
+      echo "  --samples INT         (default: 10000)"
+      echo "  --output-dir PATH     (default: datasets/vital_single_20k)"
+      echo "  --preset-dir PATH     (default: data/presets/vital_single)"
+      echo "  --plugin-path PATH    (default: plugins/Vital.vst3)"
+      echo "  --workers INT         (default: 20)"
+      echo "  --variance FLOAT      (default: 0.1)"
+      echo "  --param-spec STR      (default: vital_simple)"
+      echo "  --env FILE            (default: .env)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
 
 # Load environment variables for AWS CLI commands
 if [ -f "$ENV_FILE" ]; then
@@ -17,21 +63,9 @@ else
     exit 1
 fi
 
-# Configuration
-FIRST_SHARD=0
-LAST_SHARD=5
-SAMPLES_PER_SHARD=10000
-OUTPUT_DIR="datasets/vital_single_20k"
-PRESET_DIR="data/presets/vital_single"
-PLUGIN_PATH="plugins/Vital.vst3"
-WORKERS=20
-VARIANCE=0.1
-PARAM_SPEC="vital_simple"
-
-# S3 Configuration (from .env)
 S3_ENDPOINT="${AWS_ENDPOINT_URL}"
 S3_REGION="${AWS_DEFAULT_REGION}"
-S3_PREFIX="datasets/vital_single_20k"  # Prefix for organizing files in the bucket
+S3_PREFIX="${OUTPUT_DIR}"
 
 # Function to upload file to S3 and delete locally
 upload_to_s3() {
@@ -54,7 +88,6 @@ upload_to_s3() {
     fi
 }
 
-# Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
 echo "Starting dataset generation..."
@@ -65,7 +98,6 @@ echo "Output directory: $OUTPUT_DIR"
 for i in $(seq $FIRST_SHARD $LAST_SHARD); do
     SHARD_FILE="$OUTPUT_DIR/shard_$i.h5"
     
-    # Check if file already exists locally
     if [ -f "$SHARD_FILE" ]; then
         echo "Shard $i already exists at $SHARD_FILE. Skipping generation..."
         echo "Attempting to upload existing file..."
@@ -73,7 +105,6 @@ for i in $(seq $FIRST_SHARD $LAST_SHARD); do
         continue
     fi
     
-    # Check if file already exists on S3
     S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/shard_$i.h5"
     if uv run aws s3 ls "$S3_PATH" --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" > /dev/null 2>&1; then
         echo "Shard $i already exists on S3. Skipping..."
@@ -94,8 +125,6 @@ for i in $(seq $FIRST_SHARD $LAST_SHARD); do
         --param_spec "$PARAM_SPEC"
         
     echo "Shard $i completed."
-    
-    # Upload to S3 and delete local file if successful
     upload_to_s3 "$SHARD_FILE"
 done
 

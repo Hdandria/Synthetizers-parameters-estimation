@@ -10,6 +10,10 @@ readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly RESET='\033[0m'
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT"
+
 # Configuration
 ENV_FILE=".env"
 SKIP_BUILD=false
@@ -39,7 +43,7 @@ while [[ $# -gt 0 ]]; do
     --skip-build) SKIP_BUILD=true; shift ;;
     --stream) STREAM_LOGS=true; shift ;;
     --help)
-      echo "Usage: ./evaluate_cloud.sh [OPTIONS]"
+      echo "Usage: ./scripts/eval/evaluate.sh [OPTIONS]"
       echo "Required:"
       echo "  --experiment CONFIG   Experiment config (e.g. flow_multi/vital_100k)"
       echo "  --ckpt PATH           Checkpoint path relative to outputs/ (wildcards allowed, e.g. 'outputs/train/.../last.ckpt')"

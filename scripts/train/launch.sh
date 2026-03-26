@@ -10,6 +10,10 @@ readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly RESET='\033[0m'
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT"
+
 # Configuration
 EXPERIMENT_CONFIG=""
 EXTRA_OVERRIDES=()
@@ -26,8 +30,8 @@ while [[ $# -gt 0 ]]; do
     --stream) STREAM_LOGS=true; shift ;;
     --skip-build) SKIP_BUILD=true; shift ;;
     --help)
-      echo "Usage: ./launch.sh <experiment> [OVERRIDES] [OPTIONS]"
-      echo "Example: ./launch.sh vital/vital_1M_800k trainer.max_steps=1200000"
+      echo "Usage: ./scripts/train/launch.sh <experiment> [OVERRIDES] [OPTIONS]"
+      echo "Example: ./scripts/train/launch.sh vital/vital_1M_800k trainer.max_steps=1200000"
       echo "Options:"
       echo "  --local       Run locally with Docker"
       echo "  --stream      Stream logs (cloud only)"

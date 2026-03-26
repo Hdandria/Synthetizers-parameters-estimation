@@ -27,7 +27,7 @@ callbacks:
 model:
   num_params: 597 # Vital's parameter count
 
-./scripts/eval/evaluate_cloud.sh \
+./scripts/eval/evaluate.sh \
   --ckpt "outputs/train/vital/vital_1M_800k-2026-01-23_17-36-01/checkpoints/epoch_113.ckpt" \
   --experiment vital/vital_30k \
   --split test \

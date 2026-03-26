@@ -83,7 +83,7 @@ echo -e "${BLUE}    Dataset: ${DATASET_NAME}${RESET}"
 echo ""
 
 # Run launch.sh
-./launch.sh "$EXPERIMENT" $SKIP_BUILD
+./scripts/train/launch.sh "$EXPERIMENT" $SKIP_BUILD
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
