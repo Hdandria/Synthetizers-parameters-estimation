@@ -1,5 +1,0 @@
-# Deprecated: ksin Optuna sweep configs removed when ksin models were deleted.
-# Kept as a placeholder in case you want to re-enable sweep configs; otherwise
-# you can safely delete this file.
-
-optimized_metric: "val/lsd"
