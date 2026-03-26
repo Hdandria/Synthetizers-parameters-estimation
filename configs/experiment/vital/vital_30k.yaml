@@ -1,0 +1,36 @@
+# @package _global_
+
+defaults:
+  - vital/base_full
+  - _self_
+
+# Experiment metadata
+experiment_name: vital
+run_name: vital_30k
+
+# Data configuration
+data:
+  dataset_root: ./datasets/vital_30k
+
+# Trainer configuration
+trainer:
+  min_steps: 40000
+  max_steps: 40000
+  val_check_interval: 1000
+
+# Callbacks configuration
+callbacks:
+  model_checkpoint:
+    monitor: val/loss
+    mode: min
+
+model:
+  num_params: 597 # Vital's parameter count
+
+./scripts/eval/evaluate_cloud.sh \
+  --ckpt "outputs/train/vital/vital_1M_800k-2026-01-23_17-36-01/checkpoints/epoch_113.ckpt" \
+  --experiment vital/vital_30k \
+  --split test \
+  --dataset vital_30k \
+  --limit 10 \
+  --plugin vital

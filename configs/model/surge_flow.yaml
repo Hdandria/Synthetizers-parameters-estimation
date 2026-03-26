@@ -60,3 +60,11 @@ test_cfg_strength: 2.0
 
 # compile model for faster training with pytorch 2.0
 compile: true
+
+# distillation
+distill: false
+distill_weight: 1.0
+distill_lambda_start: 0.5
+distill_lambda_end: 0.0
+distill_decay_steps: 100000
+distill_ema_momentum: 0.9

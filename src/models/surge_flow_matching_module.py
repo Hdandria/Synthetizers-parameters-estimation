@@ -3,10 +3,10 @@ from functools import partial
 from typing import Any, Dict, Literal, Optional, Tuple
 
 import torch
+import torchaudio
 from lightning import LightningModule
 from lightning.pytorch.utilities import grad_norm
 from transformers import ClapModel, ClapProcessor
-import torchaudio
 
 
 def call_with_cfg(
@@ -57,7 +57,11 @@ class SurgeFlowMatchingModule(LightningModule):
         compile: bool = False,
         num_params: int = 90,
         distill: bool = False,
-        distill_weight: float = 10.0,
+        distill_weight: float = 1.0,
+        distill_lambda_start: float = 0.5,
+        distill_lambda_end: float = 0.0,
+        distill_decay_steps: int = 50000,
+        distill_ema_momentum: float = 0.9,
     ):
         super().__init__()
 
@@ -103,6 +107,10 @@ class SurgeFlowMatchingModule(LightningModule):
             # Using 512 as CLAP embedding size.
             encoder_dim = getattr(encoder, "d_model", 512)
             self.projection = torch.nn.Linear(encoder_dim, 512)
+
+            # Buffers for loss normalization (not saved in world state as they are statistics)
+            self.register_buffer("loss_ema_flow", torch.tensor(0.0))
+            self.register_buffer("loss_ema_distill", torch.tensor(0.0))
 
     def on_train_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -181,15 +189,57 @@ class SurgeFlowMatchingModule(LightningModule):
 
         prediction = self.vector_field(x_t, t, z)
 
-        # compute and weight loss
-        loss = (prediction - target).square().mean(dim=-1)
-        loss = loss * w
-        loss = loss.mean()
+        # 1. Base flow matching loss
+        flow_loss = (prediction - target).square().mean(dim=-1)
+        flow_loss = (flow_loss * w).mean()
 
         if self.hparams.distill:
-            clap_loss = self._compute_clap_loss(batch, conditioning)
-            loss = loss + self.hparams.distill_weight * clap_loss
-            self.log("train/clap_loss", clap_loss, on_step=True, on_epoch=True, prog_bar=True)
+            # 2. Distillation loss
+            distill_loss = self._compute_clap_loss(batch, conditioning)
+
+            # 3. Dynamic Lambda Computation (Cosine Decay)
+            import math
+
+            step = self.global_step
+            max_steps = self.hparams.distill_decay_steps
+            l_start = self.hparams.distill_lambda_start
+            l_end = self.hparams.distill_lambda_end
+
+            if step >= max_steps:
+                curr_lambda = l_end
+            else:
+                progress = step / max_steps
+                cosine_factor = 0.5 * (1 + math.cos(math.pi * progress))
+                curr_lambda = l_end + (l_start - l_end) * cosine_factor
+
+            # 4. Update EMAs for normalization
+            with torch.no_grad():
+                momentum = self.hparams.distill_ema_momentum
+                if self.loss_ema_flow.item() == 0:
+                    self.loss_ema_flow.copy_(flow_loss)
+                else:
+                    self.loss_ema_flow.mul_(momentum).add_(flow_loss, alpha=1 - momentum)
+
+                if self.loss_ema_distill.item() == 0:
+                    self.loss_ema_distill.copy_(distill_loss)
+                else:
+                    self.loss_ema_distill.mul_(momentum).add_(distill_loss, alpha=1 - momentum)
+
+            # 5. Convex Combination with Balancing
+            # We scale losses by their EMA inverse to make lambda weight relative.
+            # Avoid division by zero with small eps.
+            eps = 1e-8
+            flow_norm = flow_loss / (self.loss_ema_flow + eps)
+            distill_norm = distill_loss / (self.loss_ema_distill + eps)
+
+            loss = (1 - curr_lambda) * flow_norm + curr_lambda * distill_norm
+            loss = loss * self.hparams.distill_weight
+
+            self.log("train/clap_loss", distill_loss, on_step=True, on_epoch=True, prog_bar=True)
+            self.log("train/distill_lambda", curr_lambda, on_step=True, on_epoch=False)
+            self.log("train/flow_loss_raw", flow_loss, on_step=True, on_epoch=False)
+        else:
+            loss = flow_loss
 
         penalty = None
         if hasattr(self.vector_field, "penalty"):
@@ -404,6 +454,19 @@ class SurgeFlowMatchingModule(LightningModule):
         state_dict = checkpoint.get("state_dict", {})
         if not state_dict:
             return
+
+        # If evaluating a distilled checkpoint without distillation enabled, remove CLAP parameters
+        if getattr(self.hparams, "distill", False) is False:
+            keys_to_remove = [
+                k
+                for k in state_dict.keys()
+                if k.startswith("clap.")
+                or k.startswith("resampler.")
+                or k.startswith("mel_transform.")
+                or k.startswith("projection.")
+            ]
+            for k in keys_to_remove:
+                state_dict.pop(k)
 
         # Check if checkpoint has compiled prefixes
         checkpoint_has_compiled = any(

@@ -263,39 +263,49 @@ class SynthDataModule(LightningDataModule):
         self.distill = distill
 
     def setup(self, stage: str | None = None):
-        self.train_dataset = SynthDataset(
-            self.dataset_root / "train.h5",
-            batch_size=self.batch_size,
-            ot=self.ot,
-            use_saved_mean_and_variance=self.use_saved_mean_and_variance,
-            fake=self.fake,
-            repeat_first_batch=self.repeat_first_batch,
-            read_mel=self.conditioning == "mel",
-            read_m2l=self.conditioning == "m2l",
-            read_audio=self.distill,
-        )
-        self.val_dataset = SynthDataset(
-            self.dataset_root / "val.h5",
-            batch_size=self.batch_size,
-            ot=self.val_ot,
-            use_saved_mean_and_variance=self.use_saved_mean_and_variance,
-            fake=self.fake,
-            repeat_first_batch=self.repeat_first_batch,
-            read_mel=self.conditioning == "mel",
-            read_m2l=self.conditioning == "m2l",
-            read_audio=self.distill,
-        )
-        self.test_dataset = SynthDataset(
-            self.dataset_root / "test.h5",
-            batch_size=self.batch_size,
-            ot=self.val_ot,
-            use_saved_mean_and_variance=self.use_saved_mean_and_variance,
-            fake=self.fake,
-            repeat_first_batch=self.repeat_first_batch,
-            read_mel=self.conditioning == "mel",
-            read_m2l=self.conditioning == "m2l",
-            read_audio=self.distill,
-        )
+        self.train_dataset = None
+        self.val_dataset = None
+        self.test_dataset = None
+
+        if stage == "fit" or stage is None:
+            if (self.dataset_root / "train.h5").exists():
+                self.train_dataset = SynthDataset(
+                    self.dataset_root / "train.h5",
+                    batch_size=self.batch_size,
+                    ot=self.ot,
+                    use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+                    fake=self.fake,
+                    repeat_first_batch=self.repeat_first_batch,
+                    read_mel=self.conditioning == "mel",
+                    read_m2l=self.conditioning == "m2l",
+                    read_audio=self.distill,
+                )
+            if (self.dataset_root / "val.h5").exists():
+                self.val_dataset = SynthDataset(
+                    self.dataset_root / "val.h5",
+                    batch_size=self.batch_size,
+                    ot=self.val_ot,
+                    use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+                    fake=self.fake,
+                    repeat_first_batch=self.repeat_first_batch,
+                    read_mel=self.conditioning == "mel",
+                    read_m2l=self.conditioning == "m2l",
+                    read_audio=self.distill,
+                )
+
+        if stage == "test" or stage is None:
+            if (self.dataset_root / "test.h5").exists():
+                self.test_dataset = SynthDataset(
+                    self.dataset_root / "test.h5",
+                    batch_size=self.batch_size,
+                    ot=self.val_ot,
+                    use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+                    fake=self.fake,
+                    repeat_first_batch=self.repeat_first_batch,
+                    read_mel=self.conditioning == "mel",
+                    read_m2l=self.conditioning == "m2l",
+                    read_audio=self.distill,
+                )
         if self.predict_file is not None:
             self.predict_dataset = SynthDataset(
                 self.predict_file,
@@ -352,6 +362,9 @@ class SynthDataModule(LightningDataModule):
         )
 
     def teardown(self, stage: str | None = None):
-        self.train_dataset.dataset_file.close()
-        self.val_dataset.dataset_file.close()
-        self.test_dataset.dataset_file.close()
+        if self.train_dataset is not None:
+            self.train_dataset.dataset_file.close()
+        if self.val_dataset is not None:
+            self.val_dataset.dataset_file.close()
+        if self.test_dataset is not None:
+            self.test_dataset.dataset_file.close()

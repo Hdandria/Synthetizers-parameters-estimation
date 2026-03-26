@@ -26,7 +26,7 @@ dependencies = [
     "h5py>=3.14.0",
     "hdf5plugin>=5.1.0",
     "numpy>=2.2.6",
-    "scipy>=1.14.1",
+    "scipy>=1.14.1,<1.15.0",
     # Utilities
     "click>=8.3.0",
     "colorlog>=6.9.0",

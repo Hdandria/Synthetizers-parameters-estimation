@@ -1,0 +1,12 @@
+defaults:
+  - default
+
+dataset_root: ${paths.data_dir}/nsynth_eval
+batch_size: 1024
+num_workers: 8
+ot: false
+fake: false
+val_ot: false
+distill: false
+repeat_first_batch: false
+conditioning: mel

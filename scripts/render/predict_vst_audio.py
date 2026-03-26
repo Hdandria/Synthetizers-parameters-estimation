@@ -109,6 +109,13 @@ def params_to_csv(
 @click.option("--rerender_target", "-t", is_flag=True, default=False)
 @click.option("--no-params", "-X", is_flag=True, default=False)
 @click.option("--skip-spectrogram", "-S", is_flag=True, default=False)
+@click.option(
+    "--limit-audio",
+    "-l",
+    type=int,
+    default=None,
+    help="Limit number of audio files to save (e.g. 5 means 5 target/pred pairs)",
+)
 def main(
     pred_dir: str,
     output_dir: str,
@@ -122,6 +129,7 @@ def main(
     rerender_target: bool = False,
     no_params: bool = False,
     skip_spectrogram: bool = False,
+    limit_audio: int | None = None,
 ):
     param_spec = param_specs[param_spec]
     os.makedirs(output_dir, exist_ok=True)
@@ -134,6 +142,15 @@ def main(
     # pred-{index}.pt, and we want to sort by index)
     pred_dir = Path(pred_dir)
     pred_files = [f for f in pred_dir.glob("pred-*.pt") if f.is_file()]
+    if not pred_files:
+        pred_files = [f for f in pred_dir.rglob("pred-*.pt") if f.is_file()]
+        if pred_files:
+            pred_dir = pred_files[0].parent
+            pred_files = [f for f in pred_dir.glob("pred-*.pt") if f.is_file()]
+
+    if not pred_files:
+        raise FileNotFoundError(f"No pred-*.pt files found in {pred_dir} or subdirectories!")
+
     indices = [int(f.stem.split("-")[1]) for f in pred_files]
     target_audio_files = [pred_dir / f"target-audio-{i}.pt" for i in indices]
 
@@ -169,6 +186,9 @@ def main(
         # 5. iterate over its internal rows and render the audio
         for j in trange(pred_params.shape[0]):
             file_idx = current_offset + j
+            if limit_audio is not None and file_idx >= limit_audio:
+                break
+
             sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
             os.makedirs(sample_dir, exist_ok=True)
 
@@ -273,6 +293,8 @@ def main(
             )
 
         current_offset += pred_params.shape[0]
+        if limit_audio is not None and current_offset >= limit_audio:
+            break
 
 
 if __name__ == "__main__":

@@ -113,17 +113,30 @@ NUM_WORKERS="${DATA_NUM_WORKERS:-8}"
 
 ovhai job run \
   --name "${JOB_NAME}" \
-  --flavor "ai1-1-cpu" \
-  --cpu "${NUM_WORKERS}" \
-  --volume "${S3_BUCKET_DATASETS}@${DS_ALIAS}:/workspace/datasets-mount:rw" \
+  --flavor "l40s-1-gpu" \
+  --gpu 1 \
+  --env WANDB_API_KEY="${WANDB_API_KEY}" \
   --env PROJECT_ROOT=/workspace \
   --env MPLCONFIGDIR=/tmp/matplotlib \
-  --env HDF5_VDS_PREFIX=/workspace/datasets-mount/datasets \
+  --env AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+  --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+  --env AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
+  --env AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-gra}" \
+  --env S3_BUCKET_DATASETS="${S3_BUCKET_DATASETS}" \
   --unsecure-http \
   --output json \
   "${FULL_IMAGE}" \
   -- bash -c 'set -euo pipefail
     
+    # 1. Download dataset
+    echo "==> Downloading dataset from ${S3_BUCKET_DATASETS}..."
+    mkdir -p /workspace/datasets-mount
+    aws s3 sync "s3://${S3_BUCKET_DATASETS}" /workspace/datasets-mount \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}" \
+      --no-progress \
+      --only-show-errors
+      
     MOUNT_BASE=/workspace/datasets-mount/datasets
     [ -d "$MOUNT_BASE" ] || MOUNT_BASE=/workspace/datasets-mount
     [ -d "$MOUNT_BASE" ] || { echo "ERROR: datasets mount not found"; exit 1; }
@@ -150,16 +163,30 @@ ovhai job run \
       exit 1
     fi
     
+    export HDF5_VDS_PREFIX="${DATASET_PATH}"
     cd /workspace
     python scripts/dataset/get_dataset_stats.py "$SPLIT_FILE"
     
     echo "==> Stats file created:"
     ls -lh "$DATASET_PATH"/stats.npz
     
+    # 2. Upload stats file
+    echo "==> Uploading stats file to ${S3_BUCKET_DATASETS}..."
+    if [ -d /workspace/datasets-mount/datasets ]; then
+      # Bucket has "datasets" prefix
+      AWS_TARGET="s3://${S3_BUCKET_DATASETS}/datasets/'"${DATASET}"'/stats.npz"
+    else
+      # Bucket is flat
+      AWS_TARGET="s3://${S3_BUCKET_DATASETS}/'"${DATASET}"'/stats.npz"
+    fi
+    
+    aws s3 cp "$DATASET_PATH"/stats.npz "$AWS_TARGET" \
+      --endpoint-url "${AWS_ENDPOINT_URL}" \
+      --region "${AWS_DEFAULT_REGION:-gra}"
+    
     echo "==> Done!"
   ' \
   | tee /tmp/job_output.json
-
 JOB_ID=$(jq -r '.id // .uuid // empty' /tmp/job_output.json)
 [[ -z "$JOB_ID" ]] && { echo -e "${RED}Error: Failed to get job ID${RESET}"; exit 1; }
 

@@ -63,7 +63,6 @@ temp.md
 .env.production
 
 # Large files that shouldn't be in image
-presets/
 *.vst3
 
 # Build artifacts

@@ -7,7 +7,7 @@ defaults:
 
 # Experiment Metadata
 experiment_name: vital_distill
-run_name: 1M_1M
+run_name: 1M_1M_v2
 
 # Evaluation & Testing configuration
 data:
@@ -17,7 +17,11 @@ data:
 
 model:
   distill: True
-  distill_weight: 100.0
+  distill_weight: 1.0 # Scaled by normalization now
+  distill_lambda_start: 0.9 # Replicating 14:1 distill-heavy start from previous run
+  distill_lambda_end: 0.1
+  distill_decay_steps: 600000
+  distill_ema_momentum: 0.999
   compile: false
   num_params: 597 # Vital's parameter count
 

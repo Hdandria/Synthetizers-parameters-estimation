@@ -7,29 +7,29 @@ defaults:
 
 # Experiment Metadata
 experiment_name: vital_distill
-run_name: base
+run_name: 1M_uniform_600k
 
 # Evaluation & Testing configuration
 data:
   distill: True
-  batch_size: 64
-  dataset_root: ./datasets/vital_30k
+  batch_size: 128
+  dataset_root: ./datasets/vital_simple_uniform_1M
 
 model:
   distill: True
-  distill_weight: 10.0
+  distill_weight: 1.0 # Scaled by normalization now
   distill_lambda_start: 0.9 # Replicating 14:1 distill-heavy start from previous run
-  distill_lambda_end: 0.1 # Still keep a bit of teacher at the end
-  distill_decay_steps: 10000
-  distill_ema_momentum: 0.99
+  distill_lambda_end: 0.1
+  distill_decay_steps: 600000
+  distill_ema_momentum: 0.999
   compile: false
   num_params: 597 # Vital's parameter count
 
 # Trainer configuration
 trainer:
-  min_steps: 10000
-  max_steps: 10000
-  val_check_interval: 1000
+  min_steps: 600000
+  max_steps: 600000
+  val_check_interval: 5000
 
 # Callbacks configuration
 callbacks:
