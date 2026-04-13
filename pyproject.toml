@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 dependencies = [
     # ML (PyTorch installé séparément dans Docker)
     "lightning>=2.5.5",
-    "torchmetrics>=0.11.4",
+    "torchmetrics>=1.9.0",
     "torchvision>=0.15.0",
     # Configuration
     "hydra-core>=1.3.2",
