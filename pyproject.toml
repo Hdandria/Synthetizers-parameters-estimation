@@ -31,7 +31,7 @@ dependencies = [
     "loguru>=0.7.3",
     "rich>=14.2.0",
     "rootutils>=1.0.7",
-    "tqdm>=4.67.1",
+    "tqdm>=4.67.3",
     "pyyaml>=6.0.3",
     # Math/ML utilities
     "POT",
